@@ -1,0 +1,10 @@
+#!/bin/sh
+# Retire toute attribution Co-authored-by liée à Cursor du message de commit.
+commit_msg_file="$1"
+[ -n "$commit_msg_file" ] || exit 0
+[ -f "$commit_msg_file" ] || exit 0
+
+tmp="${commit_msg_file}.strip-coauthor"
+grep -viE '^co-authored-by:.*cursor' "$commit_msg_file" >"$tmp" || true
+mv "$tmp" "$commit_msg_file"
+exit 0

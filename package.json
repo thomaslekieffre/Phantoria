@@ -1,0 +1,17 @@
+{
+  "name": "phantoria",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.28.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "preview": "pnpm --filter web preview",
+    "start": "pnpm --filter api start"
+  }
+}
