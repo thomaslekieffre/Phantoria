@@ -1,0 +1,11 @@
+{
+  "name": "Phantoria",
+  "short_name": "Phantoria",
+  "description": "Gacha & roguelite dans un monde d'esprits",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06080f",
+  "theme_color": "#06080f",
+  "lang": "fr",
+  "orientation": "portrait-primary"
+}

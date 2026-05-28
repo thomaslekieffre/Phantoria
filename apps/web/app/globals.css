@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+:root {
+  --bg-frame: #07060e;
+  --nav-h: 4.5rem;
+  --hud-h: 3.25rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-outfit);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background: #030208;
+  color: #f8fafc;
+  font-family: var(--font-nunito), system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.safe-top {
+  padding-top: max(0.35rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+}
+
+/* Frame */
+.game-frame {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-frame);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 80px rgba(0, 0, 0, 0.9);
+}
+
+.game-frame__body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* HUD */
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--hud-h);
+  padding: 0 1rem;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hud__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hud__avatar {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.hud__lvl {
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  margin-left: -0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  border: 2px solid #1e1b4b;
+  font-size: 0.55rem;
+  font-weight: 900;
+  color: #422006;
+}
+
+.hud__wallet {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.hud__pill {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.hud__ico {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Dock */
+.dock {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: var(--nav-h);
+  padding: 0 0.35rem 0.35rem;
+  flex-shrink: 0;
+  background: linear-gradient(0deg, #0a0812 0%, rgba(10, 8, 18, 0.92) 100%);
+  border-top: 1px solid rgba(167, 139, 250, 0.15);
+}
+
+.dock__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-decoration: none;
+  color: #64748b;
+  transition: color 0.15s;
+}
+
+.dock__item--on {
+  color: #e9d5ff;
+}
+
+.dock__btn {
+  position: relative;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition:
+    transform 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.dock__item--on .dock__btn {
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.5), rgba(76, 29, 149, 0.3));
+  border-color: rgba(167, 139, 250, 0.45);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(109, 40, 217, 0.35);
+}
+
+.dock__svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.dock__dot {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #f43f5e;
+  box-shadow: 0 0 6px #f43f5e;
+}
+
+.dock__label {
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
