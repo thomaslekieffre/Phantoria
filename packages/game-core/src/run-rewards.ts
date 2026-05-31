@@ -1,5 +1,6 @@
 import type { CombatState, RunRewardDef, RunShopOffer } from "./types";
 import { getRunWaveKind, type RunWaveKind } from "./run-waves";
+import { grantXp } from "./xp";
 
 export const RUN_START_GOLD = 100;
 export const RUN_START_BALLS = { standard: 5, tribal: 0 } as const;
@@ -125,6 +126,41 @@ export const RUN_REWARD_POOL: RunRewardDef[] = [
     value: 1,
     stackable: true,
   },
+  {
+    id: "eclat_xp",
+    name: "Éclat d'expérience",
+    emoji: "💠",
+    description: "+35 XP pour toute la roue",
+    kind: "xp_all",
+    value: 35,
+    stackable: true,
+  },
+  {
+    id: "grande_eclat_xp",
+    name: "Grande étincelle",
+    emoji: "🔷",
+    description: "+75 XP pour toute la roue",
+    kind: "xp_all",
+    value: 75,
+    stackable: true,
+  },
+  {
+    id: "offrande_vit",
+    name: "Offrande du vent",
+    emoji: "🍃",
+    description: "+3 VIT sur toute la roue pour ce run",
+    kind: "stat_all",
+    stat: "vit",
+    value: 3,
+  },
+  {
+    id: "relique_ame",
+    name: "Fragment d'âme",
+    emoji: "💫",
+    description: "Un allié sur le terrain gagne 80 % de jauge d'âmes",
+    kind: "soul_fill",
+    value: 0.8,
+  },
 ];
 
 const REWARD_BY_ID = Object.fromEntries(RUN_REWARD_POOL.map((r) => [r.id, r])) as Record<
@@ -214,11 +250,13 @@ export function getShopPrice(reward: RunRewardDef, wave: number): number {
     soul_fill: 16,
     ball_standard: 18,
     ball_tribal: 32,
+    xp_all: 22,
   };
   let price = kindBase[reward.kind];
   if (reward.kind === "heal_all") price += Math.round(reward.value * 14);
   if (reward.kind === "stat_all") price += Math.floor(reward.value * 0.85);
   if (reward.kind === "ball_standard") price += (reward.value - 1) * 4;
+  if (reward.kind === "xp_all") price += Math.floor(reward.value * 0.35);
   price += Math.floor(wave / 10) * 3;
   if (wave <= 5 && reward.kind !== "ball_tribal") price = Math.max(14, price - 4);
   return price;
@@ -305,6 +343,13 @@ export function applyRunReward(state: CombatState, reward: RunRewardDef, rng = M
     case "ball_tribal":
       state.runBalls.tribal += reward.value;
       return `${reward.name} — +${reward.value} tribale(s)`;
+
+    case "xp_all": {
+      const allies = state.combatants.filter((c) => c.side === "ally" && !c.ko);
+      if (allies.length === 0) return `${reward.name} — personne sur la roue`;
+      for (const a of allies) grantXp(a, reward.value);
+      return `${reward.name} — +${reward.value} XP toute la roue`;
+    }
 
     default:
       return reward.name;

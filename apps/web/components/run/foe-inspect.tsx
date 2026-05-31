@@ -9,6 +9,7 @@ import {
   type Tribe,
 } from "@phantoria/game-core";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
+import { CombatantSkills, CombatantXpBar } from "@/components/run/combatant-skills";
 
 type FoeInspectProps = {
   foe: Combatant;
@@ -62,10 +63,13 @@ export function FoeInspect({ foe, fieldAllies, onClose, onCapture, onOpenChart }
             {tribeInfo.emoji} {tribeInfo.label}
           </p>
           <p className="foe-inspect__meta">
-            Niv. {foe.level} · {Math.round(ratio * 100)} % PV
+            {Math.round(ratio * 100)} % PV
           </p>
+          <CombatantXpBar c={foe} />
         </div>
       </div>
+
+      <CombatantSkills c={foe} />
 
       <section className="foe-inspect__block">
         <h4 className="foe-inspect__label">Fort contre lui</h4>

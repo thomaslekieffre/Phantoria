@@ -1,4 +1,7 @@
 import { getTemplate } from "./characters";
+import { applyPassiveToStats, getPassive, getPassiveCaptureResist, getPassiveDamageMult, getPassiveSoulMult, getPassiveTurnRegenPct } from "./passives";
+import { grantXp, xpFromDefeated } from "./xp";
+import { hydrateCombatState } from "./run-save";
 import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD, RUN_START_BALLS, getShopRerollPrice } from "./run-rewards";
 import { getRunWaveSetup, RUN_MAX_WAVES, getRunWaveKind } from "./run-waves";
 import {
@@ -54,7 +57,8 @@ function spawn(
   statMult = 1,
 ): Combatant {
   const t = getTemplate(templateKey);
-  const stats = statsAtLevel(t.base, level);
+  let stats = statsAtLevel(t.base, level);
+  stats = applyPassiveToStats(stats, getPassive(templateKey));
   const scale = (n: number) => Math.max(1, Math.floor(n * statMult));
   return {
     instanceId: uid(),
@@ -73,6 +77,7 @@ function spawn(
     active,
     ko: false,
     souls: 0,
+    xp: 0,
     skills: t.skills,
   };
 }
@@ -206,13 +211,18 @@ export class CombatEngine {
   private state: CombatState;
 
   constructor(state: CombatState, logFirstTurn = true) {
-    this.state = state;
+    this.state = hydrateCombatState(state);
     if (logFirstTurn) {
       const first = this.getCurrentActor();
       if (first) {
         this.pushEvent("turn_start", `${first.name}`, first.instanceId);
       }
     }
+  }
+
+  /** Reprend une run sauvegardée */
+  static restore(state: CombatState): CombatEngine {
+    return new CombatEngine(state, false);
   }
 
   getState(): Readonly<CombatState> {
@@ -379,11 +389,14 @@ export class CombatEngine {
     if (ball === "standard") this.state.runBalls.standard -= 1;
     else this.state.runBalls.tribal -= 1;
 
-    const chance = computeCaptureChance(
-      target.rarity,
-      hpRatio,
-      ball,
-      this.state.runModifiers.captureBonus,
+    const chance = Math.max(
+      0.01,
+      computeCaptureChance(
+        target.rarity,
+        hpRatio,
+        ball,
+        this.state.runModifiers.captureBonus,
+      ) - getPassiveCaptureResist(target.templateKey),
     );
     this.pushEvent(
       "capture_attempt",
@@ -404,6 +417,7 @@ export class CombatEngine {
         atk: target.atk,
         def: target.def,
         vit: target.vit,
+        xp: target.xp,
       };
 
       target.ko = true;
@@ -476,10 +490,12 @@ export class CombatEngine {
       atk: pending.atk,
       def: pending.def,
       vit: pending.vit,
+      xp: pending.xp,
       wheelIndex: slot,
       active: false,
       ko: false,
       souls: 0,
+      xp: pending.xp,
       skills: getTemplate(pending.templateKey).skills,
     };
     applyFieldStatus(recruit);
@@ -525,23 +541,27 @@ export class CombatEngine {
     tribe: CharacterTemplate["tribe"],
     isSpecial: boolean,
   ) {
-    const dmg = computeDamage(actor.atk, target.def, skill.power, tribe, target.tribe);
+    const rawDmg = computeDamage(actor.atk, target.def, skill.power, tribe, target.tribe);
+    const dmg = Math.max(1, Math.floor(rawDmg * getPassiveDamageMult(actor.templateKey)));
+
     target.hp = Math.max(0, target.hp - dmg);
 
     const gainActor = soulGainFromDamage(dmg, actor.maxHp);
     const gainTarget = soulGainFromDamage(dmg, target.maxHp);
+    const actorSoulMult =
+      this.state.runModifiers.soulGainMult * getPassiveSoulMult(actor.templateKey);
+    const targetSoulMult =
+      this.state.runModifiers.soulGainMult * getPassiveSoulMult(target.templateKey);
     if (actor.active && !actor.ko) {
       const before = actor.souls;
-      const mult = this.state.runModifiers.soulGainMult;
-      actor.souls = Math.min(1, actor.souls + gainActor * mult);
+      actor.souls = Math.min(1, actor.souls + gainActor * actorSoulMult);
       if (before < 1 && actor.souls >= 1) {
         this.pushEvent("soul_ready", `${actor.name} — Amultime prête !`, actor.instanceId);
       }
     }
     if (target.active && !target.ko && target.side === "ally") {
       const before = target.souls;
-      const mult = this.state.runModifiers.soulGainMult;
-      target.souls = Math.min(1, target.souls + gainTarget * mult);
+      target.souls = Math.min(1, target.souls + gainTarget * targetSoulMult);
       if (before < 1 && target.souls >= 1) {
         this.pushEvent("soul_ready", `${target.name} — Amultime prête !`, target.instanceId);
       }
@@ -559,6 +579,16 @@ export class CombatEngine {
       target.ko = true;
       applyFieldStatus(target);
       this.pushEvent("ko", `${target.name} est KO`, undefined, target.instanceId);
+      if (target.side === "enemy") {
+        const xpGain = xpFromDefeated(target, this.state.wave);
+        for (const ally of this.state.combatants.filter((c) => c.side === "ally" && !c.ko)) {
+          const r = grantXp(ally, xpGain);
+          if (r.leveled) {
+            this.pushEvent("level_up", `${ally.name} passe niv. ${r.newLevel}`, ally.instanceId);
+          }
+        }
+        this.pushEvent("wave_end", `+${xpGain} XP équipe`, undefined, target.instanceId, xpGain);
+      }
       if (target.side === "ally") {
         this.resyncTurnQueue();
         this.tryAutoFillField();
@@ -585,6 +615,7 @@ export class CombatEngine {
 
       const next = this.getCurrentActor();
       if (next) {
+        this.applyTurnStartEffects(next);
         this.pushEvent("turn_start", `${next.name}`, next.instanceId);
         return;
       }
@@ -777,6 +808,13 @@ export class CombatEngine {
     }
 
     return true;
+  }
+
+  private applyTurnStartEffects(combatant: Combatant): void {
+    const regenPct = getPassiveTurnRegenPct(combatant.templateKey);
+    if (regenPct <= 0 || combatant.ko) return;
+    const gain = Math.max(1, Math.floor(combatant.maxHp * regenPct));
+    combatant.hp = Math.min(combatant.maxHp, combatant.hp + gain);
   }
 
   private checkEnd(): boolean {

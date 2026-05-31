@@ -11,9 +11,11 @@ const STARTERS = INITIAL_ROSTER.filter((s): s is SpiritSlot & { id: SpiritId } =
 
 type RunStarterPickerProps = {
   onPick: (id: SpiritId) => void;
+  onContinue?: () => void;
+  savedSummary?: { wave: number; phase: "fighting" | "reward_pick" } | null;
 };
 
-export function RunStarterPicker({ onPick }: RunStarterPickerProps) {
+export function RunStarterPicker({ onPick, onContinue, savedSummary }: RunStarterPickerProps) {
   return (
     <div className="run-pick">
       <div className="run-pick__sky" aria-hidden />
@@ -21,6 +23,13 @@ export function RunStarterPicker({ onPick }: RunStarterPickerProps) {
         <p className="run-pick__eyebrow">Roguelite</p>
         <h1 className="run-pick__title">Choisis ton premier esprit</h1>
         <p className="run-pick__sub">Tu partiras seul — les autres rejoindront via capture.</p>
+
+        {savedSummary && onContinue ? (
+          <button type="button" className="run-pick__continue" onClick={onContinue}>
+            Continuer — vague {savedSummary.wave}
+            {savedSummary.phase === "reward_pick" ? " (boutique)" : ""}
+          </button>
+        ) : null}
 
         <div className="run-pick__grid">
           {STARTERS.map((s) => (

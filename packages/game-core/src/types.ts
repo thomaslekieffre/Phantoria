@@ -54,6 +54,8 @@ export interface SkillTemplate {
   power: number;
   targeting: Targeting;
   tribe?: Tribe;
+  /** Si absent, généré via describeSkill() */
+  description?: string;
 }
 
 export interface CharacterTemplate {
@@ -102,6 +104,8 @@ export interface Combatant {
   ko: boolean;
   /** Jauge Âmes 0 → 1 */
   souls: number;
+  /** XP run — montée de niveau */
+  xp: number;
   skills: CharacterTemplate["skills"];
 }
 
@@ -121,7 +125,8 @@ export type CombatEventKind =
   | "capture_pending"
   | "wave_end"
   | "wave_start"
-  | "wheel_rotate";
+  | "wheel_rotate"
+  | "level_up";
 
 export interface CombatEvent {
   id: number;
@@ -141,7 +146,8 @@ export type RunRewardKind =
   | "capture_bonus"
   | "soul_fill"
   | "ball_standard"
-  | "ball_tribal";
+  | "ball_tribal"
+  | "xp_all";
 
 export interface RunBallStock {
   standard: number;
@@ -217,6 +223,7 @@ export interface PendingRecruit {
   atk: number;
   def: number;
   vit: number;
+  xp: number;
 }
 
 export interface BattleResult {

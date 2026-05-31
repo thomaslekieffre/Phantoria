@@ -12,10 +12,12 @@ import {
   RUN_MAX_WAVES,
   getRunWaveKind,
   getRunWaveKindLabel,
-  type CombatEngine,
   type CombatEvent,
   type Combatant,
   type PhantoballType,
+  describeSkill,
+  formatPassiveLine,
+  CombatEngine,
 } from "@phantoria/game-core";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
@@ -33,7 +35,9 @@ import { FoeInspect } from "@/components/run/foe-inspect";
 import { TribeChart } from "@/components/run/tribe-chart";
 import { WaveRewardPicker } from "@/components/run/wave-reward-picker";
 import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
+import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
+import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
 
 const CORE_TO_HUB_MAP = CORE_TO_HUB;
 
@@ -55,15 +59,23 @@ function AllyFieldSprite({
   c,
   acting,
   hitFlash,
+  inspected,
+  onClick,
 }: {
   c: Combatant;
   acting: boolean;
   hitFlash?: HitFlashKind;
+  inspected?: boolean;
+  onClick?: () => void;
 }) {
   const hue = combatSpiritHue(c.templateKey);
   return (
-    <div
-      className={`battle-ally ${acting ? "battle-ally--act" : ""} ${c.ko ? "battle-ally--ko" : ""} ${hitFlash ? `battle-ally--${hitFlash}` : ""}`}
+    <button
+      type="button"
+      className={`battle-ally ${acting ? "battle-ally--act" : ""} ${c.ko ? "battle-ally--ko" : ""} ${inspected ? "battle-ally--inspect" : ""} ${hitFlash ? `battle-ally--${hitFlash}` : ""}`}
+      onClick={onClick}
+      disabled={c.ko || !onClick}
+      aria-label={`Inspecter ${c.name}`}
     >
       <div
         className="battle-ally__body"
@@ -71,7 +83,7 @@ function AllyFieldSprite({
       >
         <CombatSpirit templateKey={c.templateKey} name={c.name} className="battle-ally__sprite" />
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -176,6 +188,7 @@ function SoulSlot({
   const hpRatio = c.maxHp > 0 ? c.hp / c.maxHp : 0;
   const soulPct = Math.round(c.souls * 100);
   const tribeInfo = TRIBE_INFO[c.tribe];
+  const passiveLine = formatPassiveLine(c);
   return (
     <button
       type="button"
@@ -208,10 +221,11 @@ function SoulSlot({
       <span className="soul-slot__hint">
         {c.ko ? "KO" : ready ? "Amultime !" : "Âmes"}
       </span>
+      {passiveLine ? <span className="soul-slot__passive">{passiveLine}</span> : null}
       {ready && !c.ko ? (
         <span className="soul-slot__skills">
-          <span>{c.skills.special1.name}</span>
-          <span>{c.skills.special2.name}</span>
+          <span title={describeSkill(c.skills.special1)}>{c.skills.special1.name}</span>
+          <span title={describeSkill(c.skills.special2)}>{c.skills.special2.name}</span>
         </span>
       ) : null}
     </button>
@@ -224,6 +238,8 @@ export function RunScreen() {
   const [specialTarget, setSpecialTarget] = useState<{ actorId: string; slot: 1 | 2 } | null>(null);
   const [captureTarget, setCaptureTarget] = useState<string | null>(null);
   const [inspectTarget, setInspectTarget] = useState<string | null>(null);
+  const [inspectAlly, setInspectAlly] = useState<string | null>(null);
+  const [savedSummary, setSavedSummary] = useState(() => getSavedRunSummary());
   const [showTribeChart, setShowTribeChart] = useState(false);
   const [captureSeq, setCaptureSeq] = useState<CaptureSeqState | null>(null);
   const [floaters, setFloaters] = useState<Floater[]>([]);
@@ -242,6 +258,8 @@ export function RunScreen() {
   engineRef.current = engine;
 
   const beginRun = (starterId: SpiritId) => {
+    clearSavedRun();
+    setSavedSummary(null);
     setEngine(
       createRunBattle({
         allySetup: [{ key: starterCoreKey(starterId), wheelIndex: RUN_STARTER_WHEEL_INDEX }],
@@ -251,9 +269,25 @@ export function RunScreen() {
     setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
+    setInspectAlly(null);
     setShowTribeChart(false);
     setFloaters([]);
     lastEventId.current = 0;
+    setRenderTick((n) => n + 1);
+  };
+
+  const resumeRun = () => {
+    const saved = loadSavedRun();
+    if (!saved) return;
+    setEngine(CombatEngine.restore(saved));
+    setSpecialActor(null);
+    setSpecialTarget(null);
+    setCaptureTarget(null);
+    setInspectTarget(null);
+    setInspectAlly(null);
+    setShowTribeChart(false);
+    setFloaters([]);
+    lastEventId.current = saved.events.at(-1)?.id ?? 0;
     setRenderTick((n) => n + 1);
   };
 
@@ -294,6 +328,7 @@ export function RunScreen() {
   const captureBonus = state?.runModifiers.captureBonus ?? 0;
 
   const inspectedFoe = inspectTarget ? engine?.getCombatant(inspectTarget) ?? null : null;
+  const inspectedAlly = inspectAlly ? engine?.getCombatant(inspectAlly) ?? null : null;
   const inspectTribe = inspectedFoe && !inspectedFoe.ko ? inspectedFoe.tribe : null;
 
   pausedRef.current = paused;
@@ -308,9 +343,18 @@ export function RunScreen() {
     setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
+    setInspectAlly(null);
     setShowTribeChart(false);
     setCaptureSeq(null);
+    clearSavedRun();
+    setSavedSummary(null);
   }, [isOver]);
+
+  useEffect(() => {
+    if (!engine) return;
+    saveRun(engine.getState());
+    setSavedSummary(getSavedRunSummary());
+  }, [engine, renderTick]);
 
   const weakEnemy =
     !isOver && (runBalls.standard > 0 || runBalls.tribal > 0)
@@ -446,6 +490,16 @@ export function RunScreen() {
     }
 
     setInspectTarget((id) => (id === foeId ? null : foeId));
+    setInspectAlly(null);
+    setShowTribeChart(false);
+  };
+
+  const handleAllyInspect = (allyId: string) => {
+    if (!engine || isOver || isRewardPick) return;
+    const ally = engine.getCombatant(allyId);
+    if (!ally || ally.ko || ally.side !== "ally") return;
+    setInspectAlly((id) => (id === allyId ? null : allyId));
+    setInspectTarget(null);
     setShowTribeChart(false);
   };
 
@@ -508,6 +562,7 @@ export function RunScreen() {
 
     setCaptureTarget(null);
     setInspectTarget(null);
+    setInspectAlly(null);
     setShowTribeChart(false);
     setCaptureSeq({
       targetId,
@@ -557,6 +612,7 @@ export function RunScreen() {
     setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
+    setInspectAlly(null);
     setShowTribeChart(false);
     setFloaters([]);
     lastEventId.current = 0;
@@ -564,18 +620,23 @@ export function RunScreen() {
   };
 
   const restart = () => {
+    clearSavedRun();
+    setSavedSummary(null);
     setEngine(null);
     setSpecialActor(null);
     setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
+    setInspectAlly(null);
     setShowTribeChart(false);
     setFloaters([]);
     lastEventId.current = 0;
   };
 
   if (!engine || !state) {
-    return <RunStarterPicker onPick={beginRun} />;
+    return (
+      <RunStarterPicker onPick={beginRun} onContinue={resumeRun} savedSummary={savedSummary} />
+    );
   }
 
   const actor = specialActor ? engine.getCombatant(specialActor) : null;
@@ -723,6 +784,12 @@ export function RunScreen() {
               c={c}
               acting={current?.instanceId === c.instanceId}
               hitFlash={hitFlashes[c.instanceId]}
+              inspected={inspectAlly === c.instanceId}
+              onClick={
+                !c.ko && !captureSeq && !isOver && !isRewardPick
+                  ? () => handleAllyInspect(c.instanceId)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -761,7 +828,10 @@ export function RunScreen() {
                 if (c.souls >= 1) {
                   setSpecialActor((id) => (id === c.instanceId ? null : c.instanceId));
                   setCaptureTarget(null);
+                  setInspectAlly(null);
+                  return;
                 }
+                handleAllyInspect(c.instanceId);
               }}
             />
           ))}
@@ -787,7 +857,11 @@ export function RunScreen() {
 
       {showDevTools && engine ? <RunDevPanel engine={engine} onAction={bump} /> : null}
 
-      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget && !isOver ? (
+      {inspectedAlly && !inspectedAlly.ko && !showTribeChart && !isRewardPick && !specialTarget && !specialActor && !isOver ? (
+        <AllyInspect ally={inspectedAlly} onClose={() => setInspectAlly(null)} />
+      ) : null}
+
+      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget && !specialActor && !isOver ? (
         <FoeInspect
           foe={inspectedFoe}
           fieldAllies={fieldAllies}
@@ -815,12 +889,18 @@ export function RunScreen() {
           <div className="battle__spe-menu">
             <p className="battle__spe-title">{actor.name} — Amultime</p>
             <button type="button" className="battle__spe-btn" onClick={() => handlePickSpecial(1)}>
-              <span className="battle__spe-btn-name">{actor.skills.special1.name}</span>
-              <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special1.targeting)}</span>
+              <span className="battle__spe-btn-top">
+                <span className="battle__spe-btn-name">{actor.skills.special1.name}</span>
+                <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special1.targeting)}</span>
+              </span>
+              <span className="battle__spe-btn-desc">{describeSkill(actor.skills.special1)}</span>
             </button>
             <button type="button" className="battle__spe-btn" onClick={() => handlePickSpecial(2)}>
-              <span className="battle__spe-btn-name">{actor.skills.special2.name}</span>
-              <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special2.targeting)}</span>
+              <span className="battle__spe-btn-top">
+                <span className="battle__spe-btn-name">{actor.skills.special2.name}</span>
+                <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special2.targeting)}</span>
+              </span>
+              <span className="battle__spe-btn-desc">{describeSkill(actor.skills.special2)}</span>
             </button>
             <button type="button" className="battle__spe-cancel" onClick={() => setSpecialActor(null)}>
               Annuler

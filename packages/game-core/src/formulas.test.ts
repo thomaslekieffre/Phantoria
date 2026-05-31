@@ -7,6 +7,10 @@ import { applyRunReward, rollRewardChoices, rollShopOffers, getShopPrice, getSho
 import { devJumpToBoss } from "./run-dev";
 import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
+import { grantXp, xpToNextLevel, xpFromDefeated } from "./xp";
+import { getPassiveCaptureResist, getPassiveDamageMult } from "./passives";
+import { describeSkill } from "./skill-text";
+import { serializeRun, parseRun } from "./run-save";
 
 /** Simule un tour complet */
 function tickCombat(engine: CombatEngine): boolean {
@@ -541,5 +545,68 @@ describe("vagues run", () => {
     assert.ok(engine.continueAfterReward());
     assert.equal(engine.getState().phase, "won");
     assert.equal(engine.getState().wave, RUN_MAX_WAVES);
+  });
+});
+
+describe("xp run", () => {
+  it("monte de niveau après assez d'XP", () => {
+    const engine = createRunBattle();
+    const ally = engine.getState().combatants.find((c) => c.side === "ally")!;
+    const startLevel = ally.level;
+    const need = xpToNextLevel(ally.level, ally.rarity);
+    grantXp(ally, need);
+    assert.equal(ally.level, startLevel + 1);
+    assert.equal(ally.xp, 0);
+  });
+
+  it("XP KO ennemi scale avec vague", () => {
+    const low = xpFromDefeated({ level: 5, rarity: "C" }, 1);
+    const high = xpFromDefeated({ level: 5, rarity: "C" }, 50);
+    assert.ok(high > low);
+  });
+
+  it("shop éclat XP", () => {
+    const engine = createRunBattle();
+    const xpReward = RUN_REWARD_POOL.find((r) => r.id === "eclat_xp")!;
+    const ally = engine.getState().combatants.find((c) => c.side === "ally")!;
+    const before = ally!.level;
+    applyRunReward(engine.getState(), xpReward);
+    assert.ok(ally!.xp > 0 || ally!.level > before);
+  });
+});
+
+describe("passifs", () => {
+  it("ombre_faible résiste à la capture", () => {
+    assert.equal(getPassiveCaptureResist("ombre_faible"), 0.08);
+  });
+
+  it("bram inflige plus de dégâts", () => {
+    assert.equal(getPassiveDamageMult("bram_vaillant"), 1.08);
+  });
+});
+
+describe("skill-text", () => {
+  it("describeSkill sans description custom", () => {
+    const engine = createRunBattle();
+    const ally = engine.getState().combatants.find((c) => c.side === "ally")!;
+    const text = describeSkill(ally!.skills.basic);
+    assert.match(text, /%/);
+  });
+});
+
+describe("save run", () => {
+  it("round-trip serialize/parse", () => {
+    const engine = createRunBattle();
+    const raw = serializeRun(engine.getState());
+    const parsed = parseRun(raw);
+    assert.ok(parsed);
+    assert.equal(parsed!.wave, 1);
+    assert.equal(parsed!.combatants[0]?.xp, 0);
+  });
+
+  it("parse refuse won/lost", () => {
+    const engine = createRunBattle();
+    engine.getState().phase = "lost";
+    assert.equal(parseRun(serializeRun(engine.getState())), null);
   });
 });
