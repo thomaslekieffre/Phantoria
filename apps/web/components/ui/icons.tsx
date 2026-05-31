@@ -86,7 +86,127 @@ export function IconSoul({ className }: IconProps) {
 export function IconGem({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M8 2L14 6v4L8 14 2 10V6l6-4z" fill="#38bdf8" stroke="#0ea5e9" strokeWidth="0.5" />
+      <path
+        d="M8 2c3 2 5 5 5 8s-2 6-5 6-5-3-5-6 2-6 5-6z"
+        fill="#38bdf8"
+        stroke="#0ea5e9"
+        strokeWidth="0.6"
+      />
+      <ellipse cx="8" cy="5" rx="2" ry="1.2" fill="#bae6fd" opacity="0.8" />
+    </svg>
+  );
+}
+
+export function IconCube({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M8 2l5 3v6l-5 3-5-3V5l5-3z"
+        fill="#60a5fa"
+        stroke="#2563eb"
+        strokeWidth="0.6"
+      />
+      <path d="M8 2v6M8 8l5 3M8 8L3 11M8 8V2" stroke="#93c5fd" strokeWidth="0.5" opacity="0.8" />
+    </svg>
+  );
+}
+
+export function IconFlame({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M8 2c2 3 1 5-1 7 1-1 2 0 2 2 0 3-2 4-4 4s-4-1-4-4c0-2 1-3 2-2-2-2-3-4-1-7z"
+        fill="#38bdf8"
+      />
+      <path
+        d="M8 6c1 2 0 3-1 4 1-1 2 0 2 2 0 2-1 3-3 3s-3-1-3-3c0-2 1-2 2-1-1-1-1-2 0-3z"
+        fill="#7dd3fc"
+      />
+    </svg>
+  );
+}
+
+export function IconSpirits({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 3c4 0 7 3 7 7 0 3-2 5-4 6v5H9v-5c-2-1-4-3-4-6 0-4 3-7 7-7z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.5" cy="9" r="1" fill="currentColor" />
+      <circle cx="14.5" cy="9" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconStory({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M7 4h10v16l-5-3-5 3V4z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconQuest({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M7 4h10v16l-5-3-5 3V4z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 8h6M9 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconMore({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="6" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="18" cy="12" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconBag({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M8 8V7a4 4 0 118 0v1M6 8h12l-1 12H7L6 8z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconEvent({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="5" y="8" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 8V5M8 5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconGacha({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

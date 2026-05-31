@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Nunito, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -16,21 +16,8 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Phantoria",
-  description: "Gacha & roguelite — monde d'esprits",
+  description: "Gacha roguelite — jeu web dans le navigateur",
   applicationName: "Phantoria",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Phantoria",
-  },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#07060e",
 };
 
 export default function RootLayout({

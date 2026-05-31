@@ -403,12 +403,12 @@ Tout ce qui est **run-only** (roue, buffs temporaires, reliques, balls trouvées
 
 ---
 
-## Support technique — PWA
+## Support technique — Client web
 
-- **Navigateur** desktop + mobile.
-- **Installable** comme une app (PWA) — pas besoin de l’App Store.
-- Cible : hub, combats, gacha accessibles web-first.
+- **Jeu dans le navigateur** (desktop-first) : pas d’App Store, pas d’apk en v0.
+- **Cible** : écran large, souris/clavier ; hub sanctuaire, combats, gacha dans des routes web.
 - **Stack** : voir [`docs/TECH.md`](TECH.md) — **Next.js + React**, logique dans `game-core`, backend **Supabase** (gacha serveur).
+- PWA / mobile : hors scope v0, possible en option plus tard.
 
 ---
 

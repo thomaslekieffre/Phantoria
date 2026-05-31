@@ -3,16 +3,12 @@ import { GameShell } from "@/components/layout/game-shell";
 
 export default function StoryPage() {
   return (
-    <GameShell activeTab="camp">
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-4xl">📜</p>
-        <h1 className="text-xl font-black">Histoire</h1>
-        <p className="text-sm font-semibold text-text-muted">Bientôt — carte des zones</p>
-        <Link
-          href="/"
-          className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-black"
-        >
-          ← Camp
+    <GameShell active="camp">
+      <div className="page-stub">
+        <h1>Mode Histoire</h1>
+        <p>11 zones · 165 niveaux — bientôt.</p>
+        <Link href="/" className="play play--story" style={{ marginTop: "1rem", padding: "0.75rem 1.5rem" }}>
+          Retour au sanctuaire
         </Link>
       </div>
     </GameShell>

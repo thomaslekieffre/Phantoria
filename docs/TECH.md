@@ -1,43 +1,62 @@
 # Phantoria — Stack technique
 
-Décisions pour l’implémentation (complète le [GDD — PWA](GAME_DESIGN.md#support-technique--pwa)).
+Décisions pour l’implémentation (complète le [GDD — Client web](GAME_DESIGN.md#support-technique--client-web)).
 
 ## Choix validé
 
 | Couche | Stack | Notes |
 |--------|--------|--------|
-| **App** | **Next.js** (App Router) + **React** + **TypeScript** | SSR/SSG pour hub, routes combat ; PWA via config Next |
-| **UI** | **Tailwind CSS** | Écrans mobile-first (combat portrait) |
+| **App** | **Next.js** (App Router) + **React** + **TypeScript** | Hub SSR, routes combat, déploiement Vercel / Node |
+| **UI** | **CSS** (+ Tailwind dispo) | **Desktop-first** — layout navigateur plein écran |
 | **Logique jeu** | **`packages/game-core`** (TS pur) | Combat, Âmes, capture, pity — testable sans React |
-| **Backend** | **Supabase** (recommandé) ou API Next Route Handlers | Auth, sauvegardes, **gacha côté serveur** |
+| **Backend** | **Supabase** (recommandé) ou Route Handlers Next | Auth, sauvegardes, **gacha côté serveur** |
 | **DB** | Postgres (Supabase) | Profils, roster, pulls, métaprogression |
 
-Next.js seulement **si nécessaire** (SEO hub, API routes, déploiement Vercel). Un **Vite + React** suffit pour un proto combat-only ; pour Phantoria complet, **Next** est le bon défaut.
+## Client : jeu web navigateur
+
+- **Cible principale** : PC / écran large, souris + clavier.
+- **Pas de contrainte PWA** en v0 : le jeu se joue dans l’onglet (`http://localhost:3000` en dev).
+- **Layout** : sidebar fixe + topbar + zone de jeu (hub sanctuaire, combat, gacha…).
+- **Responsive** : secondaire ; le combat pourra adapter la largeur plus tard.
 
 ## Monorepo
 
 ```
 Phantoria/
-├── apps/web/          # Next.js (UI, PWA) — ✅ écran d’accueil
+├── apps/web/          # Next.js — client web
 ├── packages/game-core/  # Moteur & règles (à venir)
 ├── docs/
 └── package.json
 ```
 
+## UI actuelle (`apps/web`)
+
+| Zone | Composant | Rôle |
+|------|-----------|------|
+| Shell | `components/layout/` | Grille desktop : sidebar, topbar, main |
+| Hub | `components/hub/` | Sanctuaire `/` — roue ×6, fiche esprit, quêtes, CTA |
+| Routes | `app/*/page.tsx` | Esprits, quêtes, gacha, plus, run, histoire |
+
+### Hub sanctuaire (`/`)
+
+- **Roue d'esprits** : 6 emplacements, 3 max sur le terrain (GDD).
+- **Portraits SVG** par esprit ; slots vides = trous « Libre ».
+- **Sélection** : clic sur un esprit → fiche dans le panneau droit (PV, tribu, terrain/réserve).
+- **Toggle terrain** : bouton « Mettre sur le terrain » / « Retirer du terrain » (état local mock).
+- **Panneau droit** : quête active, stats, événement, CTA Run / Histoire.
+- **Navigation** : sidebar unique (plus de double nav mobile).
+
+Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.ts`, `spirit-portrait.tsx`.
+
 ## Ordre d’implémentation
 
-1. ✅ **Camp** (`/`) — hub nuit, équipe, CTA run/histoire
+1. ✅ **Hub desktop** (`/`) — roue ×6, fiche esprit, toggle terrain, CTA run / histoire
 2. `game-core` — combat (roue 6 / terrain 3, VIT, Âmes, capture)
-3. Routes `/run`, `/story`, `/collection`, `/gacha`
+3. Écrans `/run`, `/story`, collection, gacha
 4. Supabase + auth
-
-## PWA
-
-- `next-pwa` ou manifest + service worker manuel
-- Viewport mobile, `theme-color`, icônes
-- Cible : installable desktop + mobile sans store
 
 ## Hors scope infra v0
 
-- App native (Capacitor) — possible plus tard depuis la PWA
-- Godot / moteur 2D dédié — non retenu pour l’UI gacha/hub
+- App native / store mobile
+- PWA installable (optionnel plus tard)
+- Godot / moteur 2D dédié pour l’UI hub

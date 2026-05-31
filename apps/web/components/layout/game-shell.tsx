@@ -1,23 +1,25 @@
 import type { ReactNode } from "react";
-import { BottomNav, type NavTab } from "./bottom-nav";
-import { TopHud } from "./top-hud";
+import { Sidebar, type NavId } from "./sidebar";
+import { Topbar } from "./topbar";
 
 type GameShellProps = {
   children: ReactNode;
-  activeTab: NavTab;
-  showHud?: boolean;
+  active: NavId;
 };
 
-export function GameShell({
-  children,
-  activeTab,
-  showHud = true,
-}: GameShellProps) {
+export function GameShell({ children, active }: GameShellProps) {
   return (
-    <div className="game-frame">
-      {showHud ? <TopHud /> : null}
-      <div className="game-frame__body">{children}</div>
-      <BottomNav active={activeTab} />
+    <div className="shell">
+      <div className="shell__sidebar">
+        <Sidebar active={active} />
+      </div>
+      <div className="shell__topbar">
+        <Topbar />
+      </div>
+      <main className="shell__main">{children}</main>
     </div>
   );
 }
+
+/** @deprecated Utiliser `active` */
+export type NavTab = NavId;
