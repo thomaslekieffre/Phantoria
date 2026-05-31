@@ -1,6 +1,6 @@
 import { getTemplate } from "./characters";
-import { getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
-import { applyRunReward, rollRewardChoices, isPersistentRunRelic } from "./run-rewards";
+import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD } from "./run-rewards";
+import { getRunWaveSetup, RUN_MAX_WAVES, getRunWaveKind } from "./run-waves";
 import {
   computeCaptureChance,
   computeDamage,
@@ -190,6 +190,9 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     runRelics: [],
     runModifiers: { soulGainMult: 1, captureBonus: 0 },
     rewardChoices: null,
+    freeRewardPicked: false,
+    shopOffers: null,
+    runGold: RUN_START_GOLD,
     attackFocusId: null,
   };
 
@@ -612,6 +615,8 @@ export class CombatEngine {
     this.state.captureTargetId = null;
     this.state.pendingRecruit = null;
     this.state.rewardChoices = null;
+    this.state.freeRewardPicked = false;
+    this.state.shopOffers = null;
     this.state.attackFocusId = null;
 
     const waveLabel =
@@ -626,9 +631,10 @@ export class CombatEngine {
     return true;
   }
 
-  /** Choix d'objet entre deux vagues */
+  /** Récompense gratuite entre vagues — reste sur l'écran boutique jusqu'à Continuer */
   selectReward(rewardId: string): boolean {
     if (this.state.phase !== "reward_pick") return false;
+    if (this.state.freeRewardPicked) return false;
 
     const reward = this.state.rewardChoices?.find((r) => r.id === rewardId);
     if (!reward) return false;
@@ -638,8 +644,48 @@ export class CombatEngine {
       this.state.runRelics.push(rewardId);
     }
 
-    this.pushEvent("wave_end", msg);
+    this.pushEvent("wave_end", `${msg} (gratuit)`);
+    this.state.freeRewardPicked = true;
     this.state.rewardChoices = null;
+    return true;
+  }
+
+  /** Achat boutique entre vagues */
+  buyShopOffer(rewardId: string): boolean {
+    if (this.state.phase !== "reward_pick") return false;
+
+    const offerIdx = this.state.shopOffers?.findIndex((o) => o.rewardId === rewardId) ?? -1;
+    if (offerIdx < 0 || !this.state.shopOffers) return false;
+
+    const offer = this.state.shopOffers[offerIdx]!;
+    if (this.state.runGold < offer.price) return false;
+
+    const reward = getRunReward(rewardId);
+    if (!reward) return false;
+    if (!reward.stackable && isPersistentRunRelic(reward) && this.state.runRelics.includes(rewardId)) {
+      return false;
+    }
+
+    this.state.runGold -= offer.price;
+    const msg = applyRunReward(this.state, reward);
+    if (isPersistentRunRelic(reward)) {
+      this.state.runRelics.push(rewardId);
+    }
+
+    if (!reward.stackable) {
+      this.state.shopOffers = this.state.shopOffers.filter((_, i) => i !== offerIdx);
+    }
+
+    this.pushEvent("wave_end", `${msg} — ${offer.price} €`);
+    return true;
+  }
+
+  /** Passe à la vague suivante après récompense gratuite (+ achats optionnels) */
+  continueAfterReward(): boolean {
+    if (this.state.phase !== "reward_pick") return false;
+    if (!this.state.freeRewardPicked) return false;
+
+    this.state.shopOffers = null;
 
     if (this.state.wave >= RUN_MAX_WAVES) {
       this.state.phase = "won";
@@ -664,6 +710,10 @@ export class CombatEngine {
 
       this.state.phase = "reward_pick";
       this.state.rewardChoices = rollRewardChoices(this.state.wave, this.state.runRelics);
+      this.state.freeRewardPicked = false;
+      this.state.shopOffers = rollShopOffers(this.state.wave, this.state.runRelics);
+      const waveKind = getRunWaveKind(this.state.wave);
+      this.state.runGold += waveClearGold(this.state.wave, waveKind);
       const waveSetup = getRunWaveSetup(this.state.wave, livingAllies(this.state.combatants).length);
       const cleared =
         waveSetup.kind === "normal"

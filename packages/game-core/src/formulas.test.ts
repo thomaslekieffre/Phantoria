@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { computeCaptureChance, computeDamage, soulGainFromDamage } from "./formulas";
 import { getTypeMultiplier, getMatchupsVs } from "./tribes";
 import { createBattle, createRunBattle, DEV_ALLY_SETUP, type CombatEngine } from "./combat-engine";
-import { applyRunReward, rollRewardChoices, RUN_REWARD_POOL, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
+import { applyRunReward, rollRewardChoices, rollShopOffers, getShopPrice, RUN_REWARD_POOL, RUN_START_GOLD, waveClearGold, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
 import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
 
@@ -199,6 +199,7 @@ describe("combat", () => {
     assert.equal(engine.getState().phase, "reward_pick");
     const pick = engine.getState().rewardChoices![0]!;
     engine.selectReward(pick.id);
+    engine.continueAfterReward();
 
     assert.equal(engine.getCombatant(ally.instanceId)?.souls, 0.75);
     assert.equal(engine.getState().wave, 2);
@@ -347,7 +348,7 @@ describe("récompenses de vague", () => {
     assert.equal(new Set(choices.map((c) => c.id)).size, 3);
   });
 
-  it("selectReward lance la vague suivante", () => {
+  it("selectReward + continueAfterReward lance la vague suivante", () => {
     const engine = createRunBattle();
     const foe = engine.getState().combatants.find((c) => c.side === "enemy")!;
     foe.hp = 0;
@@ -356,11 +357,45 @@ describe("récompenses de vague", () => {
     const pick = RUN_REWARD_POOL.find((r) => r.id === "griffe_ardente")!;
     engine.getState().phase = "reward_pick";
     engine.getState().rewardChoices = [pick];
+    engine.getState().shopOffers = rollShopOffers(1, []);
 
     assert.ok(engine.selectReward(pick.id));
+    assert.equal(engine.getState().phase, "reward_pick");
+    assert.equal(engine.getState().freeRewardPicked, true);
+    assert.ok(engine.continueAfterReward());
     assert.equal(engine.getState().phase, "fighting");
     assert.equal(engine.getState().wave, 2);
     assert.ok(engine.getState().runRelics.includes(pick.id));
+  });
+
+  it("run démarre avec 100 €", () => {
+    const engine = createRunBattle();
+    assert.equal(engine.getState().runGold, RUN_START_GOLD);
+  });
+
+  it("boutique — achat déduit l'or et applique l'effet", () => {
+    const engine = createRunBattle();
+    const heal = RUN_REWARD_POOL.find((r) => r.id === "lanterne_soin")!;
+    const price = getShopPrice(heal, 1);
+    engine.getState().phase = "reward_pick";
+    engine.getState().freeRewardPicked = true;
+    engine.getState().runGold = price + 5;
+    engine.getState().shopOffers = [{ rewardId: heal.id, price }];
+
+    const ally = engine.getState().combatants.find((c) => c.side === "ally")!;
+    ally.hp = Math.floor(ally.maxHp * 0.4);
+    const hpBefore = ally.hp;
+
+    assert.ok(engine.buyShopOffer(heal.id));
+    assert.equal(engine.getState().runGold, 5);
+    assert.ok(ally.hp > hpBefore);
+  });
+
+  it("continueAfterReward refuse sans récompense gratuite", () => {
+    const engine = createRunBattle();
+    engine.getState().phase = "reward_pick";
+    engine.getState().shopOffers = rollShopOffers(1, []);
+    assert.equal(engine.continueAfterReward(), false);
   });
 
   it("soin instantané n'apparaît pas dans les reliques", () => {
@@ -369,6 +404,7 @@ describe("récompenses de vague", () => {
     engine.getState().rewardChoices = [RUN_REWARD_POOL.find((r) => r.id === "lanterne_soin")!];
 
     assert.ok(engine.selectReward("lanterne_soin"));
+    assert.ok(engine.continueAfterReward());
     assert.equal(engine.getState().runRelics.length, 0);
     assert.equal(getRunRelicDisplay(engine.getState().runRelics).length, 0);
   });
@@ -382,6 +418,20 @@ describe("récompenses de vague", () => {
     applyRunReward(engine.getState(), heal);
 
     assert.ok(ally.hp > ally.maxHp * 0.3);
+  });
+
+  it("rollShopOffers propose des prix cohérents", () => {
+    const offers = rollShopOffers(5, [], 5, () => 0.1);
+    assert.ok(offers.length >= 1);
+    for (const o of offers) {
+      const def = RUN_REWARD_POOL.find((r) => r.id === o.rewardId);
+      assert.ok(def);
+      assert.equal(o.price, getShopPrice(def!, 5));
+    }
+  });
+
+  it("waveClearGold bonus sur boss", () => {
+    assert.ok(waveClearGold(10, "boss") > waveClearGold(9, "normal"));
   });
 });
 
@@ -420,8 +470,10 @@ describe("vagues run", () => {
     engine.getState().wave = RUN_MAX_WAVES;
     engine.getState().phase = "reward_pick";
     engine.getState().rewardChoices = [pick];
+    engine.getState().shopOffers = rollShopOffers(RUN_MAX_WAVES, []);
 
     assert.ok(engine.selectReward(pick.id));
+    assert.ok(engine.continueAfterReward());
     assert.equal(engine.getState().phase, "won");
     assert.equal(engine.getState().wave, RUN_MAX_WAVES);
   });

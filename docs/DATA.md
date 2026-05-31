@@ -136,7 +136,8 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Défaite run | 0 allié vivant sur la roue entière |
 | Victoire run | Boss final vague 200 + dernière récompense → phase `won` |
 | Capture max | 85 % |
-| Récompenses vagues | Picker 3 objets (pas encore shop GDD) |
+| Récompenses vagues | Gratuit (3 choix) + boutique € (`RUN_START_GOLD` = 100) |
+| Game over UI | Fullscreen bloque capture / combat ; tick auto off |
 | Reliques affichées | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |
 
@@ -144,6 +145,6 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 
 - [ ] `data/characters.json` généré depuis Excalidraw / sheet
 - [ ] Formule pity gacha (state par pack)
-- [ ] Shop entre vagues (GDD) + balls variées en run
+- [ ] Shop entre vagues (GDD) — balls variées en run *(boutique € proto OK)*
 - [ ] Critères 3★ mode histoire
 - [ ] Passives modifiant la charge d’Âmes

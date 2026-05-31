@@ -157,6 +157,12 @@ export interface RunModifiers {
   captureBonus: number;
 }
 
+/** Offre boutique entre vagues */
+export interface RunShopOffer {
+  rewardId: string;
+  price: number;
+}
+
 export interface CombatState {
   wave: number;
   round: number;
@@ -174,8 +180,14 @@ export interface CombatState {
   runRelics: string[];
   /** Modificateurs passifs du run */
   runModifiers: RunModifiers;
-  /** Choix entre vagues (3 objets) */
+  /** Choix entre vagues (3 objets gratuits) */
   rewardChoices: RunRewardDef[] | null;
+  /** Récompense gratuite déjà prise ce palier */
+  freeRewardPicked: boolean;
+  /** Stock boutique entre vagues */
+  shopOffers: RunShopOffer[] | null;
+  /** Or du run (€) */
+  runGold: number;
   /** Ennemi marqué pour les attaques de base alliées — défaut = premier ennemi */
   attackFocusId: string | null;
 }

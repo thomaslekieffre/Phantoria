@@ -247,7 +247,9 @@ export function RunScreen() {
       captureTarget ||
       pendingRecruit ||
       captureSeq ||
-      state?.phase === "reward_pick",
+      state?.phase === "reward_pick" ||
+      state?.phase === "lost" ||
+      state?.phase === "won",
   );
   const isOver = state?.phase === "lost" || state?.phase === "won";
   const isVictory = state?.phase === "won";
@@ -260,6 +262,9 @@ export function RunScreen() {
   const waveKindLabel = getRunWaveKindLabel(waveKind);
   const isBossWave = waveKind !== "normal";
   const rewardChoices = state?.rewardChoices ?? null;
+  const shopOffers = state?.shopOffers ?? [];
+  const freeRewardPicked = state?.freeRewardPicked ?? false;
+  const runGold = state?.runGold ?? 0;
   const runRelics = state?.runRelics ?? [];
   const captureBonus = state?.runModifiers.captureBonus ?? 0;
 
@@ -271,7 +276,17 @@ export function RunScreen() {
 
   const bump = () => setRenderTick((n) => n + 1);
 
-  const weakEnemy = livingEnemies.find((e) => e.hp / e.maxHp <= 0.4);
+  useEffect(() => {
+    if (!isOver) return;
+    setSpecialActor(null);
+    setSpecialTarget(null);
+    setCaptureTarget(null);
+    setInspectTarget(null);
+    setShowTribeChart(false);
+    setCaptureSeq(null);
+  }, [isOver]);
+
+  const weakEnemy = !isOver ? livingEnemies.find((e) => e.hp / e.maxHp <= 0.4) : undefined;
 
   useEffect(() => {
     if (!engineRef.current) return;
@@ -362,7 +377,7 @@ export function RunScreen() {
   }, [engine, isOver, paused]);
 
   const handleEnemyClick = (foeId: string) => {
-    if (!engine) return;
+    if (!engine || isOver || isRewardPick) return;
     const foe = engine.getCombatant(foeId);
     if (!foe || foe.ko) return;
 
@@ -379,7 +394,7 @@ export function RunScreen() {
   };
 
   const handleEnemyFocus = (foeId: string) => {
-    if (!engine || captureSeq || specialTarget) return;
+    if (!engine || isOver || isRewardPick || captureSeq || specialTarget) return;
     const foe = engine.getCombatant(foeId);
     if (!foe || foe.ko) return;
     engine.setAttackFocus(foeId);
@@ -387,7 +402,7 @@ export function RunScreen() {
   };
 
   const handlePickSpecial = (slot: 1 | 2) => {
-    if (!engine || !specialActor) return;
+    if (!engine || !specialActor || isOver) return;
     const actor = engine.getCombatant(specialActor);
     if (!actor) return;
     const skill = actor.skills[slot === 1 ? "special1" : "special2"];
@@ -410,7 +425,7 @@ export function RunScreen() {
   };
 
   const handleCapture = () => {
-    if (!engine || !captureTarget) return;
+    if (!engine || !captureTarget || isOver) return;
     const target = engine.getCombatant(captureTarget);
     if (!target || target.ko) return;
 
@@ -438,7 +453,7 @@ export function RunScreen() {
   };
 
   const handlePlacement = (wheelIndex: number) => {
-    if (!engine) return;
+    if (!engine || isOver) return;
     engine.completeCapturePlacement(wheelIndex);
     bump();
   };
@@ -452,6 +467,18 @@ export function RunScreen() {
   const handleSelectReward = (rewardId: string) => {
     if (!engine) return;
     engine.selectReward(rewardId);
+    bump();
+  };
+
+  const handleBuyShop = (rewardId: string) => {
+    if (!engine) return;
+    engine.buyShopOffer(rewardId);
+    bump();
+  };
+
+  const handleContinueAfterReward = () => {
+    if (!engine) return;
+    engine.continueAfterReward();
     setSpecialActor(null);
     setSpecialTarget(null);
     setCaptureTarget(null);
@@ -491,7 +518,7 @@ export function RunScreen() {
     : 0;
 
   return (
-    <div className="battle">
+    <div className={`battle ${isOver ? "battle--over" : ""}`}>
       <BattleWheel
         slots={wheelSlots}
         currentId={current?.side === "ally" ? current.instanceId : null}
@@ -530,6 +557,9 @@ export function RunScreen() {
             )}
           </div>
           <div className="battle__top-right">
+            <span className="battle__gold" aria-label={`${runGold} euros`}>
+              {runGold} €
+            </span>
             {specialTarget ? (
               <button type="button" className="battle__cancel-target" onClick={cancelTargeting}>
                 Annuler
@@ -538,7 +568,9 @@ export function RunScreen() {
             <button
               type="button"
               className="battle__tribes-btn"
+              disabled={isOver || isRewardPick}
               onClick={() => {
+                if (isOver || isRewardPick) return;
                 setShowTribeChart((v) => !v);
                 if (showTribeChart) setInspectTarget(null);
               }}
@@ -577,7 +609,7 @@ export function RunScreen() {
                 capturePhase={captureSeq?.targetId === c.instanceId ? captureSeq.phase : null}
                 matchupMult={mult}
                 onClick={
-                  !c.ko && !captureSeq
+                  !c.ko && !captureSeq && !isOver && !isRewardPick
                     ? () => handleEnemyClick(c.instanceId)
                     : undefined
                 }
@@ -618,28 +650,6 @@ export function RunScreen() {
             Phantoball
           </button>
         ) : null}
-
-        {isDefeat ? (
-          <div className="battle__end battle__end--lose">
-            <p>Défaite…</p>
-            <span className="battle__end-meta">Vague {state.wave}/{RUN_MAX_WAVES}</span>
-            <button type="button" className="battle__end-btn" onClick={restart}>
-              Recommencer
-            </button>
-          </div>
-        ) : null}
-
-        {isVictory ? (
-          <div className="battle__end battle__end--win">
-            <p>Victoire !</p>
-            <span className="battle__end-meta">
-              Run terminé — {RUN_MAX_WAVES} vagues · {runRelics.length} relique{runRelics.length > 1 ? "s" : ""}
-            </span>
-            <button type="button" className="battle__end-btn" onClick={restart}>
-              Nouveau run
-            </button>
-          </div>
-        ) : null}
       </div>
 
       <footer className="battle__hud" aria-label="Jauges d'âmes">
@@ -657,7 +667,7 @@ export function RunScreen() {
               selected={specialActor === c.instanceId}
               matchupMult={inspectTribe ? getTypeMultiplier(c.tribe, inspectTribe) : undefined}
               onSelect={() => {
-                if (c.ko) return;
+                if (c.ko || isOver || isRewardPick) return;
                 if (c.souls >= 1) {
                   setSpecialActor((id) => (id === c.instanceId ? null : c.instanceId));
                   setCaptureTarget(null);
@@ -669,16 +679,21 @@ export function RunScreen() {
       </footer>
       </div>
 
-      {isRewardPick && rewardChoices ? (
+      {isRewardPick ? (
         <WaveRewardPicker
           wave={state.wave}
+          runGold={runGold}
           choices={rewardChoices}
+          shopOffers={shopOffers}
+          freeRewardPicked={freeRewardPicked}
           relicIds={runRelics}
-          onPick={handleSelectReward}
+          onPickFree={handleSelectReward}
+          onBuy={handleBuyShop}
+          onContinue={handleContinueAfterReward}
         />
       ) : null}
 
-      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget ? (
+      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget && !isOver ? (
         <FoeInspect
           foe={inspectedFoe}
           fieldAllies={fieldAllies}
@@ -692,7 +707,7 @@ export function RunScreen() {
         />
       ) : null}
 
-      {showTribeChart ? (
+      {showTribeChart && !isOver ? (
         <div className="battle__overlay battle__overlay--panel" role="dialog" aria-label="Table des tribus">
           <TribeChart
             focusDefender={inspectTribe}
@@ -701,7 +716,7 @@ export function RunScreen() {
         </div>
       ) : null}
 
-      {specialActor && actor ? (
+      {specialActor && actor && !isOver ? (
         <div className="battle__overlay" role="dialog" aria-label="Choisir une amultime">
           <div className="battle__spe-menu">
             <p className="battle__spe-title">{actor.name} — Amultime</p>
@@ -720,7 +735,7 @@ export function RunScreen() {
         </div>
       ) : null}
 
-      {captureTarget && captureConfirm ? (
+      {captureTarget && captureConfirm && !isOver ? (
         <div className="battle__overlay battle__overlay--dim" role="dialog" aria-label="Capture">
           <div className="battle__spe-menu battle__spe-menu--capture">
             <p className="battle__spe-title">Capturer {captureConfirm.name} ?</p>
@@ -733,6 +748,28 @@ export function RunScreen() {
               Annuler
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {isDefeat ? (
+        <div className="battle__end battle__end--lose battle__end--screen" role="dialog" aria-label="Défaite">
+          <p>Défaite…</p>
+          <span className="battle__end-meta">Vague {state.wave}/{RUN_MAX_WAVES}</span>
+          <button type="button" className="battle__end-btn" onClick={restart}>
+            Recommencer
+          </button>
+        </div>
+      ) : null}
+
+      {isVictory ? (
+        <div className="battle__end battle__end--win battle__end--screen" role="dialog" aria-label="Victoire">
+          <p>Victoire !</p>
+          <span className="battle__end-meta">
+            Run terminé — {RUN_MAX_WAVES} vagues · {runRelics.length} relique{runRelics.length > 1 ? "s" : ""}
+          </span>
+          <button type="button" className="battle__end-btn" onClick={restart}>
+            Nouveau run
+          </button>
         </div>
       ) : null}
     </div>

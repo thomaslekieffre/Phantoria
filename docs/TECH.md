@@ -57,7 +57,7 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 
 1. **Picker starter** — choix du premier esprit (Bram, Nyx, Luma, Kiro).
 2. **Combat auto** — file VIT, `tickTurn()` résout les attaques de base ; le joueur agit sur rotation, focus cible, capture, spés.
-3. **Fin de vague** — phase `reward_pick` : 3 objets au choix (`rollRewardChoices` → `selectReward`).
+3. **Fin de vague** — phase `reward_pick` : **1 objet gratuit** (3 choix) + **boutique** (5 offres payantes en €). Or de départ **100 €**, + gain à chaque vague cleared (`waveClearGold`). **Continuer** lance la vague suivante.
 4. **Vague suivante** — ennemis tirés aléatoirement (`getRunWaveSetup`), stats/alliés conservés.
 5. **Victoire** — phase `won` après la récompense de la **vague 200** (boss final vaincu).
 6. **Défaite** — phase `lost` si plus aucun allié vivant sur la roue (réserve incluse).
@@ -91,7 +91,7 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 - Slot occupé → l’esprit présent est **éjecté** (perdu pour le run).
 - Séquence visuelle : `capture-sequence.tsx`.
 
-#### Récompenses entre vagues
+#### Récompenses & boutique entre vagues
 
 Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 
@@ -99,6 +99,10 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 |-----------|--------|----------------|----------|
 | **Persistant** (tout le run) | `stat_all`, `combo_atk_def`, `soul_mult`, `capture_bonus` | ✅ affiché | Griffe ardente, Écho d’âmes, Phantoball renforcée |
 | **Usage unique** | `heal_all`, `soul_fill` | ❌ masqué | Lanterne de soin, Offrande du sanctuaire |
+
+**Économie run** — `RUN_START_GOLD` = 100 € · gain par vague `waveClearGold(wave, kind)` (~10–15 € + bonus boss).
+
+**Phase `reward_pick`** : 3 gratuits (`selectReward`) + boutique 5 offres (`buyShopOffer`) → **`continueAfterReward()`** pour la vague suivante.
 
 - Reliques persistantes stockées dans `CombatState.runRelics` ; modificateurs dans `runModifiers` (`soulGainMult`, `captureBonus`).
 - Objets non stackables exclus du tirage une fois possédés ; stackables (Écho d’âmes, Phantoball) cumulables.
@@ -130,11 +134,17 @@ Priorité : vague 200 = final (pas méga boss). API : `getRunWaveKind`, `getRunW
 | `combat-spirit.tsx` | Sprite combat (hue par esprit) |
 | `foe-inspect.tsx` | Clic ennemi → tribu, matchups, mult terrain |
 | `tribe-chart.tsx` | Table faiblesses 11×11 (overlay « Tribus ») |
-| `wave-reward-picker.tsx` | Choix entre vagues (3 cartes) |
+| `wave-reward-picker.tsx` | Entre vagues : gratuit (3 cartes) + boutique € + Continuer |
 | `run-relics-tray.tsx` | Liste reliques persistantes + tooltips |
 | `run-starter-picker.tsx` | Choix du starter |
 | `capture-sequence.tsx` | Animation lancer / shake / succès-échec |
 | `run.css` | Styles combat (bandeau HUD, cartes lanterne, grain, lucioires) |
+
+#### Fin de run (défaite / victoire)
+
+- Phases `lost` / `won` → **auto-tick stoppé**, overlays combat fermés (inspect, capture, amultime).
+- Écran **fullscreen** (`battle__end--screen`, z-index 60) — bloque toute interaction arrière-plan (plus de capture possible).
+- Seul **Recommencer** / **Nouveau run** réactive l’UI.
 
 #### Identité visuelle run
 
@@ -157,7 +167,7 @@ Moteur TypeScript pur, importé par `apps/web` via workspace `@phantoria/game-co
 | `combat-engine.ts` | `CombatEngine`, `createRunBattle`, rotation, capture, vagues |
 | `run-waves.ts` | Composition ennemis par vague |
 | `run-rewards.ts` | Pool objets, application, affichage reliques |
-| `formulas.test.ts` | 34 tests (tribus, formules, combat, récompenses) |
+| `formulas.test.ts` | 39 tests (tribus, formules, combat, récompenses) |
 
 ### API principale
 
@@ -170,7 +180,9 @@ CombatEngine
   .rotateWheel("cw" | "ccw")
   .tryCapture(targetId, ball?, rng?)
   .completeCapturePlacement(wheelIndex)
-  .selectReward(rewardId)               // reward_pick → vague suivante
+  .selectReward(rewardId)              // gratuit entre vagues
+  .buyShopOffer(rewardId)              // achat boutique (€)
+  .continueAfterReward()               // vague suivante
   .getState() / .getCurrentActor() / .getRecentEvents() / .getWheelSlots()
 ```
 
@@ -186,7 +198,7 @@ CombatEngine
 ### Tests
 
 ```bash
-pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (34 tests)
+pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (39 tests)
 ```
 
 ## Ordre d’implémentation

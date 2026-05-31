@@ -1,4 +1,16 @@
-import type { CombatState, RunRewardDef } from "./types";
+import type { CombatState, RunRewardDef, RunShopOffer } from "./types";
+import { getRunWaveKind, type RunWaveKind } from "./run-waves";
+
+export const RUN_START_GOLD = 100;
+
+/** Or gagné en clearing une vague */
+export function waveClearGold(wave: number, kind: RunWaveKind = getRunWaveKind(wave)): number {
+  const base = 10 + Math.floor(wave / 8);
+  if (kind === "boss") return base + 18;
+  if (kind === "mega_boss") return base + 35;
+  if (kind === "final_boss") return base + 50;
+  return base;
+}
 
 export const RUN_REWARD_POOL: RunRewardDef[] = [
   {
@@ -163,6 +175,49 @@ export function rollRewardChoices(
   }
 
   return picks;
+}
+
+/** Prix boutique selon type d'objet et progression */
+export function getShopPrice(reward: RunRewardDef, wave: number): number {
+  const kindBase: Record<RunRewardDef["kind"], number> = {
+    heal_all: 25,
+    stat_all: 32,
+    combo_atk_def: 48,
+    soul_mult: 38,
+    capture_bonus: 34,
+    soul_fill: 18,
+  };
+  let price = kindBase[reward.kind];
+  if (reward.kind === "heal_all") price += Math.round(reward.value * 18);
+  if (reward.kind === "stat_all") price += reward.value;
+  price += Math.floor(wave / 12) * 4;
+  return price;
+}
+
+function canOfferInShop(reward: RunRewardDef, ownedIds: readonly string[]): boolean {
+  if (reward.stackable) return true;
+  return !ownedIds.includes(reward.id);
+}
+
+/** Stock boutique — objets distincts du pool, prix calculés */
+export function rollShopOffers(
+  wave: number,
+  ownedIds: readonly string[],
+  count = 5,
+  rng: () => number = Math.random,
+): RunShopOffer[] {
+  const pool = RUN_REWARD_POOL.filter((r) => canOfferInShop(r, ownedIds));
+  const bag = pool.slice();
+  const offers: RunShopOffer[] = [];
+
+  while (offers.length < count && bag.length > 0) {
+    const idx = Math.floor(rng() * bag.length);
+    const reward = bag[idx]!;
+    bag.splice(idx, 1);
+    offers.push({ rewardId: reward.id, price: getShopPrice(reward, wave) });
+  }
+
+  return offers.sort((a, b) => a.price - b.price);
 }
 
 export function applyRunReward(state: CombatState, reward: RunRewardDef, rng = Math.random): string {

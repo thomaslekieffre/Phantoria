@@ -15,7 +15,7 @@ pnpm install          # après clone ou pull avec lockfile changé
 pnpm dev              # Next.js → http://localhost:3000
 pnpm build            # vérif prod locale
 pnpm lint             # ESLint (apps/web)
-pnpm test:core        # tests game-core (34 tests : tribus, formules, combat, récompenses, vagues)
+pnpm test:core        # tests game-core (39 tests : tribus, formules, combat, récompenses, vagues)
 ```
 
 Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
