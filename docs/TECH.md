@@ -72,7 +72,7 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 | **Clic gauche ennemi** | Inspect tribus / matchups / compétences / passif (`foe-inspect`) |
 | **Clic allié terrain ou slot (jauge vide)** | Inspect allié (`ally-inspect`) — passif, compétences, barre XP |
 | **Jauge Âmes pleine → slot** | Menu amultime : nom + **effet textuel** (`describeSkill`) + tag Mono / Zone / Aléatoire |
-| **Phantoball** | Ennemi ≤ 40 % PV → stock consommable (`runBalls`) · standard / tribale |
+| **Phantoball** | Ennemi ≤ 40 % PV → standard ou tribales par groupe (bonus/malus tribu) |
 | **Vitesse combat** | ⏸ / ×1 / ×2 (UI bandeau) |
 | **Dev** | Panel bas-droite en dev ou `?dev=1` — skip vague, +50 €, boss suiv. |
 | **Roue ↺ / ↻** | Rotation manuelle (pause auto si overlay capture / récompense / amultime) |
@@ -140,7 +140,7 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 
 **Phase `reward_pick`** : 3 gratuits (`selectReward`) + boutique 5 offres (`buyShopOffer`) + **reroll** payant (`rerollShop`, prix `getShopRerollPrice`) → **`continueAfterReward()`** pour la vague suivante.
 
-Stock Phantoballs : `RUN_START_BALLS` (5 standard) · achat `ball_pack` / `ball_tribal_pack` en boutique.
+Stock Phantoballs : `RUN_START_BALLS` (5 standard) · tribales par type (`phantoballs.ts`) · achat shop (`ball_lumi`, `ball_flam`, … ou aléatoire).
 
 - Reliques persistantes stockées dans `CombatState.runRelics` ; modificateurs dans `runModifiers` (`soulGainMult`, `captureBonus`).
 - Objets non stackables exclus du tirage une fois possédés ; stackables (Écho d’âmes, Phantoball) cumulables.
@@ -204,7 +204,8 @@ Moteur TypeScript pur, importé par `apps/web` via workspace `@phantoria/game-co
 |---------|------|
 | `types.ts` | Tribus, stats, `Combatant`, `CombatState`, phases, reliques |
 | `tribes.ts` | Table 11×11, `getTypeMultiplier`, `TRIBE_INFO` |
-| `characters.ts` | Catalogue esprits + `ALL_SPIRIT_KEYS` |
+| `phantoballs.ts` | Stock balls, mult capture tribu, migration save |
+| `characters.ts` | Catalogue + descriptions compétences + errants pool vague |
 | `formulas.ts` | Dégâts, Âmes, capture (clamp 5–85 %) |
 | `combat-engine.ts` | `CombatEngine`, `createRunBattle`, rotation, capture, vagues |
 | `run-waves.ts` | Composition ennemis par vague |
@@ -214,7 +215,7 @@ Moteur TypeScript pur, importé par `apps/web` via workspace `@phantoria/game-co
 | `passives.ts` | Passifs esprits / ennemis + hooks combat |
 | `skill-text.ts` | `describeSkill()` — texte lisible attaque / amultime |
 | `run-dev.ts` | Helpers dev (`devJumpToBoss`, `nextBossWave`) |
-| `formulas.test.ts` | 55 tests (tribus, formules, combat, XP, save, passifs…) |
+| `formulas.test.ts` | 61 tests (tribus, formules, combat, XP, save, passifs, balls…) |
 
 ### API principale
 
@@ -250,7 +251,7 @@ CombatEngine
 ### Tests
 
 ```bash
-pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (55 tests)
+pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 ```
 
 ## Ordre d’implémentation

@@ -1,5 +1,10 @@
-import { CAPTURE_MAX_CHANCE, CAPTURE_MIN_CHANCE, CAPTURE_RATE_BY_RARITY, type Rarity, type Stats } from "./types";
+import { CAPTURE_MAX_CHANCE, CAPTURE_MIN_CHANCE, CAPTURE_RATE_BY_RARITY, type Rarity, type Stats, type Tribe } from "./types";
 import { getTypeMultiplier } from "./tribes";
+import type { PhantoballType } from "./phantoballs";
+import { getBallCaptureMult } from "./phantoballs";
+import { getTypeMultiplier } from "./tribes";
+import type { PhantoballType } from "./phantoballs";
+import { getBallCaptureMult } from "./phantoballs";
 
 export function levelMultiplier(level: number): number {
   return 1 + (level - 1) * 0.04;
@@ -31,21 +36,18 @@ export function soulGainFromDamage(damage: number, maxHp: number): number {
   return Math.min(0.5, (damage / maxHp) * 0.35);
 }
 
-const BALL_MULT: Record<string, number> = {
-  standard: 1,
-  tribal: 1.5,
-};
-
 export function computeCaptureChance(
   rarity: Rarity,
   hpRatio: number,
-  ballType: keyof typeof BALL_MULT = "standard",
+  ball: PhantoballType = "standard",
   captureBonus = 0,
+  targetTribe?: Tribe,
 ): number {
   const base = CAPTURE_RATE_BY_RARITY[rarity];
   /** Bonus PV bas adouci — évite 100 % dès qu'on peut lancer la ball */
   const lowHpMult = 1 + 0.55 * (1 - hpRatio);
-  const chance = base * (BALL_MULT[ballType] ?? 1) * lowHpMult + captureBonus;
+  const ballMult = getBallCaptureMult(ball, targetTribe);
+  const chance = base * ballMult * lowHpMult + captureBonus;
   return Math.min(CAPTURE_MAX_CHANCE, Math.max(CAPTURE_MIN_CHANCE, chance));
 }
 

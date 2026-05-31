@@ -2675,6 +2675,11 @@
   box-shadow: 2px 2px 0 var(--ink);
 }
 
+.battle__ball-opt--match {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+
 .battle__ball-opt:disabled {
   opacity: 0.45;
   cursor: not-allowed;

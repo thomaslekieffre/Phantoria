@@ -8,7 +8,7 @@ type CombatantSkillsProps = {
 };
 
 export function CombatantSkills({ c, title = "Compétences" }: CombatantSkillsProps) {
-  const passive = getPassive(c.templateKey);
+  const passive = getPassive(c.templateKey, c.tribe);
 
   return (
     <div className="cskills">

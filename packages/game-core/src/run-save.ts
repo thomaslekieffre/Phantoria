@@ -1,5 +1,6 @@
 import type { CombatState } from "./types";
-import { RUN_START_BALLS, RUN_START_GOLD } from "./run-rewards";
+import { migrateRunBalls } from "./phantoballs";
+import { RUN_START_GOLD } from "./run-rewards";
 
 export const RUN_SAVE_VERSION = 1;
 export const RUN_SAVE_KEY = "phantoria_run_v1";
@@ -15,7 +16,7 @@ export function hydrateCombatState(raw: CombatState): CombatState {
   return {
     ...raw,
     runGold: raw.runGold ?? RUN_START_GOLD,
-    runBalls: raw.runBalls ?? { ...RUN_START_BALLS },
+    runBalls: migrateRunBalls(raw.runBalls),
     shopRerollCount: raw.shopRerollCount ?? 0,
     freeRewardPicked: raw.freeRewardPicked ?? false,
     attackFocusId: raw.attackFocusId ?? null,

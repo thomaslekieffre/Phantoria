@@ -12,6 +12,13 @@ import {
   RUN_MAX_WAVES,
   getRunWaveKind,
   getRunWaveKindLabel,
+  TRIBAL_BALL_IDS,
+  TRIBAL_BALL_INFO,
+  hasAnyBall,
+  totalTribalBalls,
+  tribalBallMatches,
+  createEmptyTribalStock,
+  bestTribalBallFor,
   type CombatEvent,
   type Combatant,
   type PhantoballType,
@@ -322,7 +329,7 @@ export function RunScreen() {
   const shopOffers = state?.shopOffers ?? [];
   const freeRewardPicked = state?.freeRewardPicked ?? false;
   const runGold = state?.runGold ?? 0;
-  const runBalls = state?.runBalls ?? { standard: 0, tribal: 0 };
+  const runBalls = state?.runBalls ?? { standard: 0, tribal: createEmptyTribalStock() };
   const shopRerollCount = state?.shopRerollCount ?? 0;
   const runRelics = state?.runRelics ?? [];
   const captureBonus = state?.runModifiers.captureBonus ?? 0;
@@ -357,9 +364,20 @@ export function RunScreen() {
   }, [engine, renderTick]);
 
   const weakEnemy =
-    !isOver && (runBalls.standard > 0 || runBalls.tribal > 0)
+    !isOver && hasAnyBall(runBalls)
       ? livingEnemies.find((e) => e.hp / e.maxHp <= 0.4)
       : undefined;
+
+  useEffect(() => {
+    if (!captureTarget || !engineRef.current) return;
+    const target = engineRef.current.getCombatant(captureTarget);
+    if (!target) return;
+    const balls = engineRef.current.getState().runBalls;
+    const best = bestTribalBallFor(balls, target.tribe);
+    if (best && best.mult >= 1.5) setSelectedBall(best.id);
+    else if (balls.standard > 0) setSelectedBall("standard");
+    else if (best) setSelectedBall(best.id);
+  }, [captureTarget]);
 
   useEffect(() => {
     if (!engineRef.current) return;
@@ -540,19 +558,20 @@ export function RunScreen() {
     if (!target || target.ko) return;
 
     const balls = engine.getState().runBalls;
-    const ball =
-      selectedBall === "tribal" && balls.tribal > 0
-        ? "tribal"
-        : balls.standard > 0
-          ? "standard"
-          : balls.tribal > 0
-            ? "tribal"
-            : null;
-    if (!ball) return;
+    const ball = selectedBall;
+    const hasBall =
+      ball === "standard" ? balls.standard > 0 : (balls.tribal[ball] ?? 0) > 0;
+    if (!hasBall) return;
 
     const hpRatio = target.hp / target.maxHp;
     const chancePct = Math.round(
-      computeCaptureChance(target.rarity, hpRatio, ball, engine.getState().runModifiers.captureBonus) * 100,
+      computeCaptureChance(
+        target.rarity,
+        hpRatio,
+        ball,
+        engine.getState().runModifiers.captureBonus,
+        target.tribe,
+      ) * 100,
     );
     const targetId = captureTarget;
     const targetName = target.name;
@@ -646,11 +665,17 @@ export function RunScreen() {
         computeCaptureChance(
           captureConfirm.rarity,
           captureConfirm.hp / captureConfirm.maxHp,
-          selectedBall === "tribal" && runBalls.tribal > 0 ? "tribal" : "standard",
+          selectedBall,
           captureBonus,
+          captureConfirm.tribe,
         ) * 100,
       )
     : 0;
+
+  const selectedBallAvailable =
+    selectedBall === "standard"
+      ? runBalls.standard > 0
+      : (runBalls.tribal[selectedBall] ?? 0) > 0;
 
   return (
     <div className={`battle ${isOver ? "battle--over" : ""}`}>
@@ -694,7 +719,7 @@ export function RunScreen() {
           <div className="battle__top-right">
             <span className="battle__balls" aria-label="Phantoballs">
               🔵{runBalls.standard}
-              {runBalls.tribal > 0 ? ` · 🟣${runBalls.tribal}` : ""}
+              {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
             </span>
             <span className="battle__gold" aria-label={`${runGold} euros`}>
               {runGold} €
@@ -804,7 +829,7 @@ export function RunScreen() {
             }}
           >
             Phantoball
-            {runBalls.standard > 0 ? ` (${runBalls.standard})` : runBalls.tribal > 0 ? " 🟣" : ""}
+            {runBalls.standard > 0 ? ` (${runBalls.standard})` : totalTribalBalls(runBalls) > 0 ? " 🎯" : ""}
           </button>
         ) : null}
       </div>
@@ -915,31 +940,45 @@ export function RunScreen() {
             <p className="battle__spe-title">Capturer {captureConfirm.name} ?</p>
             <p className="battle__capture-chance">Chance : {captureConfirmChance} %</p>
             <div className="battle__ball-pick" role="group" aria-label="Type de Phantoball">
-              <button
-                type="button"
-                className={`battle__ball-opt ${selectedBall === "standard" ? "battle__ball-opt--on" : ""}`}
-                disabled={runBalls.standard <= 0}
-                onClick={() => setSelectedBall("standard")}
-              >
-                🔵 Standard ×{runBalls.standard}
-              </button>
-              <button
-                type="button"
-                className={`battle__ball-opt ${selectedBall === "tribal" ? "battle__ball-opt--on" : ""}`}
-                disabled={runBalls.tribal <= 0}
-                onClick={() => setSelectedBall("tribal")}
-              >
-                🟣 Tribale ×{runBalls.tribal}
-              </button>
+              {runBalls.standard > 0 ? (
+                <button
+                  type="button"
+                  className={`battle__ball-opt ${selectedBall === "standard" ? "battle__ball-opt--on" : ""}`}
+                  onClick={() => setSelectedBall("standard")}
+                >
+                  🔵 Standard ×{runBalls.standard}
+                </button>
+              ) : null}
+              {TRIBAL_BALL_IDS.map((id) => {
+                const count = runBalls.tribal[id] ?? 0;
+                if (count <= 0) return null;
+                const info = TRIBAL_BALL_INFO[id];
+                const matches = captureConfirm ? tribalBallMatches(id, captureConfirm.tribe) : false;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`battle__ball-opt ${selectedBall === id ? "battle__ball-opt--on" : ""} ${matches ? "battle__ball-opt--match" : ""}`}
+                    onClick={() => setSelectedBall(id)}
+                  >
+                    {info.emoji} {info.name} ×{count}
+                    {captureConfirm
+                      ? matches
+                        ? ` · ×${info.matchMult} tribu`
+                        : ` · ×${info.mismatchMult} hors tribu`
+                      : ""}
+                  </button>
+                );
+              })}
             </div>
-            <p className="battle__capture-note">Jamais garanti — max 85 % · consomme 1 ball · si ça rate, l&apos;ennemi reste en vie.</p>
+            <p className="battle__capture-note">
+              Balls tribales : bonus si la tribu cible correspond · malus sinon · max 85 %
+            </p>
             <button
               type="button"
               className="battle__spe-btn battle__spe-btn--ball"
               onClick={handleCapture}
-              disabled={
-                (selectedBall === "tribal" ? runBalls.tribal : runBalls.standard) <= 0
-              }
+              disabled={!selectedBallAvailable}
             >
               Lancer la Phantoball
             </button>

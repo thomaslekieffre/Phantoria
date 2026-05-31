@@ -1,3 +1,4 @@
+export * from "./phantoballs";
 export * from "./types";
 export * from "./tribes";
 export * from "./formulas";

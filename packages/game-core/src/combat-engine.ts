@@ -2,7 +2,8 @@ import { getTemplate } from "./characters";
 import { applyPassiveToStats, getPassive, getPassiveCaptureResist, getPassiveDamageMult, getPassiveSoulMult, getPassiveTurnRegenPct } from "./passives";
 import { grantXp, xpFromDefeated } from "./xp";
 import { hydrateCombatState } from "./run-save";
-import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD, RUN_START_BALLS, getShopRerollPrice } from "./run-rewards";
+import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD, getShopRerollPrice } from "./run-rewards";
+import { RUN_START_BALLS, createEmptyTribalStock } from "./phantoballs";
 import { getRunWaveSetup, RUN_MAX_WAVES, getRunWaveKind } from "./run-waves";
 import {
   computeCaptureChance,
@@ -58,7 +59,7 @@ function spawn(
 ): Combatant {
   const t = getTemplate(templateKey);
   let stats = statsAtLevel(t.base, level);
-  stats = applyPassiveToStats(stats, getPassive(templateKey));
+  stats = applyPassiveToStats(stats, getPassive(templateKey, t.tribe));
   const scale = (n: number) => Math.max(1, Math.floor(n * statMult));
   return {
     instanceId: uid(),
@@ -198,7 +199,7 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     freeRewardPicked: false,
     shopOffers: null,
     runGold: RUN_START_GOLD,
-    runBalls: { ...RUN_START_BALLS },
+    runBalls: { standard: RUN_START_BALLS.standard, tribal: createEmptyTribalStock() },
     shopRerollCount: 0,
     attackFocusId: null,
   };
@@ -378,7 +379,7 @@ export class CombatEngine {
     if (this.state.pendingRecruit) return false;
 
     if (ball === "standard" && this.state.runBalls.standard <= 0) return false;
-    if (ball === "tribal" && this.state.runBalls.tribal <= 0) return false;
+    if (ball !== "standard" && (this.state.runBalls.tribal[ball] ?? 0) <= 0) return false;
 
     const target = this.getCombatant(targetId);
     if (!target || target.side !== "enemy" || target.ko) return false;
@@ -387,7 +388,7 @@ export class CombatEngine {
     if (hpRatio > 0.4) return false;
 
     if (ball === "standard") this.state.runBalls.standard -= 1;
-    else this.state.runBalls.tribal -= 1;
+    else this.state.runBalls.tribal[ball] -= 1;
 
     const chance = Math.max(
       0.01,
@@ -396,7 +397,8 @@ export class CombatEngine {
         hpRatio,
         ball,
         this.state.runModifiers.captureBonus,
-      ) - getPassiveCaptureResist(target.templateKey),
+        target.tribe,
+      ) - getPassiveCaptureResist(target.templateKey, target.tribe),
     );
     this.pushEvent(
       "capture_attempt",
@@ -542,16 +544,16 @@ export class CombatEngine {
     isSpecial: boolean,
   ) {
     const rawDmg = computeDamage(actor.atk, target.def, skill.power, tribe, target.tribe);
-    const dmg = Math.max(1, Math.floor(rawDmg * getPassiveDamageMult(actor.templateKey)));
+    const dmg = Math.max(1, Math.floor(rawDmg * getPassiveDamageMult(actor.templateKey, actor.tribe)));
 
     target.hp = Math.max(0, target.hp - dmg);
 
     const gainActor = soulGainFromDamage(dmg, actor.maxHp);
     const gainTarget = soulGainFromDamage(dmg, target.maxHp);
     const actorSoulMult =
-      this.state.runModifiers.soulGainMult * getPassiveSoulMult(actor.templateKey);
+      this.state.runModifiers.soulGainMult * getPassiveSoulMult(actor.templateKey, actor.tribe);
     const targetSoulMult =
-      this.state.runModifiers.soulGainMult * getPassiveSoulMult(target.templateKey);
+      this.state.runModifiers.soulGainMult * getPassiveSoulMult(target.templateKey, target.tribe);
     if (actor.active && !actor.ko) {
       const before = actor.souls;
       actor.souls = Math.min(1, actor.souls + gainActor * actorSoulMult);
@@ -811,7 +813,7 @@ export class CombatEngine {
   }
 
   private applyTurnStartEffects(combatant: Combatant): void {
-    const regenPct = getPassiveTurnRegenPct(combatant.templateKey);
+    const regenPct = getPassiveTurnRegenPct(combatant.templateKey, combatant.tribe);
     if (regenPct <= 0 || combatant.ko) return;
     const gain = Math.max(1, Math.floor(combatant.maxHp * regenPct));
     combatant.hp = Math.min(combatant.maxHp, combatant.hp + gain);

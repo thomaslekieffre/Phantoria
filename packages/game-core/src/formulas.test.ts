@@ -7,8 +7,9 @@ import { applyRunReward, rollRewardChoices, rollShopOffers, getShopPrice, getSho
 import { devJumpToBoss } from "./run-dev";
 import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
+import { createEmptyTribalStock, getBallCaptureMult, migrateRunBalls, tribalBallMatches } from "./phantoballs";
 import { grantXp, xpToNextLevel, xpFromDefeated } from "./xp";
-import { getPassiveCaptureResist, getPassiveDamageMult } from "./passives";
+import { getPassiveCaptureResist, getPassiveDamageMult, getPassive } from "./passives";
 import { describeSkill } from "./skill-text";
 import { serializeRun, parseRun } from "./run-save";
 
@@ -461,10 +462,21 @@ describe("récompenses de vague", () => {
   it("tryCapture refuse sans stock", () => {
     const engine = createRunBattle();
     engine.getState().runBalls.standard = 0;
-    engine.getState().runBalls.tribal = 0;
+    engine.getState().runBalls.tribal = createEmptyTribalStock();
     const foe = engine.getState().combatants.find((c) => c.side === "enemy")!;
     foe.hp = Math.floor(foe.maxHp * 0.1);
     assert.equal(engine.tryCapture(foe.instanceId), false);
+  });
+
+  it("achat ball_lumi crédite le stock tribale", () => {
+    const engine = createRunBattle();
+    const lumi = RUN_REWARD_POOL.find((r) => r.id === "ball_lumi")!;
+    engine.getState().phase = "reward_pick";
+    engine.getState().freeRewardPicked = true;
+    engine.getState().runGold = 999;
+    engine.getState().shopOffers = [{ rewardId: lumi.id, price: getShopPrice(lumi, 1) }];
+    assert.ok(engine.buyShopOffer(lumi.id));
+    assert.equal(engine.getState().runBalls.tribal.lumi, 1);
   });
 
   it("achat ball_pack crédite le stock", () => {
@@ -575,6 +587,33 @@ describe("xp run", () => {
   });
 });
 
+describe("phantoballs", () => {
+  it("lumiball bonus sur mignons", () => {
+    assert.ok(tribalBallMatches("lumi", "mignons"));
+    assert.equal(getBallCaptureMult("lumi", "mignons"), 1.5);
+    assert.equal(getBallCaptureMult("lumi", "vaillants"), 0.5);
+  });
+
+  it("capture chance tribale > standard si match", () => {
+    const match = computeCaptureChance("C", 0.2, "lumi", 0, "mignons");
+    const std = computeCaptureChance("C", 0.2, "standard", 0, "mignons");
+    assert.ok(match > std);
+  });
+
+  it("migrate save tribal number → lumi", () => {
+    const migrated = migrateRunBalls({ standard: 3, tribal: 2 });
+    assert.equal(migrated.standard, 3);
+    assert.equal(migrated.tribal.lumi, 2);
+  });
+});
+
+describe("catalogue", () => {
+  it("pool errants élargi", () => {
+    assert.ok((ALL_SPIRIT_KEYS as readonly string[]).includes("roche_costaud"));
+    assert.ok((ALL_SPIRIT_KEYS as readonly string[]).includes("sigille_enma"));
+  });
+});
+
 describe("passifs", () => {
   it("ombre_faible résiste à la capture", () => {
     assert.equal(getPassiveCaptureResist("ombre_faible"), 0.08);
@@ -582,6 +621,12 @@ describe("passifs", () => {
 
   it("bram inflige plus de dégâts", () => {
     assert.equal(getPassiveDamageMult("bram_vaillant"), 1.08);
+  });
+
+  it("fallback tribu si clé inconnue", () => {
+    const p = getPassive("roche_costaud", "costauds");
+    assert.ok(p);
+    assert.equal(p!.name, "Granit vivant");
   });
 });
 

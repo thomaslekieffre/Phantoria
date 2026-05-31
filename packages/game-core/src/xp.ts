@@ -63,7 +63,7 @@ export function grantXp(combatant: Combatant, amount: number): LevelUpResult {
 export function refreshStatsForLevel(combatant: Combatant, hpRatio = combatant.maxHp > 0 ? combatant.hp / combatant.maxHp : 1): void {
   const template = getTemplate(combatant.templateKey);
   let stats = statsAtLevel(template.base, combatant.level);
-  stats = applyPassiveToStats(stats, getPassive(combatant.templateKey));
+  stats = applyPassiveToStats(stats, getPassive(combatant.templateKey, combatant.tribe));
   combatant.maxHp = stats.hp;
   combatant.hp = Math.max(1, Math.min(combatant.maxHp, Math.floor(combatant.maxHp * hpRatio)));
   combatant.atk = stats.atk;

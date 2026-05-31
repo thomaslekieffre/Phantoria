@@ -149,10 +149,8 @@ export type RunRewardKind =
   | "ball_tribal"
   | "xp_all";
 
-export interface RunBallStock {
-  standard: number;
-  tribal: number;
-}
+export type { RunBallStock, PhantoballType, TribalBallId } from "./phantoballs";
+import type { TribalBallId } from "./phantoballs";
 
 export interface RunRewardDef {
   id: string;
@@ -163,6 +161,8 @@ export interface RunRewardDef {
   value: number;
   stat?: "atk" | "def" | "vit" | "maxHp";
   stackable?: boolean;
+  /** Pour kind `ball_tribal` — type précis ; absent = aléatoire */
+  tribalBall?: TribalBallId;
 }
 
 export interface RunModifiers {
@@ -202,14 +202,12 @@ export interface CombatState {
   /** Or du run (€) */
   runGold: number;
   /** Stock Phantoballs consommables ce run */
-  runBalls: RunBallStock;
+  runBalls: import("./phantoballs").RunBallStock;
   /** Rerolls boutique ce palier (prix croissant) */
   shopRerollCount: number;
   /** Ennemi marqué pour les attaques de base alliées — défaut = premier ennemi */
   attackFocusId: string | null;
 }
-
-export type PhantoballType = "standard" | "tribal";
 
 /** Snapshot de l'esprit au moment de la capture — mêmes stats qu'en combat */
 export interface PendingRecruit {

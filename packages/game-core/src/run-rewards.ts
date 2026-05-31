@@ -1,9 +1,15 @@
 import type { CombatState, RunRewardDef, RunShopOffer } from "./types";
 import { getRunWaveKind, type RunWaveKind } from "./run-waves";
 import { grantXp } from "./xp";
+import {
+  RUN_START_BALLS,
+  TRIBAL_BALL_INFO,
+  pickRandomTribalBall,
+  type TribalBallId,
+} from "./phantoballs";
 
+export { RUN_START_BALLS } from "./phantoballs";
 export const RUN_START_GOLD = 100;
-export const RUN_START_BALLS = { standard: 5, tribal: 0 } as const;
 export const SHOP_REROLL_BASE = 12;
 
 /** Or gagné en clearing une vague — courbe douce vagues 1→50+ */
@@ -118,11 +124,51 @@ export const RUN_REWARD_POOL: RunRewardDef[] = [
     stackable: true,
   },
   {
-    id: "ball_tribal_pack",
-    name: "Phantoball tribale",
-    emoji: "🟣",
-    description: "+1 Phantoball tribale — ×1,5 capture",
+    id: "ball_tribal_random",
+    name: "Ball tribale aléatoire",
+    emoji: "🎲",
+    description: "+1 ball tribale (type aléatoire) — bonus si tribu compatible",
     kind: "ball_tribal",
+    value: 1,
+    stackable: true,
+  },
+  {
+    id: "ball_lumi",
+    name: "Lumiball",
+    emoji: "🟡",
+    description: "+1 Lumiball — Mignons & Bienveillants ×1,5",
+    kind: "ball_tribal",
+    tribalBall: "lumi",
+    value: 1,
+    stackable: true,
+  },
+  {
+    id: "ball_flam",
+    name: "Flamball",
+    emoji: "🔴",
+    description: "+1 Flamball — Vaillants & Costauds ×2",
+    kind: "ball_tribal",
+    tribalBall: "flam",
+    value: 1,
+    stackable: true,
+  },
+  {
+    id: "ball_ombra",
+    name: "Ombraball",
+    emoji: "🟣",
+    description: "+1 Ombraball — Sombres & Sinistres ×2",
+    kind: "ball_tribal",
+    tribalBall: "ombra",
+    value: 1,
+    stackable: true,
+  },
+  {
+    id: "ball_neant",
+    name: "Néantball",
+    emoji: "⚫",
+    description: "+1 Néantball — Néants ×2,5",
+    kind: "ball_tribal",
+    tribalBall: "neant",
     value: 1,
     stackable: true,
   },
@@ -340,9 +386,12 @@ export function applyRunReward(state: CombatState, reward: RunRewardDef, rng = M
       state.runBalls.standard += reward.value;
       return `${reward.name} — +${reward.value} Phantoball(s)`;
 
-    case "ball_tribal":
-      state.runBalls.tribal += reward.value;
-      return `${reward.name} — +${reward.value} tribale(s)`;
+    case "ball_tribal": {
+      const ballId: TribalBallId = reward.tribalBall ?? pickRandomTribalBall(rng);
+      state.runBalls.tribal[ballId] = (state.runBalls.tribal[ballId] ?? 0) + reward.value;
+      const info = TRIBAL_BALL_INFO[ballId];
+      return `${reward.name} — +${reward.value} ${info.name}`;
+    }
 
     case "xp_all": {
       const allies = state.combatants.filter((c) => c.side === "ally" && !c.ko);
