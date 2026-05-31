@@ -1,0 +1,16 @@
+{
+  "name": "@phantoria/game-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "tsx --test src/formulas.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.2",
+    "typescript": "^5"
+  }
+}

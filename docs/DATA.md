@@ -1,16 +1,19 @@
 # Phantoria — Données & formules (v0)
 
-Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Notes pour une future implémentation (pas de code dans ce dépôt).
+Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de vérité implémentée dans `packages/game-core`.
 
-## Personnages mock (proto)
+## Personnages (catalogue proto)
 
 | Clé | Nom | Tribu | Rareté | Rôle proto |
 |-----|-----|-------|--------|------------|
-| `bram_vaillant` | Bram | Vaillants | E | Tank débutant |
+| `bram_vaillant` | Bram | Vaillants | E | Tank débutant / starter run |
 | `nyx_mysterieux` | Nyx | Mystérieux | C | Rapide |
 | `luma_mignon` | Luma | Mignons | B | Support léger |
-| `ombre_faible` | Ombre errante | Sombres | E | Ennemi facile |
+| `kiro_perfide` | Kiro | Perfides | D | Rapide |
+| `ombre_faible` | Ombre errante | Sombres | E | Ennemi tuto vague 1 |
 | `neant_scout` | Éclaireur néant | Néants | D | Ennemi mid |
+
+Catalogue complet : `packages/game-core/src/characters.ts` — `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
 
 ## Formules v0
 
@@ -24,45 +27,104 @@ Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Notes pour une future implémentat
 dégâts = max(1, floor(ATK × power × typeMult - DEF × 0.35))
 ```
 
-`typeMult` : tableau des faiblesses dans le GDD (section Tribus).
+`typeMult` : tableau 11×11 dans `tribes.ts` (×2 super efficace, ×0,5 peu efficace, ×0 immunité).
 
 ### Âmes
 
-- Jauge `0 → 1` par perso sur le terrain (float normalisé)
-- Remplissage **progressif** quand le perso **inflige** ou **subit** des dégâts — **formule à playtest**
-- Pas de saut instantané 0 → 1 sur un seul hit
-- Spéciale 1 ou 2 : utilisable si jauge **≥ 1** (pleine) → reset à `0`
-- Pas de charge sur la réserve (hors terrain)
+- Jauge `0 → 1` par perso **sur le terrain** (float normalisé).
+- Remplissage proportionnel aux dégâts infligés / subis :
+
+```
+gain = min(0.5, (dégâts / PV_max) × 0.35) × runModifiers.soulGainMult
+```
+
+- Spéciale 1 ou 2 : utilisable si jauge **≥ 1** → reset à `0`.
+- Pas de charge sur la réserve (hors terrain).
 
 ### Capture
 
 ```
-chance = taux_rareté × mult_ball × (1 + (1 - PV%))
-chance = clamp(chance, 1 %, 100 %)
+chance = taux_rareté × mult_ball × (1 + 0.55 × (1 - PV%)) + captureBonus
+chance = clamp(chance, 5 %, 85 %)
 ```
 
-Taux de base par rareté : voir GDD (section Phantoballs / paliers).
+- Taux base par rareté : `CAPTURE_RATE_BY_RARITY` (E 70 % → S 1 %).
+- **Plafond 85 %** — jamais garantie à 100 %.
+- **Plancher 5 %**.
+- Bonus relique Phantoball renforcée : `+12 %` cumulable (`runModifiers.captureBonus`).
+
+Types de ball v0 : `standard` (×1), `tribal` (×1,5).
+
+## Terrain & roue
+
+| Concept | Valeur |
+|---------|--------|
+| Slots roue | 6 (indices `0–5`) |
+| Terrain (arc haut) | slots **`5`, `0`, `1`** |
+| Max alliés terrain | 3 |
+| Rotation | permute tous les alliés ; auto-fill si trou terrain + réserve |
+
+## Vagues roguelite (`run-waves.ts`)
+
+| Règle | Détail |
+|-------|--------|
+| Vague 1 solo | 1 ennemi fixe : `ombre_faible` lvl 3 |
+| Pool ennemis | Tous les esprits du catalogue, filtrés par rareté min selon vague |
+| Nombre ennemis | 1–3 selon vague et taille équipe alliée |
+| Niveau ennemi | `wave === 1 ? 3 : 2 + wave` |
+
+Poids rareté (approx.) : E dès v1, D v2+, C v3+, B v5+, A v8+, S v12+.
+
+## Récompenses entre vagues (`run-rewards.ts`)
+
+Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
+
+### Pool actuel
+
+| ID | Nom | Kind | Persistant | Effet |
+|----|-----|------|------------|-------|
+| `lanterne_soin` | Lanterne de soin | `heal_all` | ❌ | +35 % PV max toute la roue |
+| `lanterne_ember` | Lanterne braise | `heal_all` | ❌ | +55 % PV max toute la roue |
+| `offrande` | Offrande du sanctuaire | `soul_fill` | ❌ | +50 % jauge âmes (1 esprit terrain) |
+| `griffe_ardente` | Griffe ardente | `stat_all` atk | ✅ | +8 ATK run |
+| `coquille_verte` | Coquille verte | `stat_all` def | ✅ | +6 DEF run |
+| `veine_vita` | Veine vitale | `stat_all` maxHp | ✅ | +20 PV max run |
+| `vent_vif` | Vent vif | `stat_all` vit | ✅ | +2 VIT run |
+| `filament` | Filament mycélien | `combo_atk_def` | ✅ | +5 ATK et +5 DEF run |
+| `echo_ames` | Écho d'âmes | `soul_mult` | ✅ stackable | +30 % remplissage âmes |
+| `ball_acier` | Phantoball renforcée | `capture_bonus` | ✅ stackable | +12 % capture |
+
+**Barre reliques UI** : uniquement les persistants (`isPersistentRunRelic`).
+
+### Règles de tirage
+
+- Objets non stackables retirés du pool une fois possédés.
+- Vagues 1–2 : pool légèrement biaisé vers les soins (`heal_all` en tête).
 
 ## Persistance (à définir plus tard)
 
 - Profil joueur, roster, jetons gacha
 - Sauvegarde hub + métaprogression
+- État run en cours (non sauvegardé v0)
 
 ## Décisions validées (proto)
 
 | Sujet | Choix |
 |-------|--------|
-| Fill Âmes | À playtest |
-| Rotation roue | À tout moment en combat |
-| Phantoball | En plein combat |
-| Cible attaque de base | Choix joueur |
-| Histoire vs Roguelite (combat) | Pareil |
+| Fill Âmes | `(dmg/maxHp)×0.35`, cap 0.5 par hit, mult relique |
+| Rotation roue | Manuelle + auto-fill trou terrain |
+| Phantoball | En plein combat, placement slot obligatoire |
+| Cible attaque de base | Auto (premier ennemi) — choix joueur via inspect |
+| Défaite run | 0 allié vivant sur la roue entière |
+| Capture max | 85 % |
+| Récompenses vagues | Picker 3 objets (pas encore shop GDD) |
+| Reliques affichées | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |
 
 ## Prochaines étapes data
 
 - [ ] `data/characters.json` généré depuis Excalidraw / sheet
 - [ ] Formule pity gacha (state par pack)
-- [ ] Reliques & buffs entre vagues (IDs + effets)
+- [ ] Shop entre vagues (GDD) + balls variées en run
 - [ ] Critères 3★ mode histoire
-- [ ] Passives modifiant la charge d’Âmes (ex. double charge, charge allié proche…)
+- [ ] Passives modifiant la charge d’Âmes

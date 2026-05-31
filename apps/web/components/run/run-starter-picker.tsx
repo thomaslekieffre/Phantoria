@@ -1,0 +1,51 @@
+"use client";
+
+import Link from "next/link";
+import type { CSSProperties } from "react";
+import { HUB_TO_CORE } from "@phantoria/game-core";
+import { SpiritPortrait } from "@/components/hub/spirit-portrait";
+import { INITIAL_ROSTER, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
+import "./run.css";
+
+const STARTERS = INITIAL_ROSTER.filter((s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id));
+
+type RunStarterPickerProps = {
+  onPick: (id: SpiritId) => void;
+};
+
+export function RunStarterPicker({ onPick }: RunStarterPickerProps) {
+  return (
+    <div className="run-pick">
+      <div className="run-pick__sky" aria-hidden />
+      <div className="run-pick__panel">
+        <p className="run-pick__eyebrow">Roguelite</p>
+        <h1 className="run-pick__title">Choisis ton premier esprit</h1>
+        <p className="run-pick__sub">Tu partiras seul — les autres rejoindront via capture.</p>
+
+        <div className="run-pick__grid">
+          {STARTERS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className="run-pick__card"
+              style={{ "--hue": s.hue } as CSSProperties}
+              onClick={() => onPick(s.id)}
+            >
+              <SpiritPortrait id={s.id} className="run-pick__portrait" />
+              <span className="run-pick__name">{s.name}</span>
+              <span className="run-pick__tribe">{s.tribe}</span>
+            </button>
+          ))}
+        </div>
+
+        <Link href="/" className="run-pick__back">
+          Retour au camp
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export function starterCoreKey(id: SpiritId): string {
+  return HUB_TO_CORE[id] ?? HUB_TO_CORE.bram;
+}

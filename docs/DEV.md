@@ -15,6 +15,7 @@ pnpm install          # après clone ou pull avec lockfile changé
 pnpm dev              # Next.js → http://localhost:3000
 pnpm build            # vérif prod locale
 pnpm lint             # ESLint (apps/web)
+pnpm test:core        # tests game-core (26 tests : tribus, formules, combat, récompenses)
 ```
 
 Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
@@ -51,6 +52,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `apps/web` | Client Next.js — hub sanctuaire (`/`), routes secondaires |
 | `apps/web/components/layout/` | Shell desktop (sidebar, topbar, game-shell) |
 | `apps/web/components/hub/` | Hub : roue, portraits, panneau fiche + actions |
+| `apps/web/components/run/` | Run roguelite : combat, capture, récompenses, reliques |
+| `packages/game-core/` | Moteur TS pur : tribus, formules, `CombatEngine`, vagues, récompenses |
 | `docs/` | GDD, data, tech, ce fichier |
 
 ### Routes web
@@ -62,9 +65,36 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/quests` | Quêtes (stub) |
 | `/gacha` | Gacha (stub) |
 | `/more` | Boutique, inventaire, événements… |
-| `/run`, `/story` | Modes de jeu (stub) |
+| `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
+| `/story` | Mode Histoire (stub) |
 
-`packages/game-core` arrive plus tard.
+### Composants run (`apps/web/components/run/`)
+
+| Fichier | Rôle |
+|---------|------|
+| `run-screen.tsx` | Écran principal, branche `CombatEngine` |
+| `battle-wheel.tsx` | Roue ×6 + reliques sidebar |
+| `run-relics-tray.tsx` | Reliques persistantes + tooltips |
+| `wave-reward-picker.tsx` | Choix objet entre vagues |
+| `run-starter-picker.tsx` | Choix starter |
+| `capture-sequence.tsx` | Animation capture |
+| `foe-inspect.tsx` | Inspect ennemi (tribu, matchups) |
+| `tribe-chart.tsx` | Table faiblesses 11×11 |
+| `combat-spirit.tsx` | Sprites combat |
+| `run.css` | Styles run |
+
+### game-core — où modifier quoi
+
+| Besoin | Fichier |
+|--------|---------|
+| Nouvel esprit | `characters.ts` |
+| Formule dégâts / capture / âmes | `formulas.ts` + tests |
+| Logique combat | `combat-engine.ts` |
+| Ennemis par vague | `run-waves.ts` |
+| Objets / reliques | `run-rewards.ts` |
+| Types & constantes | `types.ts` |
+
+`packages/game-core` — détails dans [`TECH.md`](TECH.md).
 
 ## Ordre d’implémentation
 
