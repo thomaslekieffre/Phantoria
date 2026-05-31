@@ -15,6 +15,11 @@ Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de vérité implémentée d
 | `boss_gardien` | Gardien des brumes | Sombres | B | Boss ×10 |
 | `boss_colosse` | Colosse du néant | Néants | A | Méga boss ×50 |
 | `boss_solmaar` | Solmaar corrompu | Néants | S | Boss final vague 200 |
+| `roche_costaud` | Roche errante | Costauds | E | Errant pool vague |
+| `halo_bienveillant` | Halo errant | Bienveillants | E | Errant pool vague |
+| `murmure_sinistre` | Murmure sinistre | Sinistres | D | Errant pool vague |
+| `brise_insaisissable` | Brise fugace | Insaisissables | D | Errant pool vague |
+| `sigille_enma` | Sigille enma | Enma | C | Errant pool vague |
 
 Catalogue complet : `packages/game-core/src/characters.ts` — `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
 
@@ -57,7 +62,10 @@ chance = clamp(chance, 5 %, 85 %)
 - **Plancher 5 %**.
 - Bonus relique Phantoball renforcée : `+12 %` cumulable (`runModifiers.captureBonus`).
 
-Types de ball v0 : `standard` (×1), `tribal` (×1,5).
+Types de ball run (`phantoballs.ts`) :
+- `standard` ×1
+- Tribales par groupe GDD : Lumi 🟡 · Flam 🔴 · Ombra 🟣 · Glace 🩵 · Terra 🟤 · Néant ⚫
+- Match tribu cible → ×1,5–2,5 · hors tribu → ×0,5
 
 ### XP (run)
 
@@ -82,8 +90,9 @@ Appliqués au spawn (`applyPassiveToStats`) + hooks combat (`getPassiveDamageMul
 | `ombre_faible` | Ombre fugace | −8 % capture |
 | `neant_scout` | Éclat corrompu | +10 % dmg · −5 % capture |
 | `boss_*` | (boss) | dmg + capture resist + bonus stats |
+| errants + starters | explicite ou `TRIBE_DEFAULT_PASSIVES` | fallback par tribu |
 
-Texte compétence : `describeSkill(skill)` — cible, % ATK, bonus tribu éventuel.
+Texte compétence : `description` sur chaque skill dans `characters.ts` · fallback `describeSkill()`.
 
 ## Terrain & roue
 
@@ -139,7 +148,11 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | `echo_ames` | Écho d'âmes | `soul_mult` | ✅ stackable | +30 % remplissage âmes |
 | `ball_acier` | Phantoball renforcée | `capture_bonus` | ✅ stackable | +12 % capture |
 | `ball_pack` | Lot Phantoballs | `ball_standard` | ❌ | +2 standard |
-| `ball_tribal_pack` | Lot tribales | `ball_tribal` | ❌ | +1 tribale |
+| `ball_tribal_random` | Ball tribale aléatoire | `ball_tribal` | ❌ | +1 type aléatoire |
+| `ball_lumi` | Lumiball | `ball_tribal` lumi | ❌ | Mignons & Bienveillants |
+| `ball_flam` | Flamball | `ball_tribal` flam | ❌ | Vaillants & Costauds |
+| `ball_ombra` | Ombraball | `ball_tribal` ombra | ❌ | Sombres & Sinistres |
+| `ball_neant` | Néantball | `ball_tribal` neant | ❌ | Néants ×2,5 |
 | `eclat_xp` | Éclat d'expérience | `xp_all` | ❌ stackable | +35 XP roue |
 | `grande_eclat_xp` | Grande étincelle | `xp_all` | ❌ stackable | +75 XP roue |
 | `offrande_vit` | Offrande du vent | `stat_all` vit | ✅ | +3 VIT run |
@@ -166,7 +179,7 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 |-------|--------|
 | Fill Âmes | `(dmg/maxHp)×0.35`, cap 0.5 par hit, mult relique |
 | Or run | 100 € départ · `waveClearGold` (vague 1 ≈ 16 €, scale + bonus boss) |
-| Phantoballs run | 5 standard au départ · consommées à chaque tentative · tribale ×1,5 capture |
+| Phantoballs run | 5 standard · tribales par type (bonus/malus tribu) · voir `phantoballs.ts` |
 | Rotation roue | Manuelle + auto-fill trou terrain |
 | Phantoball | En plein combat, placement slot obligatoire |
 | Cible attaque de base | Auto (premier ennemi) — **clic droit** pour marquer un focus (`attackFocusId`) |
@@ -175,7 +188,7 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Capture max | 85 % |
 | Récompenses vagues | Gratuit (3 choix) + boutique € + reroll · balls + XP achetables |
 | Save run | `phantoria_run_v1` localStorage · Continuer au picker |
-| Passifs | Starters + ennemis clés · affichés inspect + HUD |
+| Passifs | Explicites + fallback tribu · inspect + HUD |
 | Game over UI | Fullscreen bloque capture / combat ; tick auto off |
 | Reliques affichées | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |
@@ -184,7 +197,6 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 
 - [ ] `data/characters.json` généré depuis Excalidraw / sheet
 - [ ] Formule pity gacha (state par pack)
-- [ ] Passifs sur tout le pool ennemi vague (pas seulement clés listées)
+- [ ] Phantoballs restantes GDD (Verdeball, Spectraball…)
 - [ ] Critères 3★ mode histoire
-- [ ] Phantoballs tribales par tribu (GDD) � proto = 1 type g�n�rique
 - [ ] Sync save run serveur (post-Supabase)

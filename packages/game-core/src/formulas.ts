@@ -2,9 +2,6 @@ import { CAPTURE_MAX_CHANCE, CAPTURE_MIN_CHANCE, CAPTURE_RATE_BY_RARITY, type Ra
 import { getTypeMultiplier } from "./tribes";
 import type { PhantoballType } from "./phantoballs";
 import { getBallCaptureMult } from "./phantoballs";
-import { getTypeMultiplier } from "./tribes";
-import type { PhantoballType } from "./phantoballs";
-import { getBallCaptureMult } from "./phantoballs";
 
 export function levelMultiplier(level: number): number {
   return 1 + (level - 1) * 0.04;
