@@ -67,12 +67,3 @@ pnpm build       # build prod
 | [`docs/TECH.md`](docs/TECH.md) | Stack · run roguelite · game-core |
 
 | [`docs/DEV.md`](docs/DEV.md) | Workflow dev & Git |
-
-
-
-## Git
-
-
-
-Hooks : `.\scripts\setup-git-hooks.ps1` (une fois). Pas de `Co-authored-by: Cursor` — [`.cursor/rules/git-commits.mdc`](.cursor/rules/git-commits.mdc).
-
