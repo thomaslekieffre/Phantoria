@@ -186,4 +186,5 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 - [ ] Formule pity gacha (state par pack)
 - [ ] Passifs sur tout le pool ennemi vague (pas seulement clés listées)
 - [ ] Critères 3★ mode histoire
-- [ ] Passives modifiant la charge d’Âmes
+- [ ] Phantoballs tribales par tribu (GDD) � proto = 1 type g�n�rique
+- [ ] Sync save run serveur (post-Supabase)
