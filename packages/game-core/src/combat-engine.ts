@@ -1,5 +1,5 @@
 import { getTemplate } from "./characters";
-import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD } from "./run-rewards";
+import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD, RUN_START_BALLS, getShopRerollPrice } from "./run-rewards";
 import { getRunWaveSetup, RUN_MAX_WAVES, getRunWaveKind } from "./run-waves";
 import {
   computeCaptureChance,
@@ -193,6 +193,8 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     freeRewardPicked: false,
     shopOffers: null,
     runGold: RUN_START_GOLD,
+    runBalls: { ...RUN_START_BALLS },
+    shopRerollCount: 0,
     attackFocusId: null,
   };
 
@@ -365,11 +367,17 @@ export class CombatEngine {
     if (this.state.phase === "won" || this.state.phase === "lost") return false;
     if (this.state.pendingRecruit) return false;
 
+    if (ball === "standard" && this.state.runBalls.standard <= 0) return false;
+    if (ball === "tribal" && this.state.runBalls.tribal <= 0) return false;
+
     const target = this.getCombatant(targetId);
     if (!target || target.side !== "enemy" || target.ko) return false;
 
     const hpRatio = target.hp / target.maxHp;
     if (hpRatio > 0.4) return false;
+
+    if (ball === "standard") this.state.runBalls.standard -= 1;
+    else this.state.runBalls.tribal -= 1;
 
     const chance = computeCaptureChance(
       target.rarity,
@@ -617,6 +625,7 @@ export class CombatEngine {
     this.state.rewardChoices = null;
     this.state.freeRewardPicked = false;
     this.state.shopOffers = null;
+    this.state.shopRerollCount = 0;
     this.state.attackFocusId = null;
 
     const waveLabel =
@@ -680,6 +689,20 @@ export class CombatEngine {
     return true;
   }
 
+  /** Reroll du stock boutique (payant) */
+  rerollShop(): boolean {
+    if (this.state.phase !== "reward_pick") return false;
+
+    const price = getShopRerollPrice(this.state.wave, this.state.shopRerollCount);
+    if (this.state.runGold < price) return false;
+
+    this.state.runGold -= price;
+    this.state.shopRerollCount += 1;
+    this.state.shopOffers = rollShopOffers(this.state.wave, this.state.runRelics);
+    this.pushEvent("wave_end", `Boutique rafraîchie — ${price} €`);
+    return true;
+  }
+
   /** Passe à la vague suivante après récompense gratuite (+ achats optionnels) */
   continueAfterReward(): boolean {
     if (this.state.phase !== "reward_pick") return false;
@@ -694,6 +717,66 @@ export class CombatEngine {
     }
 
     return this.startNextWave();
+  }
+
+  /** Dev — tue tous les ennemis et ouvre la boutique */
+  devSkipWave(): boolean {
+    if (this.state.phase !== "fighting") return false;
+    for (const c of this.state.combatants) {
+      if (c.side === "enemy" && !c.ko) {
+        c.ko = true;
+        c.hp = 0;
+        applyFieldStatus(c);
+      }
+    }
+    return this.checkEnd();
+  }
+
+  /** Dev — crédite de l'or */
+  devAddGold(amount: number): boolean {
+    if (this.state.phase === "lost" || amount <= 0) return false;
+    this.state.runGold += amount;
+    this.pushEvent("wave_end", `Dev +${amount} €`);
+    return true;
+  }
+
+  /** Dev — force le début d'une vague (ex. prochain boss) */
+  devForceWave(targetWave: number): boolean {
+    if (this.state.phase === "lost" || this.state.phase === "won") return false;
+    if (targetWave < 1 || targetWave > RUN_MAX_WAVES) return false;
+    if (targetWave <= this.state.wave) return false;
+
+    this.state.combatants = this.state.combatants.filter((c) => c.side === "ally");
+    const allyCount = this.state.combatants.filter((c) => c.side === "ally").length;
+    const waveSetup = getRunWaveSetup(targetWave, allyCount);
+
+    for (const enemy of spawnEnemiesFromSetup(waveSetup)) {
+      this.state.combatants.push(enemy);
+    }
+
+    this.state.wave = targetWave;
+    this.state.round = 1;
+    this.state.turnQueue = buildTurnQueue(this.state.combatants);
+    this.state.queueIndex = 0;
+    this.state.phase = "fighting";
+    this.state.captureTargetId = null;
+    this.state.pendingRecruit = null;
+    this.state.rewardChoices = null;
+    this.state.freeRewardPicked = false;
+    this.state.shopOffers = null;
+    this.state.shopRerollCount = 0;
+    this.state.attackFocusId = null;
+
+    const waveLabel =
+      waveSetup.kind === "normal" ? `Vague ${targetWave}` : `${waveSetup.label} — vague ${targetWave}`;
+    this.pushEvent("wave_start", waveLabel);
+
+    const first = this.getCurrentActor();
+    if (first) {
+      this.pushEvent("turn_start", `${first.name}`, first.instanceId);
+    }
+
+    return true;
   }
 
   private checkEnd(): boolean {
@@ -711,6 +794,7 @@ export class CombatEngine {
       this.state.phase = "reward_pick";
       this.state.rewardChoices = rollRewardChoices(this.state.wave, this.state.runRelics);
       this.state.freeRewardPicked = false;
+      this.state.shopRerollCount = 0;
       this.state.shopOffers = rollShopOffers(this.state.wave, this.state.runRelics);
       const waveKind = getRunWaveKind(this.state.wave);
       this.state.runGold += waveClearGold(this.state.wave, waveKind);

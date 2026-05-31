@@ -2,14 +2,22 @@ import type { CombatState, RunRewardDef, RunShopOffer } from "./types";
 import { getRunWaveKind, type RunWaveKind } from "./run-waves";
 
 export const RUN_START_GOLD = 100;
+export const RUN_START_BALLS = { standard: 5, tribal: 0 } as const;
+export const SHOP_REROLL_BASE = 12;
 
-/** Or gagné en clearing une vague */
+/** Or gagné en clearing une vague — courbe douce vagues 1→50+ */
 export function waveClearGold(wave: number, kind: RunWaveKind = getRunWaveKind(wave)): number {
-  const base = 10 + Math.floor(wave / 8);
-  if (kind === "boss") return base + 18;
-  if (kind === "mega_boss") return base + 35;
-  if (kind === "final_boss") return base + 50;
+  let base = 12 + Math.floor(wave * 0.45);
+  if (wave <= 3) base += 4;
+  if (kind === "boss") return base + 22;
+  if (kind === "mega_boss") return base + 42;
+  if (kind === "final_boss") return base + 55;
   return base;
+}
+
+/** Prix reroll boutique entre vagues */
+export function getShopRerollPrice(wave: number, rerollCount: number): number {
+  return SHOP_REROLL_BASE + Math.floor(wave / 6) * 2 + rerollCount * 8;
 }
 
 export const RUN_REWARD_POOL: RunRewardDef[] = [
@@ -99,6 +107,24 @@ export const RUN_REWARD_POOL: RunRewardDef[] = [
     kind: "heal_all",
     value: 0.55,
   },
+  {
+    id: "ball_pack",
+    name: "Lot Phantoballs",
+    emoji: "🔵",
+    description: "+3 Phantoballs standard (consommables)",
+    kind: "ball_standard",
+    value: 3,
+    stackable: true,
+  },
+  {
+    id: "ball_tribal_pack",
+    name: "Phantoball tribale",
+    emoji: "🟣",
+    description: "+1 Phantoball tribale — ×1,5 capture",
+    kind: "ball_tribal",
+    value: 1,
+    stackable: true,
+  },
 ];
 
 const REWARD_BY_ID = Object.fromEntries(RUN_REWARD_POOL.map((r) => [r.id, r])) as Record<
@@ -180,17 +206,21 @@ export function rollRewardChoices(
 /** Prix boutique selon type d'objet et progression */
 export function getShopPrice(reward: RunRewardDef, wave: number): number {
   const kindBase: Record<RunRewardDef["kind"], number> = {
-    heal_all: 25,
-    stat_all: 32,
-    combo_atk_def: 48,
-    soul_mult: 38,
-    capture_bonus: 34,
-    soul_fill: 18,
+    heal_all: 22,
+    stat_all: 28,
+    combo_atk_def: 42,
+    soul_mult: 34,
+    capture_bonus: 30,
+    soul_fill: 16,
+    ball_standard: 18,
+    ball_tribal: 32,
   };
   let price = kindBase[reward.kind];
-  if (reward.kind === "heal_all") price += Math.round(reward.value * 18);
-  if (reward.kind === "stat_all") price += reward.value;
-  price += Math.floor(wave / 12) * 4;
+  if (reward.kind === "heal_all") price += Math.round(reward.value * 14);
+  if (reward.kind === "stat_all") price += Math.floor(reward.value * 0.85);
+  if (reward.kind === "ball_standard") price += (reward.value - 1) * 4;
+  price += Math.floor(wave / 10) * 3;
+  if (wave <= 5 && reward.kind !== "ball_tribal") price = Math.max(14, price - 4);
   return price;
 }
 
@@ -267,6 +297,14 @@ export function applyRunReward(state: CombatState, reward: RunRewardDef, rng = M
       pick.souls = Math.min(1, pick.souls + reward.value);
       return `${reward.name} — ${pick.name} gagne des âmes`;
     }
+
+    case "ball_standard":
+      state.runBalls.standard += reward.value;
+      return `${reward.name} — +${reward.value} Phantoball(s)`;
+
+    case "ball_tribal":
+      state.runBalls.tribal += reward.value;
+      return `${reward.name} — +${reward.value} tribale(s)`;
 
     default:
       return reward.name;

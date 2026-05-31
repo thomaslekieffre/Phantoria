@@ -130,13 +130,16 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Sujet | Choix |
 |-------|--------|
 | Fill Âmes | `(dmg/maxHp)×0.35`, cap 0.5 par hit, mult relique |
+| Or run | 100 € départ · `waveClearGold` (vague 1 ≈ 16 €, scale + bonus boss) |
+| Phantoballs run | 5 standard au départ · consommées à chaque tentative · tribale ×1,5 capture |
 | Rotation roue | Manuelle + auto-fill trou terrain |
 | Phantoball | En plein combat, placement slot obligatoire |
 | Cible attaque de base | Auto (premier ennemi) — **clic droit** pour marquer un focus (`attackFocusId`) |
 | Défaite run | 0 allié vivant sur la roue entière |
 | Victoire run | Boss final vague 200 + dernière récompense → phase `won` |
 | Capture max | 85 % |
-| Récompenses vagues | Gratuit (3 choix) + boutique € (`RUN_START_GOLD` = 100) |
+| Récompenses vagues | Gratuit (3 choix) + boutique € + reroll · balls achetables |
+| Phantoballs run | 5 standard au départ · consommées à la capture |
 | Game over UI | Fullscreen bloque capture / combat ; tick auto off |
 | Reliques affichées | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |

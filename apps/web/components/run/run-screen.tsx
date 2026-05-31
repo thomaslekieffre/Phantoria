@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   createRunBattle,
   computeCaptureChance,
@@ -14,6 +15,7 @@ import {
   type CombatEngine,
   type CombatEvent,
   type Combatant,
+  type PhantoballType,
 } from "@phantoria/game-core";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
@@ -30,10 +32,13 @@ import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
 import { TribeChart } from "@/components/run/tribe-chart";
 import { WaveRewardPicker } from "@/components/run/wave-reward-picker";
+import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
+import { RunDevPanel } from "@/components/run/run-dev-panel";
 
 const CORE_TO_HUB_MAP = CORE_TO_HUB;
 
 type Floater = { id: number; targetId: string; amount: number };
+type HitFlashKind = "hit" | "super" | "ko";
 
 function hubIdOf(c: Combatant): SpiritId | null {
   const id = CORE_TO_HUB_MAP[c.templateKey];
@@ -46,10 +51,20 @@ function hpTone(ratio: number) {
   return "low";
 }
 
-function AllyFieldSprite({ c, acting }: { c: Combatant; acting: boolean }) {
+function AllyFieldSprite({
+  c,
+  acting,
+  hitFlash,
+}: {
+  c: Combatant;
+  acting: boolean;
+  hitFlash?: HitFlashKind;
+}) {
   const hue = combatSpiritHue(c.templateKey);
   return (
-    <div className={`battle-ally ${acting ? "battle-ally--act" : ""} ${c.ko ? "battle-ally--ko" : ""}`}>
+    <div
+      className={`battle-ally ${acting ? "battle-ally--act" : ""} ${c.ko ? "battle-ally--ko" : ""} ${hitFlash ? `battle-ally--${hitFlash}` : ""}`}
+    >
       <div
         className="battle-ally__body"
         style={{ background: `color-mix(in srgb, ${hue} 78%, #1a1028 22%)` }}
@@ -82,6 +97,7 @@ function EnemyFieldSprite({
   onClick,
   onContextMenu,
   floater,
+  hitFlash,
 }: {
   c: Combatant;
   inspected: boolean;
@@ -93,6 +109,7 @@ function EnemyFieldSprite({
   onClick?: () => void;
   onContextMenu?: () => void;
   floater?: Floater;
+  hitFlash?: HitFlashKind;
 }) {
   const ratio = c.maxHp > 0 ? c.hp / c.maxHp : 0;
   const capClass = capturePhase ? `battle-foe--cap-${capturePhase}` : "";
@@ -102,7 +119,7 @@ function EnemyFieldSprite({
   return (
     <button
       type="button"
-      className={`battle-foe ${inspected ? "battle-foe--inspect" : ""} ${targetable ? "battle-foe--target" : ""} ${focused ? "battle-foe--focus" : ""} ${captureSelected ? "battle-foe--sel" : ""} ${c.ko ? "battle-foe--ko" : ""} ${capClass}`}
+      className={`battle-foe ${inspected ? "battle-foe--inspect" : ""} ${targetable ? "battle-foe--target" : ""} ${focused ? "battle-foe--focus" : ""} ${captureSelected ? "battle-foe--sel" : ""} ${c.ko ? "battle-foe--ko" : ""} ${hitFlash ? `battle-foe--${hitFlash}` : ""} ${capClass}`}
       onClick={onClick}
       onContextMenu={(e) => {
         if (!onContextMenu) return;
@@ -210,11 +227,17 @@ export function RunScreen() {
   const [showTribeChart, setShowTribeChart] = useState(false);
   const [captureSeq, setCaptureSeq] = useState<CaptureSeqState | null>(null);
   const [floaters, setFloaters] = useState<Floater[]>([]);
+  const [hitFlashes, setHitFlashes] = useState<Record<string, HitFlashKind>>({});
+  const [battleSpeed, setBattleSpeed] = useState<BattleSpeed>(1);
+  const [selectedBall, setSelectedBall] = useState<PhantoballType>("standard");
   const [renderTick, setRenderTick] = useState(0);
   const lastEventId = useRef(0);
   const engineRef = useRef<CombatEngine | null>(null);
   const pausedRef = useRef(false);
   const isOverRef = useRef(false);
+  const speedRef = useRef<BattleSpeed>(1);
+  const searchParams = useSearchParams();
+  const showDevTools = process.env.NODE_ENV === "development" || searchParams.get("dev") === "1";
 
   engineRef.current = engine;
 
@@ -265,6 +288,8 @@ export function RunScreen() {
   const shopOffers = state?.shopOffers ?? [];
   const freeRewardPicked = state?.freeRewardPicked ?? false;
   const runGold = state?.runGold ?? 0;
+  const runBalls = state?.runBalls ?? { standard: 0, tribal: 0 };
+  const shopRerollCount = state?.shopRerollCount ?? 0;
   const runRelics = state?.runRelics ?? [];
   const captureBonus = state?.runModifiers.captureBonus ?? 0;
 
@@ -273,6 +298,7 @@ export function RunScreen() {
 
   pausedRef.current = paused;
   isOverRef.current = isOver;
+  speedRef.current = battleSpeed;
 
   const bump = () => setRenderTick((n) => n + 1);
 
@@ -286,11 +312,15 @@ export function RunScreen() {
     setCaptureSeq(null);
   }, [isOver]);
 
-  const weakEnemy = !isOver ? livingEnemies.find((e) => e.hp / e.maxHp <= 0.4) : undefined;
+  const weakEnemy =
+    !isOver && (runBalls.standard > 0 || runBalls.tribal > 0)
+      ? livingEnemies.find((e) => e.hp / e.maxHp <= 0.4)
+      : undefined;
 
   useEffect(() => {
     if (!engineRef.current) return;
-    const events = engineRef.current.getState().events;
+    const eng = engineRef.current;
+    const events = eng.getState().events;
     const recent = events.filter((e) => e.id > lastEventId.current);
     lastEventId.current = events.at(-1)?.id ?? lastEventId.current;
 
@@ -301,14 +331,38 @@ export function RunScreen() {
         Boolean(e.targetId),
     );
 
-    if (hits.length === 0) return;
+    const kos = recent.filter((e): e is CombatEvent & { targetId: string } => e.kind === "ko" && Boolean(e.targetId));
 
-    const next = hits.map((e) => ({ id: e.id, targetId: e.targetId!, amount: e.amount }));
-    setFloaters((prev) => [...prev, ...next].slice(-6));
+    const flashUpdates: Record<string, HitFlashKind> = {};
+    for (const e of hits) {
+      const actor = e.actorId ? eng.getCombatant(e.actorId) : undefined;
+      const target = eng.getCombatant(e.targetId);
+      const mult =
+        actor && target ? getTypeMultiplier(actor.tribe, target.tribe) : 1;
+      flashUpdates[e.targetId] = mult >= 2 ? "super" : "hit";
+    }
+    for (const e of kos) {
+      flashUpdates[e.targetId] = "ko";
+    }
 
+    if (hits.length > 0) {
+      const next = hits.map((e) => ({ id: e.id, targetId: e.targetId!, amount: e.amount }));
+      setFloaters((prev) => [...prev, ...next].slice(-6));
+      window.setTimeout(() => {
+        setFloaters((prev) => prev.filter((f) => !next.some((n) => n.id === f.id)));
+      }, 900);
+    }
+
+    if (Object.keys(flashUpdates).length === 0) return;
+
+    setHitFlashes((prev) => ({ ...prev, ...flashUpdates }));
     const t = window.setTimeout(() => {
-      setFloaters((prev) => prev.filter((f) => !next.some((n) => n.id === f.id)));
-    }, 900);
+      setHitFlashes((prev) => {
+        const next = { ...prev };
+        for (const id of Object.keys(flashUpdates)) delete next[id];
+        return next;
+      });
+    }, 450);
     return () => clearTimeout(t);
   }, [renderTick]);
 
@@ -347,21 +401,23 @@ export function RunScreen() {
   }, [captureSeq?.phase, captureSeq?.targetId]);
 
   useEffect(() => {
-    if (!engine || isOver || paused) return;
+    if (!engine || isOver || paused || battleSpeed === 0) return;
 
     let alive = true;
     let timeout = 0;
 
     const schedule = () => {
-      if (!alive || isOverRef.current || pausedRef.current) return;
+      if (!alive || isOverRef.current || pausedRef.current || speedRef.current === 0) return;
 
       const eng = engineRef.current;
       if (!eng || eng.getState().phase !== "fighting") return;
 
-      const delay = !eng.getCurrentActor() ? 50 : 600;
+      const actor = eng.getCurrentActor();
+      const delay = getTickDelayMs(speedRef.current, Boolean(actor));
+      if (delay <= 0) return;
 
       timeout = window.setTimeout(() => {
-        if (!alive || isOverRef.current || pausedRef.current) return;
+        if (!alive || isOverRef.current || pausedRef.current || speedRef.current === 0) return;
         eng.tickTurn();
         bump();
         schedule();
@@ -374,7 +430,7 @@ export function RunScreen() {
       alive = false;
       window.clearTimeout(timeout);
     };
-  }, [engine, isOver, paused]);
+  }, [engine, isOver, paused, battleSpeed]);
 
   const handleEnemyClick = (foeId: string) => {
     if (!engine || isOver || isRewardPick) return;
@@ -429,14 +485,26 @@ export function RunScreen() {
     const target = engine.getCombatant(captureTarget);
     if (!target || target.ko) return;
 
+    const balls = engine.getState().runBalls;
+    const ball =
+      selectedBall === "tribal" && balls.tribal > 0
+        ? "tribal"
+        : balls.standard > 0
+          ? "standard"
+          : balls.tribal > 0
+            ? "tribal"
+            : null;
+    if (!ball) return;
+
     const hpRatio = target.hp / target.maxHp;
     const chancePct = Math.round(
-      computeCaptureChance(target.rarity, hpRatio, "standard", engine.getState().runModifiers.captureBonus) * 100,
+      computeCaptureChance(target.rarity, hpRatio, ball, engine.getState().runModifiers.captureBonus) * 100,
     );
     const targetId = captureTarget;
     const targetName = target.name;
 
-    const success = engine.tryCapture(targetId);
+    const success = engine.tryCapture(targetId, ball);
+    if (!success) return;
 
     setCaptureTarget(null);
     setInspectTarget(null);
@@ -476,6 +544,12 @@ export function RunScreen() {
     bump();
   };
 
+  const handleRerollShop = () => {
+    if (!engine) return;
+    engine.rerollShop();
+    bump();
+  };
+
   const handleContinueAfterReward = () => {
     if (!engine) return;
     engine.continueAfterReward();
@@ -511,7 +585,7 @@ export function RunScreen() {
         computeCaptureChance(
           captureConfirm.rarity,
           captureConfirm.hp / captureConfirm.maxHp,
-          "standard",
+          selectedBall === "tribal" && runBalls.tribal > 0 ? "tribal" : "standard",
           captureBonus,
         ) * 100,
       )
@@ -557,9 +631,18 @@ export function RunScreen() {
             )}
           </div>
           <div className="battle__top-right">
+            <span className="battle__balls" aria-label="Phantoballs">
+              🔵{runBalls.standard}
+              {runBalls.tribal > 0 ? ` · 🟣${runBalls.tribal}` : ""}
+            </span>
             <span className="battle__gold" aria-label={`${runGold} euros`}>
               {runGold} €
             </span>
+            <BattleSpeedControls
+              speed={battleSpeed}
+              onChange={setBattleSpeed}
+              disabled={isOver || isRewardPick}
+            />
             {specialTarget ? (
               <button type="button" className="battle__cancel-target" onClick={cancelTargeting}>
                 Annuler
@@ -619,6 +702,7 @@ export function RunScreen() {
                     : undefined
                 }
                 floater={floaters.find((f) => f.targetId === c.instanceId)}
+                hitFlash={hitFlashes[c.instanceId]}
               />
             );
           })}
@@ -634,7 +718,12 @@ export function RunScreen() {
 
         <div className="battle__allies" aria-label="Équipe">
           {fieldAllies.map((c) => (
-            <AllyFieldSprite key={c.instanceId} c={c} acting={current?.instanceId === c.instanceId} />
+            <AllyFieldSprite
+              key={c.instanceId}
+              c={c}
+              acting={current?.instanceId === c.instanceId}
+              hitFlash={hitFlashes[c.instanceId]}
+            />
           ))}
         </div>
 
@@ -648,6 +737,7 @@ export function RunScreen() {
             }}
           >
             Phantoball
+            {runBalls.standard > 0 ? ` (${runBalls.standard})` : runBalls.tribal > 0 ? " 🟣" : ""}
           </button>
         ) : null}
       </div>
@@ -686,12 +776,16 @@ export function RunScreen() {
           choices={rewardChoices}
           shopOffers={shopOffers}
           freeRewardPicked={freeRewardPicked}
+          shopRerollCount={shopRerollCount}
           relicIds={runRelics}
           onPickFree={handleSelectReward}
           onBuy={handleBuyShop}
+          onReroll={handleRerollShop}
           onContinue={handleContinueAfterReward}
         />
       ) : null}
+
+      {showDevTools && engine ? <RunDevPanel engine={engine} onAction={bump} /> : null}
 
       {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget && !isOver ? (
         <FoeInspect
@@ -740,8 +834,33 @@ export function RunScreen() {
           <div className="battle__spe-menu battle__spe-menu--capture">
             <p className="battle__spe-title">Capturer {captureConfirm.name} ?</p>
             <p className="battle__capture-chance">Chance : {captureConfirmChance} %</p>
-            <p className="battle__capture-note">Jamais garanti — max 85 % · si ça rate, l&apos;ennemi reste en vie.</p>
-            <button type="button" className="battle__spe-btn battle__spe-btn--ball" onClick={handleCapture}>
+            <div className="battle__ball-pick" role="group" aria-label="Type de Phantoball">
+              <button
+                type="button"
+                className={`battle__ball-opt ${selectedBall === "standard" ? "battle__ball-opt--on" : ""}`}
+                disabled={runBalls.standard <= 0}
+                onClick={() => setSelectedBall("standard")}
+              >
+                🔵 Standard ×{runBalls.standard}
+              </button>
+              <button
+                type="button"
+                className={`battle__ball-opt ${selectedBall === "tribal" ? "battle__ball-opt--on" : ""}`}
+                disabled={runBalls.tribal <= 0}
+                onClick={() => setSelectedBall("tribal")}
+              >
+                🟣 Tribale ×{runBalls.tribal}
+              </button>
+            </div>
+            <p className="battle__capture-note">Jamais garanti — max 85 % · consomme 1 ball · si ça rate, l&apos;ennemi reste en vie.</p>
+            <button
+              type="button"
+              className="battle__spe-btn battle__spe-btn--ball"
+              onClick={handleCapture}
+              disabled={
+                (selectedBall === "tribal" ? runBalls.tribal : runBalls.standard) <= 0
+              }
+            >
               Lancer la Phantoball
             </button>
             <button type="button" className="battle__spe-cancel" onClick={() => setCaptureTarget(null)}>

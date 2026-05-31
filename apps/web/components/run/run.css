@@ -2393,3 +2393,194 @@
 .run-pick__back:hover {
   color: var(--accent-soft);
 }
+
+/* ─── Feel combat — flash hit / super / KO ─── */
+.battle-foe--hit .battle-foe__body,
+.battle-ally--hit .battle-ally__body {
+  animation: battle-hit-flash 0.38s ease;
+}
+
+.battle-foe--super .battle-foe__body,
+.battle-ally--super .battle-ally__body {
+  animation: battle-super-flash 0.45s ease;
+}
+
+.battle-foe--ko .battle-foe__body,
+.battle-ally--ko .battle-ally__body {
+  animation: battle-ko-pop 0.55s ease forwards;
+}
+
+@keyframes battle-hit-flash {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  35% {
+    filter: brightness(2.4);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes battle-super-flash {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  30% {
+    filter: brightness(2.6);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.85);
+  }
+}
+
+@keyframes battle-ko-pop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1.08);
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0.35;
+    filter: grayscale(0.85);
+  }
+}
+
+/* Vitesse combat */
+.battle-speed {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+.battle-speed__btn {
+  min-width: 2rem;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.battle-speed__btn--on {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.battle-speed__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.battle__balls {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.battle__ball-pick {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.battle__ball-opt {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.battle__ball-opt--on {
+  background: color-mix(in srgb, var(--accent) 25%, var(--surface));
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.battle__ball-opt:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wave-reward__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wave-reward__reroll {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+}
+
+.wave-reward__reroll:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Dev tools — bas droite */
+.run-dev {
+  position: fixed;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 55;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-md);
+  border: 2px dashed rgba(251, 191, 36, 0.55);
+  background: rgba(10, 8, 18, 0.92);
+  max-width: min(22rem, 92vw);
+}
+
+.run-dev__label {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.run-dev__btn {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.run-dev__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.run-dev__btn:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.15);
+}

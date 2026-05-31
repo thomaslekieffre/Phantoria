@@ -139,7 +139,14 @@ export type RunRewardKind =
   | "combo_atk_def"
   | "soul_mult"
   | "capture_bonus"
-  | "soul_fill";
+  | "soul_fill"
+  | "ball_standard"
+  | "ball_tribal";
+
+export interface RunBallStock {
+  standard: number;
+  tribal: number;
+}
 
 export interface RunRewardDef {
   id: string;
@@ -188,6 +195,10 @@ export interface CombatState {
   shopOffers: RunShopOffer[] | null;
   /** Or du run (€) */
   runGold: number;
+  /** Stock Phantoballs consommables ce run */
+  runBalls: RunBallStock;
+  /** Rerolls boutique ce palier (prix croissant) */
+  shopRerollCount: number;
   /** Ennemi marqué pour les attaques de base alliées — défaut = premier ennemi */
   attackFocusId: string | null;
 }

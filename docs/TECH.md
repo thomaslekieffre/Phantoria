@@ -71,7 +71,9 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 | **Clic droit ennemi** | `setAttackFocus(id)` — marque / dé-marque la cible (outline doré, ×2/×½ vs perso actif) |
 | **Clic gauche ennemi** | Inspect tribus / matchups (`foe-inspect`) |
 | **Jauge Âmes pleine → slot** | Menu amultime : tag **Mono / Zone / Aléatoire** ; Mono = clic gauche sur ennemi (+ Annuler) |
-| **Phantoball** | Ennemi ≤ 40 % PV → confirmation puis séquence capture |
+| **Phantoball** | Ennemi ≤ 40 % PV → stock consommable (`runBalls`) · standard / tribale |
+| **Vitesse combat** | ⏸ / ×1 / ×2 (UI bandeau) |
+| **Dev** | Panel bas-droite en dev ou `?dev=1` — skip vague, +50 €, boss suiv. |
 | **Roue ↺ / ↻** | Rotation manuelle (pause auto si overlay capture / récompense / amultime) |
 
 État moteur : `CombatState.attackFocusId` (reset à chaque nouvelle vague).
@@ -98,11 +100,13 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 | Catégorie | `kind` | Barre reliques | Exemples |
 |-----------|--------|----------------|----------|
 | **Persistant** (tout le run) | `stat_all`, `combo_atk_def`, `soul_mult`, `capture_bonus` | ✅ affiché | Griffe ardente, Écho d’âmes, Phantoball renforcée |
-| **Usage unique** | `heal_all`, `soul_fill` | ❌ masqué | Lanterne de soin, Offrande du sanctuaire |
+| **Usage unique** | `heal_all`, `soul_fill`, `ball_standard`, `ball_tribal` | ❌ masqué | Lanterne, Offrande, lots Phantoballs |
 
-**Économie run** — `RUN_START_GOLD` = 100 € · gain par vague `waveClearGold(wave, kind)` (~10–15 € + bonus boss).
+**Économie run** — `RUN_START_GOLD` = 100 € · vague 1 ≈ 16 € (`waveClearGold`) · prix shop via `getShopPrice` · reroll `getShopRerollPrice(wave, count)`.
 
-**Phase `reward_pick`** : 3 gratuits (`selectReward`) + boutique 5 offres (`buyShopOffer`) → **`continueAfterReward()`** pour la vague suivante.
+**Phase `reward_pick`** : 3 gratuits (`selectReward`) + boutique 5 offres (`buyShopOffer`) + **reroll** payant (`rerollShop`, prix `getShopRerollPrice`) → **`continueAfterReward()`** pour la vague suivante.
+
+Stock Phantoballs : `RUN_START_BALLS` (5 standard) · achat `ball_pack` / `ball_tribal_pack` en boutique.
 
 - Reliques persistantes stockées dans `CombatState.runRelics` ; modificateurs dans `runModifiers` (`soulGainMult`, `captureBonus`).
 - Objets non stackables exclus du tirage une fois possédés ; stackables (Écho d’âmes, Phantoball) cumulables.
@@ -129,12 +133,14 @@ Priorité : vague 200 = final (pas méga boss). API : `getRunWaveKind`, `getRunW
 
 | Fichier | Rôle |
 |---------|------|
-| `run-screen.tsx` | Orchestration : moteur, auto-tick, overlays capture / récompense / défaite |
+| `run-screen.tsx` | Orchestration : moteur, auto-tick, VFX hit/KO, vitesse, overlays |
+| `battle-speed-controls.tsx` | Contrôles ⏸ / ×1 / ×2 |
+| `run-dev-panel.tsx` | Cheats dev (skip, +€, boss) — `?dev=1` |
 | `battle-wheel.tsx` | Roue ×6, arc terrain, contrôles rotation, tray reliques |
 | `combat-spirit.tsx` | Sprite combat (hue par esprit) |
 | `foe-inspect.tsx` | Clic ennemi → tribu, matchups, mult terrain |
 | `tribe-chart.tsx` | Table faiblesses 11×11 (overlay « Tribus ») |
-| `wave-reward-picker.tsx` | Entre vagues : gratuit (3 cartes) + boutique € + Continuer |
+| `wave-reward-picker.tsx` | Entre vagues : gratuit + boutique € + reroll + Continuer |
 | `run-relics-tray.tsx` | Liste reliques persistantes + tooltips |
 | `run-starter-picker.tsx` | Choix du starter |
 | `capture-sequence.tsx` | Animation lancer / shake / succès-échec |
@@ -166,8 +172,9 @@ Moteur TypeScript pur, importé par `apps/web` via workspace `@phantoria/game-co
 | `formulas.ts` | Dégâts, Âmes, capture (clamp 5–85 %) |
 | `combat-engine.ts` | `CombatEngine`, `createRunBattle`, rotation, capture, vagues |
 | `run-waves.ts` | Composition ennemis par vague |
-| `run-rewards.ts` | Pool objets, application, affichage reliques |
-| `formulas.test.ts` | 39 tests (tribus, formules, combat, récompenses) |
+| `run-rewards.ts` | Pool objets, boutique, balls, `waveClearGold`, reroll |
+| `run-dev.ts` | Helpers dev (`devJumpToBoss`, `nextBossWave`) |
+| `formulas.test.ts` | 47 tests (tribus, formules, combat, récompenses, dev) |
 
 ### API principale
 
@@ -182,7 +189,11 @@ CombatEngine
   .completeCapturePlacement(wheelIndex)
   .selectReward(rewardId)              // gratuit entre vagues
   .buyShopOffer(rewardId)              // achat boutique (€)
+  .rerollShop()                         // rafraîchir le stock boutique
   .continueAfterReward()               // vague suivante
+  // Dev (proto)
+  .devSkipWave() / .devAddGold(n) / .devForceWave(wave)
+  devJumpToBoss(engine)                 // run-dev.ts
   .getState() / .getCurrentActor() / .getRecentEvents() / .getWheelSlots()
 ```
 
@@ -198,7 +209,7 @@ CombatEngine
 ### Tests
 
 ```bash
-pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (39 tests)
+pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (47 tests)
 ```
 
 ## Ordre d’implémentation

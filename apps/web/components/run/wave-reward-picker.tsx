@@ -3,6 +3,7 @@
 import {
   RUN_MAX_WAVES,
   getRunReward,
+  getShopRerollPrice,
   type RunRewardDef,
   type RunShopOffer,
 } from "@phantoria/game-core";
@@ -15,8 +16,10 @@ type WaveRewardPickerProps = {
   shopOffers: RunShopOffer[];
   freeRewardPicked: boolean;
   relicIds: readonly string[];
+  shopRerollCount: number;
   onPickFree: (rewardId: string) => void;
   onBuy: (rewardId: string) => void;
+  onReroll: () => void;
   onContinue: () => void;
 };
 
@@ -27,11 +30,15 @@ export function WaveRewardPicker({
   shopOffers,
   freeRewardPicked,
   relicIds,
+  shopRerollCount,
   onPickFree,
   onBuy,
+  onReroll,
   onContinue,
 }: WaveRewardPickerProps) {
   const isFinalReward = wave >= RUN_MAX_WAVES;
+  const rerollPrice = getShopRerollPrice(wave, shopRerollCount);
+  const canReroll = runGold >= rerollPrice;
 
   return (
     <div className="battle__overlay battle__overlay--dim" role="dialog" aria-label="Entre deux vagues">
@@ -79,7 +86,17 @@ export function WaveRewardPicker({
         </section>
 
         <section className="wave-reward__section" aria-label="Boutique">
-          <h3 className="wave-reward__section-title">Boutique</h3>
+          <div className="wave-reward__section-head">
+            <h3 className="wave-reward__section-title">Boutique</h3>
+            <button
+              type="button"
+              className="wave-reward__reroll"
+              onClick={onReroll}
+              disabled={!canReroll}
+            >
+              Rafraîchir · {rerollPrice} €
+            </button>
+          </div>
           {shopOffers.length === 0 ? (
             <p className="wave-reward__picked">Plus rien à vendre pour l&apos;instant.</p>
           ) : (

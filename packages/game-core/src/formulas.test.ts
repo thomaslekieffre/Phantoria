@@ -3,7 +3,8 @@ import { describe, it } from "node:test";
 import { computeCaptureChance, computeDamage, soulGainFromDamage } from "./formulas";
 import { getTypeMultiplier, getMatchupsVs } from "./tribes";
 import { createBattle, createRunBattle, DEV_ALLY_SETUP, type CombatEngine } from "./combat-engine";
-import { applyRunReward, rollRewardChoices, rollShopOffers, getShopPrice, RUN_REWARD_POOL, RUN_START_GOLD, waveClearGold, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
+import { applyRunReward, rollRewardChoices, rollShopOffers, getShopPrice, getShopRerollPrice, RUN_REWARD_POOL, RUN_START_GOLD, RUN_START_BALLS, waveClearGold, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
+import { devJumpToBoss } from "./run-dev";
 import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
 
@@ -432,6 +433,70 @@ describe("récompenses de vague", () => {
 
   it("waveClearGold bonus sur boss", () => {
     assert.ok(waveClearGold(10, "boss") > waveClearGold(9, "normal"));
+  });
+
+  it("waveClearGold early game généreux", () => {
+    assert.equal(waveClearGold(1), 16);
+    assert.ok(waveClearGold(50) > waveClearGold(1));
+  });
+
+  it("run démarre avec Phantoballs", () => {
+    const engine = createRunBattle();
+    assert.equal(engine.getState().runBalls.standard, RUN_START_BALLS.standard);
+  });
+
+  it("tryCapture consomme une ball même en échec", () => {
+    const engine = createRunBattle();
+    const foe = engine.getState().combatants.find((c) => c.side === "enemy")!;
+    foe.hp = Math.floor(foe.maxHp * 0.2);
+    const before = engine.getState().runBalls.standard;
+    engine.tryCapture(foe.instanceId, "standard", () => 1);
+    assert.equal(engine.getState().runBalls.standard, before - 1);
+  });
+
+  it("tryCapture refuse sans stock", () => {
+    const engine = createRunBattle();
+    engine.getState().runBalls.standard = 0;
+    engine.getState().runBalls.tribal = 0;
+    const foe = engine.getState().combatants.find((c) => c.side === "enemy")!;
+    foe.hp = Math.floor(foe.maxHp * 0.1);
+    assert.equal(engine.tryCapture(foe.instanceId), false);
+  });
+
+  it("achat ball_pack crédite le stock", () => {
+    const engine = createRunBattle();
+    const pack = RUN_REWARD_POOL.find((r) => r.id === "ball_pack")!;
+    engine.getState().phase = "reward_pick";
+    engine.getState().freeRewardPicked = true;
+    engine.getState().runGold = 999;
+    engine.getState().shopOffers = [{ rewardId: pack.id, price: getShopPrice(pack, 1) }];
+    const before = engine.getState().runBalls.standard;
+    assert.ok(engine.buyShopOffer(pack.id));
+    assert.equal(engine.getState().runBalls.standard, before + 3);
+  });
+
+  it("rerollShop change le stock", () => {
+    const engine = createRunBattle();
+    engine.getState().phase = "reward_pick";
+    engine.getState().freeRewardPicked = true;
+    engine.getState().runGold = 200;
+    const first = rollShopOffers(3, [], 5, () => 0);
+    engine.getState().shopOffers = first;
+    assert.ok(engine.rerollShop());
+    assert.notDeepEqual(engine.getState().shopOffers, first);
+  });
+
+  it("devSkipWave ouvre la boutique", () => {
+    const engine = createRunBattle();
+    assert.ok(engine.devSkipWave());
+    assert.equal(engine.getState().phase, "reward_pick");
+  });
+
+  it("devJumpToBoss force une vague boss", () => {
+    const engine = createRunBattle();
+    assert.ok(devJumpToBoss(engine));
+    assert.equal(engine.getState().wave, 10);
+    assert.equal(getRunWaveKind(10), "boss");
   });
 });
 
