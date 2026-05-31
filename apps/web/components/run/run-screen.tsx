@@ -60,21 +60,38 @@ function AllyFieldSprite({ c, acting }: { c: Combatant; acting: boolean }) {
   );
 }
 
+function targetingLabel(targeting: Combatant["skills"]["basic"]["targeting"]): string {
+  switch (targeting) {
+    case "single":
+      return "Mono";
+    case "aoe":
+      return "Zone";
+    case "random":
+      return "Aléatoire";
+  }
+}
+
 function EnemyFieldSprite({
   c,
   inspected,
+  targetable,
+  focused,
   captureSelected,
   capturePhase,
   matchupMult,
-  onInspect,
+  onClick,
+  onContextMenu,
   floater,
 }: {
   c: Combatant;
   inspected: boolean;
+  targetable?: boolean;
+  focused?: boolean;
   captureSelected: boolean;
   capturePhase?: CapturePhase | null;
   matchupMult?: number;
-  onInspect?: () => void;
+  onClick?: () => void;
+  onContextMenu?: () => void;
   floater?: Floater;
 }) {
   const ratio = c.maxHp > 0 ? c.hp / c.maxHp : 0;
@@ -85,9 +102,14 @@ function EnemyFieldSprite({
   return (
     <button
       type="button"
-      className={`battle-foe ${inspected ? "battle-foe--inspect" : ""} ${captureSelected ? "battle-foe--sel" : ""} ${c.ko ? "battle-foe--ko" : ""} ${capClass}`}
-      onClick={onInspect}
-      disabled={!onInspect || c.ko || Boolean(capturePhase)}
+      className={`battle-foe ${inspected ? "battle-foe--inspect" : ""} ${targetable ? "battle-foe--target" : ""} ${focused ? "battle-foe--focus" : ""} ${captureSelected ? "battle-foe--sel" : ""} ${c.ko ? "battle-foe--ko" : ""} ${capClass}`}
+      onClick={onClick}
+      onContextMenu={(e) => {
+        if (!onContextMenu) return;
+        e.preventDefault();
+        onContextMenu();
+      }}
+      disabled={(!onClick && !onContextMenu) || c.ko || Boolean(capturePhase)}
       aria-label={`${c.name}, ${tribeInfo.label}, ${Math.round(ratio * 100)} pourcent PV`}
     >
       {matchupMult !== undefined && matchupMult >= 2 ? (
@@ -169,6 +191,12 @@ function SoulSlot({
       <span className="soul-slot__hint">
         {c.ko ? "KO" : ready ? "Amultime !" : "Âmes"}
       </span>
+      {ready && !c.ko ? (
+        <span className="soul-slot__skills">
+          <span>{c.skills.special1.name}</span>
+          <span>{c.skills.special2.name}</span>
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -176,6 +204,7 @@ function SoulSlot({
 export function RunScreen() {
   const [engine, setEngine] = useState<CombatEngine | null>(null);
   const [specialActor, setSpecialActor] = useState<string | null>(null);
+  const [specialTarget, setSpecialTarget] = useState<{ actorId: string; slot: 1 | 2 } | null>(null);
   const [captureTarget, setCaptureTarget] = useState<string | null>(null);
   const [inspectTarget, setInspectTarget] = useState<string | null>(null);
   const [showTribeChart, setShowTribeChart] = useState(false);
@@ -196,6 +225,7 @@ export function RunScreen() {
       }),
     );
     setSpecialActor(null);
+    setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
     setShowTribeChart(false);
@@ -211,14 +241,24 @@ export function RunScreen() {
   const enemies = state?.combatants.filter((c) => c.side === "enemy" && c.active) ?? [];
   const livingEnemies = enemies.filter((c) => !c.ko);
   const pendingRecruit = state?.pendingRecruit ?? null;
-  const paused = Boolean(specialActor || captureTarget || pendingRecruit || captureSeq || state?.phase === "reward_pick");
+  const paused = Boolean(
+    specialActor ||
+      specialTarget ||
+      captureTarget ||
+      pendingRecruit ||
+      captureSeq ||
+      state?.phase === "reward_pick",
+  );
   const isOver = state?.phase === "lost" || state?.phase === "won";
   const isVictory = state?.phase === "won";
   const isDefeat = state?.phase === "lost";
+  const isRewardPick = state?.phase === "reward_pick";
+  const attackFocusId = state?.attackFocusId ?? null;
+  const targetingActorId = specialTarget?.actorId ?? null;
+  const targetingActor = targetingActorId ? engine?.getCombatant(targetingActorId) ?? null : null;
   const waveKind = state ? getRunWaveKind(state.wave) : "normal";
   const waveKindLabel = getRunWaveKindLabel(waveKind);
   const isBossWave = waveKind !== "normal";
-  const isRewardPick = state?.phase === "reward_pick";
   const rewardChoices = state?.rewardChoices ?? null;
   const runRelics = state?.runRelics ?? [];
   const captureBonus = state?.runModifiers.captureBonus ?? 0;
@@ -303,8 +343,7 @@ export function RunScreen() {
       const eng = engineRef.current;
       if (!eng || eng.getState().phase !== "fighting") return;
 
-      const actor = eng.getCurrentActor();
-      const delay = !actor ? 50 : actor.side === "ally" ? 850 : 600;
+      const delay = !eng.getCurrentActor() ? 50 : 600;
 
       timeout = window.setTimeout(() => {
         if (!alive || isOverRef.current || pausedRef.current) return;
@@ -322,17 +361,52 @@ export function RunScreen() {
     };
   }, [engine, isOver, paused]);
 
-  const handleSpecial = (slot: 1 | 2) => {
+  const handleEnemyClick = (foeId: string) => {
+    if (!engine) return;
+    const foe = engine.getCombatant(foeId);
+    if (!foe || foe.ko) return;
+
+    if (specialTarget) {
+      engine.playerSpecial(specialTarget.actorId, specialTarget.slot, foeId);
+      setSpecialTarget(null);
+      setInspectTarget(null);
+      bump();
+      return;
+    }
+
+    setInspectTarget((id) => (id === foeId ? null : foeId));
+    setShowTribeChart(false);
+  };
+
+  const handleEnemyFocus = (foeId: string) => {
+    if (!engine || captureSeq || specialTarget) return;
+    const foe = engine.getCombatant(foeId);
+    if (!foe || foe.ko) return;
+    engine.setAttackFocus(foeId);
+    bump();
+  };
+
+  const handlePickSpecial = (slot: 1 | 2) => {
     if (!engine || !specialActor) return;
     const actor = engine.getCombatant(specialActor);
-    const target =
-      captureTarget ??
-      livingEnemies[0]?.instanceId ??
-      undefined;
-    if (actor?.skills[slot === 1 ? "special1" : "special2"].targeting === "single" && !target) return;
-    engine.playerSpecial(specialActor, slot, target);
+    if (!actor) return;
+    const skill = actor.skills[slot === 1 ? "special1" : "special2"];
+
+    if (skill.targeting === "single") {
+      setSpecialTarget({ actorId: specialActor, slot });
+      setSpecialActor(null);
+      setInspectTarget(null);
+      return;
+    }
+
+    engine.playerSpecial(specialActor, slot);
     setSpecialActor(null);
     bump();
+  };
+
+  const cancelTargeting = () => {
+    setSpecialTarget(null);
+    setInspectTarget(null);
   };
 
   const handleCapture = () => {
@@ -379,6 +453,7 @@ export function RunScreen() {
     if (!engine) return;
     engine.selectReward(rewardId);
     setSpecialActor(null);
+    setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
     setShowTribeChart(false);
@@ -390,6 +465,7 @@ export function RunScreen() {
   const restart = () => {
     setEngine(null);
     setSpecialActor(null);
+    setSpecialTarget(null);
     setCaptureTarget(null);
     setInspectTarget(null);
     setShowTribeChart(false);
@@ -442,13 +518,23 @@ export function RunScreen() {
             </span>
           </div>
           <div className="battle__top-center">
-            {current && !isOver && !isRewardPick ? (
+            {specialTarget && targetingActor ? (
+              <span className="battle__turn battle__turn--target">
+                {targetingActor.name} — cible pour{" "}
+                {targetingActor.skills[specialTarget.slot === 1 ? "special1" : "special2"].name}
+              </span>
+            ) : current && !isOver && !isRewardPick ? (
               <span className="battle__turn">{current.name} agit…</span>
             ) : (
               <span className="battle__turn battle__turn--idle">Combat</span>
             )}
           </div>
           <div className="battle__top-right">
+            {specialTarget ? (
+              <button type="button" className="battle__cancel-target" onClick={cancelTargeting}>
+                Annuler
+              </button>
+            ) : null}
             <button
               type="button"
               className="battle__tribes-btn"
@@ -466,31 +552,44 @@ export function RunScreen() {
         </div>
 
         <div className="battle__enemies" aria-label="Ennemis">
-          {enemies.map((c) => (
-            <EnemyFieldSprite
-              key={c.instanceId}
-              c={c}
-              inspected={inspectTarget === c.instanceId}
-              captureSelected={captureTarget === c.instanceId}
-              capturePhase={captureSeq?.targetId === c.instanceId ? captureSeq.phase : null}
-              matchupMult={
-                inspectTarget === c.instanceId && inspectTribe
-                  ? fieldAllies
-                      .filter((a) => !a.ko)
-                      .reduce((best, a) => Math.max(best, getTypeMultiplier(a.tribe, c.tribe)), 0)
-                  : undefined
-              }
-              onInspect={
-                !c.ko && !captureSeq
-                  ? () => {
-                      setInspectTarget((id) => (id === c.instanceId ? null : c.instanceId));
-                      setShowTribeChart(false);
-                    }
-                  : undefined
-              }
-              floater={floaters.find((f) => f.targetId === c.instanceId)}
-            />
-          ))}
+          {enemies.map((c) => {
+            const inTargetMode = Boolean(specialTarget && !c.ko);
+            const focused = attackFocusId === c.instanceId;
+            const mult =
+              inTargetMode && targetingActor
+                ? getTypeMultiplier(targetingActor.tribe, c.tribe)
+                : focused && current?.side === "ally"
+                  ? getTypeMultiplier(current.tribe, c.tribe)
+                  : inspectTarget === c.instanceId && inspectTribe
+                    ? fieldAllies
+                        .filter((a) => !a.ko)
+                        .reduce((best, a) => Math.max(best, getTypeMultiplier(a.tribe, c.tribe)), 0)
+                    : undefined;
+
+            return (
+              <EnemyFieldSprite
+                key={c.instanceId}
+                c={c}
+                inspected={!inTargetMode && inspectTarget === c.instanceId}
+                targetable={inTargetMode}
+                focused={focused}
+                captureSelected={captureTarget === c.instanceId}
+                capturePhase={captureSeq?.targetId === c.instanceId ? captureSeq.phase : null}
+                matchupMult={mult}
+                onClick={
+                  !c.ko && !captureSeq
+                    ? () => handleEnemyClick(c.instanceId)
+                    : undefined
+                }
+                onContextMenu={
+                  !c.ko && !captureSeq && !isOver && !isRewardPick
+                    ? () => handleEnemyFocus(c.instanceId)
+                    : undefined
+                }
+                floater={floaters.find((f) => f.targetId === c.instanceId)}
+              />
+            );
+          })}
         </div>
 
         {captureSeq ? (
@@ -545,7 +644,9 @@ export function RunScreen() {
 
       <footer className="battle__hud" aria-label="Jauges d'âmes">
         <p className="battle__hud-tip">
-          Clique un esprit adverse pour sa tribu · slots lumineux = amultime
+          {specialTarget
+            ? "Clique un ennemi pour l'amultime"
+            : "Clic droit = cibler · gauche = tribus · jauge pleine = amultime"}
         </p>
         <div className="battle__slots">
           {fieldAllies.map((c) => (
@@ -577,7 +678,7 @@ export function RunScreen() {
         />
       ) : null}
 
-      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick ? (
+      {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget ? (
         <FoeInspect
           foe={inspectedFoe}
           fieldAllies={fieldAllies}
@@ -604,11 +705,13 @@ export function RunScreen() {
         <div className="battle__overlay" role="dialog" aria-label="Choisir une amultime">
           <div className="battle__spe-menu">
             <p className="battle__spe-title">{actor.name} — Amultime</p>
-            <button type="button" className="battle__spe-btn" onClick={() => handleSpecial(1)}>
-              {actor.skills.special1.name}
+            <button type="button" className="battle__spe-btn" onClick={() => handlePickSpecial(1)}>
+              <span className="battle__spe-btn-name">{actor.skills.special1.name}</span>
+              <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special1.targeting)}</span>
             </button>
-            <button type="button" className="battle__spe-btn" onClick={() => handleSpecial(2)}>
-              {actor.skills.special2.name}
+            <button type="button" className="battle__spe-btn" onClick={() => handlePickSpecial(2)}>
+              <span className="battle__spe-btn-name">{actor.skills.special2.name}</span>
+              <span className="battle__spe-btn-meta">{targetingLabel(actor.skills.special2.targeting)}</span>
             </button>
             <button type="button" className="battle__spe-cancel" onClick={() => setSpecialActor(null)}>
               Annuler

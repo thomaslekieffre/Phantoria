@@ -132,7 +132,7 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Fill Âmes | `(dmg/maxHp)×0.35`, cap 0.5 par hit, mult relique |
 | Rotation roue | Manuelle + auto-fill trou terrain |
 | Phantoball | En plein combat, placement slot obligatoire |
-| Cible attaque de base | Auto (premier ennemi) — choix joueur via inspect |
+| Cible attaque de base | Auto (premier ennemi) — **clic droit** pour marquer un focus (`attackFocusId`) |
 | Défaite run | 0 allié vivant sur la roue entière |
 | Victoire run | Boss final vague 200 + dernière récompense → phase `won` |
 | Capture max | 85 % |

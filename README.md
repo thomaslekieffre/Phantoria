@@ -30,7 +30,7 @@ pnpm dev
 
 ```bash
 
-pnpm test:core   # tests moteur (31)
+pnpm test:core   # tests moteur (34)
 
 pnpm build       # build prod
 

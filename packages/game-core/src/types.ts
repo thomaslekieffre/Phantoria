@@ -176,6 +176,8 @@ export interface CombatState {
   runModifiers: RunModifiers;
   /** Choix entre vagues (3 objets) */
   rewardChoices: RunRewardDef[] | null;
+  /** Ennemi marqué pour les attaques de base alliées — défaut = premier ennemi */
+  attackFocusId: string | null;
 }
 
 export type PhantoballType = "standard" | "tribal";

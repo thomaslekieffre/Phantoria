@@ -56,11 +56,25 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 #### Boucle de jeu
 
 1. **Picker starter** — choix du premier esprit (Bram, Nyx, Luma, Kiro).
-2. **Combat auto** — file VIT, attaques de base résolues par le moteur ; le joueur agit sur rotation, ciblage, capture, spés.
+2. **Combat auto** — file VIT, `tickTurn()` résout les attaques de base ; le joueur agit sur rotation, focus cible, capture, spés.
 3. **Fin de vague** — phase `reward_pick` : 3 objets au choix (`rollRewardChoices` → `selectReward`).
 4. **Vague suivante** — ennemis tirés aléatoirement (`getRunWaveSetup`), stats/alliés conservés.
 5. **Victoire** — phase `won` après la récompense de la **vague 200** (boss final vaincu).
 6. **Défaite** — phase `lost` si plus aucun allié vivant sur la roue (réserve incluse).
+
+#### Contrôles combat (proto `/run`)
+
+| Entrée | Effet |
+|--------|--------|
+| **Auto** | `tickTurn()` en boucle (~600 ms) — alliés et ennemis attaquent sans pause |
+| **Attaque de base alliée** | Premier ennemi vivant par défaut ; si `attackFocusId` est défini et valide → cette cible |
+| **Clic droit ennemi** | `setAttackFocus(id)` — marque / dé-marque la cible (outline doré, ×2/×½ vs perso actif) |
+| **Clic gauche ennemi** | Inspect tribus / matchups (`foe-inspect`) |
+| **Jauge Âmes pleine → slot** | Menu amultime : tag **Mono / Zone / Aléatoire** ; Mono = clic gauche sur ennemi (+ Annuler) |
+| **Phantoball** | Ennemi ≤ 40 % PV → confirmation puis séquence capture |
+| **Roue ↺ / ↻** | Rotation manuelle (pause auto si overlay capture / récompense / amultime) |
+
+État moteur : `CombatState.attackFocusId` (reset à chaque nouvelle vague).
 
 #### Terrain & roue
 
@@ -143,20 +157,21 @@ Moteur TypeScript pur, importé par `apps/web` via workspace `@phantoria/game-co
 | `combat-engine.ts` | `CombatEngine`, `createRunBattle`, rotation, capture, vagues |
 | `run-waves.ts` | Composition ennemis par vague |
 | `run-rewards.ts` | Pool objets, application, affichage reliques |
-| `formulas.test.ts` | 26 tests (tribus, formules, combat, récompenses) |
+| `formulas.test.ts` | 34 tests (tribus, formules, combat, récompenses) |
 
 ### API principale
 
 ```ts
 createRunBattle({ allySetup?, wave? })  // run 1 perso par défaut
 CombatEngine
-  .attack(targetId?)
-  .useSpecial1 / .useSpecial2
+  .tickTurn()                          // tour auto (attaque de base)
+  .setAttackFocus(targetId)            // focus clic droit — toggle
+  .playerSpecial(actorId, slot, targetId?)
   .rotateWheel("cw" | "ccw")
-  .attemptCapture(ballType, targetId)
+  .tryCapture(targetId, ball?, rng?)
   .completeCapturePlacement(wheelIndex)
   .selectReward(rewardId)               // reward_pick → vague suivante
-  .getState() / .getCurrentActor() / .getRecentEvents()
+  .getState() / .getCurrentActor() / .getRecentEvents() / .getWheelSlots()
 ```
 
 ### Phases (`CombatPhase`)
@@ -171,7 +186,7 @@ CombatEngine
 ### Tests
 
 ```bash
-pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (31 tests)
+pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (34 tests)
 ```
 
 ## Ordre d’implémentation

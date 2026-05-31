@@ -2,10 +2,15 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeCaptureChance, computeDamage, soulGainFromDamage } from "./formulas";
 import { getTypeMultiplier, getMatchupsVs } from "./tribes";
-import { createBattle, createRunBattle, DEV_ALLY_SETUP } from "./combat-engine";
+import { createBattle, createRunBattle, DEV_ALLY_SETUP, type CombatEngine } from "./combat-engine";
 import { applyRunReward, rollRewardChoices, RUN_REWARD_POOL, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
 import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
+
+/** Simule un tour complet */
+function tickCombat(engine: CombatEngine): boolean {
+  return engine.tickTurn();
+}
 
 describe("tribus", () => {
   it("super efficace vaillants → sombres", () => {
@@ -102,9 +107,52 @@ describe("combat", () => {
 
     const foe = engine.getState().combatants.find((c) => c.side === "enemy")!;
     const hpBefore = foe.hp;
-    engine.tickTurn();
+    assert.ok(tickCombat(engine));
     const hpAfter = engine.getCombatant(foe.instanceId)!.hp;
     assert.ok(hpAfter < hpBefore);
+  });
+
+  it("tickTurn résout le tour allié — premier ennemi par défaut", () => {
+    const engine = createRunBattle();
+    let actor = engine.getCurrentActor();
+    if (actor?.side !== "ally") {
+      engine.tickTurn();
+      actor = engine.getCurrentActor();
+    }
+    assert.equal(actor?.side, "ally");
+    const foes = engine.getState().combatants.filter((c) => c.side === "enemy" && !c.ko);
+    const first = foes[0]!;
+    const hpBefore = first.hp;
+    assert.ok(engine.tickTurn());
+    assert.ok(first.hp < hpBefore);
+  });
+
+  it("setAttackFocus oriente l'attaque de base alliée", () => {
+    const engine = createBattle({
+      allySetup: [...DEV_ALLY_SETUP],
+      enemyKeys: ["ombre_faible", "ombre_faible"],
+      enemyLevel: 4,
+    });
+    const foes = engine.getState().combatants.filter((c) => c.side === "enemy" && !c.ko);
+    const second = foes[1]!;
+    assert.ok(engine.setAttackFocus(second.instanceId));
+
+    let actor = engine.getCurrentActor();
+    if (actor?.side !== "ally") {
+      engine.tickTurn();
+      actor = engine.getCurrentActor();
+    }
+    assert.equal(actor?.side, "ally");
+
+    const hpBefore = second.hp;
+    assert.ok(engine.tickTurn());
+    assert.ok(second.hp < hpBefore);
+  });
+
+  it("setAttackFocus refuse une cible invalide", () => {
+    const engine = createRunBattle();
+    const ally = engine.getState().combatants.find((c) => c.side === "ally")!;
+    assert.equal(engine.setAttackFocus(ally.instanceId), false);
   });
 
   it("continue après KO d'un ennemi mid-manche", () => {
@@ -117,14 +165,14 @@ describe("combat", () => {
     const first = foes[0]!;
 
     for (let i = 0; i < 80 && !first.ko && engine.getState().phase === "fighting"; i += 1) {
-      engine.tickTurn();
+      tickCombat(engine);
     }
 
     assert.equal(first.ko, true);
     assert.equal(engine.getState().phase, "fighting");
 
     for (let i = 0; i < 40 && engine.getState().phase === "fighting"; i += 1) {
-      engine.tickTurn();
+      tickCombat(engine);
     }
 
     assert.equal(engine.getState().phase, "reward_pick");
@@ -144,6 +192,9 @@ describe("combat", () => {
     }
     ally.souls = 0.75;
 
+    const s = engine.getState();
+    const allyIdx = s.turnQueue.findIndex((id) => engine.getCombatant(id)?.side === "ally");
+    s.queueIndex = allyIdx >= 0 ? allyIdx : 0;
     engine.tickTurn();
     assert.equal(engine.getState().phase, "reward_pick");
     const pick = engine.getState().rewardChoices![0]!;
@@ -170,7 +221,7 @@ describe("combat", () => {
     kiro.ko = true;
     kiro.active = false;
 
-    for (let i = 0; i < 8; i += 1) engine.tickTurn();
+    for (let i = 0; i < 8; i += 1) tickCombat(engine);
 
     assert.equal(engine.getState().phase, "fighting");
     assert.equal(
@@ -191,7 +242,7 @@ describe("combat", () => {
     const kiro = engine.getState().combatants.find((c) => c.templateKey === "kiro_perfide")!;
 
     while (kiro.hp > 0 && engine.getState().phase === "fighting") {
-      engine.tickTurn();
+      tickCombat(engine);
     }
 
     assert.equal(kiro.ko, true);

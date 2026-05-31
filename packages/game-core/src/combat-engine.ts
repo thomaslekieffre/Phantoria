@@ -190,6 +190,7 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     runRelics: [],
     runModifiers: { soulGainMult: 1, captureBonus: 0 },
     rewardChoices: null,
+    attackFocusId: null,
   };
 
   const engine = new CombatEngine(state);
@@ -301,7 +302,7 @@ export class CombatEngine {
     this.state.queueIndex = idx >= 0 ? idx : 0;
   }
 
-  /** Tour auto — attaque de base pour l'acteur courant (allié ou ennemi) */
+  /** Tour auto — attaque de base ; alliés = focus joueur ou premier ennemi */
   tickTurn(): boolean {
     if (this.state.phase !== "fighting") return false;
     this.tryAutoFillField();
@@ -315,16 +316,24 @@ export class CombatEngine {
     const foes = foesOf(actor, this.state.combatants);
     if (foes.length === 0) return this.checkEnd();
 
+    if (actor.side === "ally") {
+      const focusId = this.state.attackFocusId;
+      const focusValid = focusId && foes.some((f) => f.instanceId === focusId);
+      const targetId = focusValid ? focusId! : foes[0]!.instanceId;
+      return this.resolveAttack(actor, actor.skills.basic, targetId);
+    }
+
     const target = foes.reduce((low, f) => (f.hp < low.hp ? f : low));
     return this.resolveAttack(actor, actor.skills.basic, target.instanceId);
   }
 
-  /** @deprecated Utiliser tickTurn() — combat entièrement auto */
-  playerBasicAttack(targetId: string): boolean {
+  /** Marque un ennemi pour les attaques de base (clic droit) — re-clic = désélection */
+  setAttackFocus(targetId: string): boolean {
     if (this.state.phase !== "fighting") return false;
-    const actor = this.getCurrentActor();
-    if (!actor || actor.side !== "ally") return false;
-    return this.resolveAttack(actor, actor.skills.basic, targetId);
+    const target = this.getCombatant(targetId);
+    if (!target || target.side !== "enemy" || target.ko || !target.active) return false;
+    this.state.attackFocusId = this.state.attackFocusId === targetId ? null : targetId;
+    return true;
   }
 
   /** Spéciale hors file VIT — si jauge pleine */
@@ -603,6 +612,7 @@ export class CombatEngine {
     this.state.captureTargetId = null;
     this.state.pendingRecruit = null;
     this.state.rewardChoices = null;
+    this.state.attackFocusId = null;
 
     const waveLabel =
       waveSetup.kind === "normal" ? `Vague ${wave}` : `${waveSetup.label} — vague ${wave}`;
