@@ -8,6 +8,9 @@ import {
   RUN_STARTER_WHEEL_INDEX,
   TRIBE_INFO,
   getTypeMultiplier,
+  RUN_MAX_WAVES,
+  getRunWaveKind,
+  getRunWaveKindLabel,
   type CombatEngine,
   type CombatEvent,
   type Combatant,
@@ -209,7 +212,12 @@ export function RunScreen() {
   const livingEnemies = enemies.filter((c) => !c.ko);
   const pendingRecruit = state?.pendingRecruit ?? null;
   const paused = Boolean(specialActor || captureTarget || pendingRecruit || captureSeq || state?.phase === "reward_pick");
-  const isOver = state?.phase === "lost";
+  const isOver = state?.phase === "lost" || state?.phase === "won";
+  const isVictory = state?.phase === "won";
+  const isDefeat = state?.phase === "lost";
+  const waveKind = state ? getRunWaveKind(state.wave) : "normal";
+  const waveKindLabel = getRunWaveKindLabel(waveKind);
+  const isBossWave = waveKind !== "normal";
   const isRewardPick = state?.phase === "reward_pick";
   const rewardChoices = state?.rewardChoices ?? null;
   const runRelics = state?.runRelics ?? [];
@@ -426,7 +434,12 @@ export function RunScreen() {
 
         <div className="battle__top">
           <div className="battle__top-left">
-            <span className="battle__wave">Vague {state.wave}</span>
+            <span className="battle__wave">
+              {isBossWave ? (
+                <span className={`battle__wave-tag battle__wave-tag--${waveKind}`}>{waveKindLabel}</span>
+              ) : null}
+              {state.wave}/{RUN_MAX_WAVES}
+            </span>
           </div>
           <div className="battle__top-center">
             {current && !isOver && !isRewardPick ? (
@@ -507,11 +520,24 @@ export function RunScreen() {
           </button>
         ) : null}
 
-        {isOver ? (
-          <div className="battle__end">
+        {isDefeat ? (
+          <div className="battle__end battle__end--lose">
             <p>Défaite…</p>
+            <span className="battle__end-meta">Vague {state.wave}/{RUN_MAX_WAVES}</span>
             <button type="button" className="battle__end-btn" onClick={restart}>
               Recommencer
+            </button>
+          </div>
+        ) : null}
+
+        {isVictory ? (
+          <div className="battle__end battle__end--win">
+            <p>Victoire !</p>
+            <span className="battle__end-meta">
+              Run terminé — {RUN_MAX_WAVES} vagues · {runRelics.length} relique{runRelics.length > 1 ? "s" : ""}
+            </span>
+            <button type="button" className="battle__end-btn" onClick={restart}>
+              Nouveau run
             </button>
           </div>
         ) : null}

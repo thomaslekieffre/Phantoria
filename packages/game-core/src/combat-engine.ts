@@ -1,5 +1,5 @@
 import { getTemplate } from "./characters";
-import { getRunWaveSetup } from "./run-waves";
+import { getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { applyRunReward, rollRewardChoices, isPersistentRunRelic } from "./run-rewards";
 import {
   computeCaptureChance,
@@ -51,9 +51,11 @@ function spawn(
   level: number,
   active: boolean,
   wheelIndex = -1,
+  statMult = 1,
 ): Combatant {
   const t = getTemplate(templateKey);
   const stats = statsAtLevel(t.base, level);
+  const scale = (n: number) => Math.max(1, Math.floor(n * statMult));
   return {
     instanceId: uid(),
     templateKey,
@@ -62,10 +64,10 @@ function spawn(
     rarity: t.rarity,
     side,
     level,
-    maxHp: stats.hp,
-    hp: stats.hp,
-    atk: stats.atk,
-    def: stats.def,
+    maxHp: scale(stats.hp),
+    hp: scale(stats.hp),
+    atk: scale(stats.atk),
+    def: scale(stats.def),
     vit: stats.vit,
     wheelIndex,
     active,
@@ -73,6 +75,12 @@ function spawn(
     souls: 0,
     skills: t.skills,
   };
+}
+
+function spawnEnemiesFromSetup(setup: ReturnType<typeof getRunWaveSetup>): Combatant[] {
+  return setup.enemyKeys.map((key, i) =>
+    spawn(key, "enemy", setup.enemyLevel, true, -1, setup.enemyStatMults[i] ?? 1),
+  );
 }
 
 function applyFieldStatus(c: Combatant) {
@@ -154,6 +162,7 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
   const enemyKeys = opts.enemyKeys ?? defaultWave.enemyKeys;
   const allyLevel = opts.allyLevel ?? 5;
   const enemyLevel = opts.enemyLevel ?? defaultWave.enemyLevel;
+  const useDefaultEnemies = !opts.enemyKeys;
 
   const combatants: Combatant[] = [
     ...allySetup.map((a) => {
@@ -161,7 +170,9 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
       applyFieldStatus(c);
       return c;
     }),
-    ...enemyKeys.map((k) => spawn(k, "enemy", enemyLevel, true)),
+    ...(useDefaultEnemies
+      ? spawnEnemiesFromSetup(defaultWave)
+      : enemyKeys.map((k) => spawn(k, "enemy", enemyLevel, true))),
   ];
 
   const turnQueue = buildTurnQueue(combatants);
@@ -574,8 +585,14 @@ export class CombatEngine {
     const enemyKeys = opts?.enemyKeys ?? waveSetup.enemyKeys;
     const enemyLevel = opts?.enemyLevel ?? waveSetup.enemyLevel;
 
-    for (const key of enemyKeys) {
-      this.state.combatants.push(spawn(key, "enemy", enemyLevel, true));
+    if (opts?.enemyKeys) {
+      for (const key of enemyKeys) {
+        this.state.combatants.push(spawn(key, "enemy", enemyLevel, true));
+      }
+    } else {
+      for (const enemy of spawnEnemiesFromSetup(waveSetup)) {
+        this.state.combatants.push(enemy);
+      }
     }
 
     this.state.wave = wave;
@@ -587,7 +604,9 @@ export class CombatEngine {
     this.state.pendingRecruit = null;
     this.state.rewardChoices = null;
 
-    this.pushEvent("wave_start", `Vague ${wave}`);
+    const waveLabel =
+      waveSetup.kind === "normal" ? `Vague ${wave}` : `${waveSetup.label} — vague ${wave}`;
+    this.pushEvent("wave_start", waveLabel);
 
     const first = this.getCurrentActor();
     if (first) {
@@ -611,6 +630,13 @@ export class CombatEngine {
 
     this.pushEvent("wave_end", msg);
     this.state.rewardChoices = null;
+
+    if (this.state.wave >= RUN_MAX_WAVES) {
+      this.state.phase = "won";
+      this.pushEvent("wave_end", `Victoire — run terminé à la vague ${RUN_MAX_WAVES} !`);
+      return true;
+    }
+
     return this.startNextWave();
   }
 
@@ -628,7 +654,12 @@ export class CombatEngine {
 
       this.state.phase = "reward_pick";
       this.state.rewardChoices = rollRewardChoices(this.state.wave, this.state.runRelics);
-      this.pushEvent("wave_end", `Vague ${this.state.wave} cleared !`);
+      const waveSetup = getRunWaveSetup(this.state.wave, livingAllies(this.state.combatants).length);
+      const cleared =
+        waveSetup.kind === "normal"
+          ? `Vague ${this.state.wave} cleared !`
+          : `${waveSetup.label} vaincu — vague ${this.state.wave} !`;
+      this.pushEvent("wave_end", cleared);
       return true;
     }
     return false;

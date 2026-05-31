@@ -12,6 +12,9 @@ Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de vérité implémentée d
 | `kiro_perfide` | Kiro | Perfides | D | Rapide |
 | `ombre_faible` | Ombre errante | Sombres | E | Ennemi tuto vague 1 |
 | `neant_scout` | Éclaireur néant | Néants | D | Ennemi mid |
+| `boss_gardien` | Gardien des brumes | Sombres | B | Boss ×10 |
+| `boss_colosse` | Colosse du néant | Néants | A | Méga boss ×50 |
+| `boss_solmaar` | Solmaar corrompu | Néants | S | Boss final vague 200 |
 
 Catalogue complet : `packages/game-core/src/characters.ts` — `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
 
@@ -66,12 +69,27 @@ Types de ball v0 : `standard` (×1), `tribal` (×1,5).
 
 ## Vagues roguelite (`run-waves.ts`)
 
+**Run complet : 200 vagues** (`RUN_MAX_WAVES`). Victoire après le boss final + choix de la dernière récompense.
+
+### Paliers
+
+| Type | Condition | Boss | Adds |
+|------|-----------|------|------|
+| `normal` | défaut | — | 1–3 esprits pool |
+| `boss` | vague % 10 === 0 | `boss_gardien` (Gardien des brumes) | 1–2 sbires |
+| `mega_boss` | vague % 50 === 0 (sauf 200) | `boss_colosse` (Colosse du néant) | 2 sbires |
+| `final_boss` | vague === 200 | `boss_solmaar` (Solmaar corrompu) | 2 sbires |
+
+Les clés boss sont **exclues** du pool des vagues normales.
+
+### Scaling
+
 | Règle | Détail |
 |-------|--------|
 | Vague 1 solo | 1 ennemi fixe : `ombre_faible` lvl 3 |
-| Pool ennemis | Tous les esprits du catalogue, filtrés par rareté min selon vague |
-| Nombre ennemis | 1–3 selon vague et taille équipe alliée |
-| Niveau ennemi | `wave === 1 ? 3 : 2 + wave` |
+| Niveau ennemi | `wave === 1 ? 3 : 2 + wave` (+ bonus boss) |
+| Stats boss | multiplicateurs par index (`enemyStatMults`) |
+| Nombre ennemis (normal) | 1–3 selon vague et taille équipe alliée |
 
 Poids rareté (approx.) : E dès v1, D v2+, C v3+, B v5+, A v8+, S v12+.
 
@@ -116,6 +134,7 @@ Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Phantoball | En plein combat, placement slot obligatoire |
 | Cible attaque de base | Auto (premier ennemi) — choix joueur via inspect |
 | Défaite run | 0 allié vivant sur la roue entière |
+| Victoire run | Boss final vague 200 + dernière récompense → phase `won` |
 | Capture max | 85 % |
 | Récompenses vagues | Picker 3 objets (pas encore shop GDD) |
 | Reliques affichées | Persistantes uniquement |

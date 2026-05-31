@@ -4,7 +4,7 @@ import { computeCaptureChance, computeDamage, soulGainFromDamage } from "./formu
 import { getTypeMultiplier, getMatchupsVs } from "./tribes";
 import { createBattle, createRunBattle, DEV_ALLY_SETUP } from "./combat-engine";
 import { applyRunReward, rollRewardChoices, RUN_REWARD_POOL, isPersistentRunRelic, getRunRelicDisplay } from "./run-rewards";
-import { getRunWaveSetup } from "./run-waves";
+import { getRunWaveKind, getRunWaveSetup, RUN_MAX_WAVES } from "./run-waves";
 import { ALL_SPIRIT_KEYS } from "./characters";
 
 describe("tribus", () => {
@@ -331,5 +331,47 @@ describe("récompenses de vague", () => {
     applyRunReward(engine.getState(), heal);
 
     assert.ok(ally.hp > ally.maxHp * 0.3);
+  });
+});
+
+describe("vagues run", () => {
+  it("200 vagues max avec paliers boss", () => {
+    assert.equal(RUN_MAX_WAVES, 200);
+    assert.equal(getRunWaveKind(9), "normal");
+    assert.equal(getRunWaveKind(10), "boss");
+    assert.equal(getRunWaveKind(50), "mega_boss");
+    assert.equal(getRunWaveKind(100), "mega_boss");
+    assert.equal(getRunWaveKind(200), "final_boss");
+  });
+
+  it("vague 10 = Gardien + sbires", () => {
+    const setup = getRunWaveSetup(10, 1, () => 0);
+    assert.equal(setup.kind, "boss");
+    assert.equal(setup.enemyKeys[0], "boss_gardien");
+    assert.ok(setup.enemyKeys.length >= 2);
+  });
+
+  it("vague 50 = Colosse", () => {
+    const setup = getRunWaveSetup(50, 3, () => 0);
+    assert.equal(setup.kind, "mega_boss");
+    assert.equal(setup.enemyKeys[0], "boss_colosse");
+  });
+
+  it("vague 200 = Solmaar final", () => {
+    const setup = getRunWaveSetup(200, 3, () => 0);
+    assert.equal(setup.kind, "final_boss");
+    assert.equal(setup.enemyKeys[0], "boss_solmaar");
+  });
+
+  it("victoire après récompense vague 200", () => {
+    const engine = createRunBattle();
+    const pick = RUN_REWARD_POOL.find((r) => r.id === "griffe_ardente")!;
+    engine.getState().wave = RUN_MAX_WAVES;
+    engine.getState().phase = "reward_pick";
+    engine.getState().rewardChoices = [pick];
+
+    assert.ok(engine.selectReward(pick.id));
+    assert.equal(engine.getState().phase, "won");
+    assert.equal(engine.getState().wave, RUN_MAX_WAVES);
   });
 });

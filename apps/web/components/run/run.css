@@ -372,6 +372,9 @@
 }
 
 .battle__wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   padding: 0.35rem 0.75rem;
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -379,7 +382,35 @@
   color: var(--accent-soft);
   font-size: 0.78rem;
   font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   box-shadow: 2px 2px 0 var(--ink);
+}
+
+.battle__wave-tag {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.battle__wave-tag--boss {
+  background: rgba(251, 146, 60, 0.18);
+  color: #fdba74;
+  border-color: rgba(251, 146, 60, 0.45);
+}
+
+.battle__wave-tag--mega_boss {
+  background: rgba(168, 85, 247, 0.18);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+.battle__wave-tag--final_boss {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .battle__turn {
@@ -1081,6 +1112,24 @@
   font-weight: 800;
   box-shadow: var(--hard-shadow);
   cursor: pointer;
+}
+
+.battle__end-meta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.battle__end--win {
+  background: rgba(20, 40, 24, 0.82);
+}
+
+.battle__end--win .battle__end-btn {
+  background: #86efac;
+}
+
+.battle__end--lose .battle__end-meta {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ─── HUD bas — jauges d'âmes ─── */

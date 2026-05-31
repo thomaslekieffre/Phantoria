@@ -120,6 +120,42 @@ export const ENEMY_TEMPLATES: Record<string, CharacterTemplate> = {
       special2: { id: "neant_s2", name: "Vortex", power: 1, targeting: "aoe", tribe: "neants" },
     },
   },
+  boss_gardien: {
+    key: "boss_gardien",
+    name: "Gardien des brumes",
+    tribe: "sombres",
+    rarity: "B",
+    base: { hp: 200, atk: 32, def: 20, vit: 10 },
+    skills: {
+      basic: { id: "gardien_basic", name: "Lame d'ombre", power: 1.1, targeting: "single" },
+      special1: { id: "gardien_s1", name: "Mur de brume", power: 1.4, targeting: "single", tribe: "sombres" },
+      special2: { id: "gardien_s2", name: "Éclipse", power: 1.05, targeting: "aoe", tribe: "sombres" },
+    },
+  },
+  boss_colosse: {
+    key: "boss_colosse",
+    name: "Colosse du néant",
+    tribe: "neants",
+    rarity: "A",
+    base: { hp: 340, atk: 42, def: 28, vit: 9 },
+    skills: {
+      basic: { id: "colosse_basic", name: "Poing du vide", power: 1.15, targeting: "single" },
+      special1: { id: "colosse_s1", name: "Fracture", power: 1.55, targeting: "single", tribe: "neants" },
+      special2: { id: "colosse_s2", name: "Cataclysme", power: 1.1, targeting: "aoe", tribe: "neants" },
+    },
+  },
+  boss_solmaar: {
+    key: "boss_solmaar",
+    name: "Solmaar corrompu",
+    tribe: "neants",
+    rarity: "S",
+    base: { hp: 520, atk: 48, def: 34, vit: 12 },
+    skills: {
+      basic: { id: "solmaar_basic", name: "Verdict ancien", power: 1.2, targeting: "single" },
+      special1: { id: "solmaar_s1", name: "Corruption solaire", power: 1.7, targeting: "single", tribe: "neants" },
+      special2: { id: "solmaar_s2", name: "Néant final", power: 1.25, targeting: "aoe", tribe: "neants" },
+    },
+  },
 };
 
 export function getTemplate(key: string): CharacterTemplate {

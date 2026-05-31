@@ -59,7 +59,8 @@ Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.
 2. **Combat auto** — file VIT, attaques de base résolues par le moteur ; le joueur agit sur rotation, ciblage, capture, spés.
 3. **Fin de vague** — phase `reward_pick` : 3 objets au choix (`rollRewardChoices` → `selectReward`).
 4. **Vague suivante** — ennemis tirés aléatoirement (`getRunWaveSetup`), stats/alliés conservés.
-5. **Défaite** — phase `lost` si plus aucun allié vivant sur la roue (réserve incluse).
+5. **Victoire** — phase `won` après la récompense de la **vague 200** (boss final vaincu).
+6. **Défaite** — phase `lost` si plus aucun allié vivant sur la roue (réserve incluse).
 
 #### Terrain & roue
 
@@ -91,9 +92,20 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 
 #### Ennemis & vagues
 
-- Pool = **tous les esprits** du catalogue (`ALL_SPIRIT_KEYS`), tirage pondéré par rareté et vague.
+- **200 vagues max** (`RUN_MAX_WAVES`) — run fini à la victoire sur le boss final.
+- Pool normal = esprits du catalogue (`ALL_SPIRIT_KEYS`, hors bosses dédiés), tirage pondéré par rareté.
 - **Vague 1 solo** (1 allié) : toujours **Ombre errante** (tuto capture).
-- Nombre d’ennemis et niveau montent avec la vague (`run-waves.ts`).
+
+| Palier | Vagues | Type | Boss principal |
+|--------|--------|------|----------------|
+| Normal | autres | `normal` | — |
+| Boss | ×10 (10, 20, 30…) | `boss` | Gardien des brumes + sbires |
+| Méga boss | ×50 (50, 100, 150) | `mega_boss` | Colosse du néant + sbires |
+| Boss final | **200** | `final_boss` | Solmaar corrompu + sbires |
+
+Priorité : vague 200 = final (pas méga boss). API : `getRunWaveKind`, `getRunWaveSetup`.
+
+- Nombre d’ennemis et niveau montent avec la vague ; bosses ont des multiplicateurs de stats dédiés.
 
 #### UI combat — composants
 
@@ -153,13 +165,13 @@ CombatEngine
 |-------|-------------|
 | `fighting` | Combat en cours |
 | `reward_pick` | Tous les ennemis KO → choix objet |
+| `won` | Récompense choisie après vague **200** — run terminé |
 | `lost` | 0 allié vivant sur la roue |
-| `won` | Legacy — préférer `reward_pick` |
 
 ### Tests
 
 ```bash
-pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts
+pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (31 tests)
 ```
 
 ## Ordre d’implémentation

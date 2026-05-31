@@ -1,6 +1,6 @@
 "use client";
 
-import type { RunRewardDef } from "@phantoria/game-core";
+import { RUN_MAX_WAVES, type RunRewardDef } from "@phantoria/game-core";
 import { RunRelicsTray } from "@/components/run/run-relics-tray";
 
 type WaveRewardPickerProps = {
@@ -11,11 +11,17 @@ type WaveRewardPickerProps = {
 };
 
 export function WaveRewardPicker({ wave, choices, relicIds, onPick }: WaveRewardPickerProps) {
+  const isFinalReward = wave >= RUN_MAX_WAVES;
+
   return (
     <div className="battle__overlay battle__overlay--dim" role="dialog" aria-label="Choix de récompense">
       <div className="wave-reward">
-        <p className="wave-reward__kicker">Vague {wave} cleared</p>
-        <h2 className="wave-reward__title">Choisis un objet</h2>
+        <p className="wave-reward__kicker">
+          {isFinalReward ? `Vague ${wave} — boss final vaincu` : `Vague ${wave} cleared`}
+        </p>
+        <h2 className="wave-reward__title">
+          {isFinalReward ? "Dernière récompense du run" : "Choisis un objet"}
+        </h2>
 
         <RunRelicsTray relicIds={relicIds} variant="panel" />
 
