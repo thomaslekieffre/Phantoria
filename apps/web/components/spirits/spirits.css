@@ -226,6 +226,44 @@
   line-height: 1.15;
 }
 
+.spirits-card__level {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--accent-soft);
+}
+
+.spirit-owned-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.spirit-owned-stats__mode {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.spirit-owned-stats__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.spirit-owned-stats__label {
+  color: var(--text-muted);
+}
+
+.spirit-owned-stats__val {
+  font-weight: 800;
+  color: var(--text);
+}
+
 .spirits-card__tribe {
   font-size: 0.58rem;
   font-weight: 700;

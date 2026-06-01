@@ -20,7 +20,7 @@ import {
   type SpiritId,
   type SpiritSlot,
 } from "@/components/hub/roster";
-import { SPIRIT_CATALOG } from "@/lib/player/types";
+import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import {
@@ -41,6 +41,7 @@ type PlayerContextValue = {
   currencies: PlayerSnapshot["currencies"] | null;
   roster: SpiritSlot[];
   unlockedHubIds: SpiritId[];
+  spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
   spiritCount: number;
   welcomePullsRemaining: number;
   gachaPityStandard: number;
@@ -54,6 +55,13 @@ type PlayerContextValue = {
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
+
+const MOCK_SPIRITS_BY_HUB: Partial<Record<SpiritId, OwnedSpiritStats>> = {
+  bram: { level: 1, xp: 0, hpPct: 100 },
+  nyx: { level: 1, xp: 0, hpPct: 72 },
+  luma: { level: 1, xp: 0, hpPct: 100 },
+  kiro: { level: 1, xp: 0, hpPct: 88 },
+};
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isSupabaseEnabled());
@@ -208,6 +216,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       unlockedHubIds: mockRoster
         ? (["bram", "nyx", "luma", "kiro"] as SpiritId[])
         : (snapshot?.unlockedHubIds ?? []),
+      spiritsByHubId: mockRoster ? MOCK_SPIRITS_BY_HUB : (snapshot?.spiritsByHubId ?? {}),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
@@ -246,4 +255,24 @@ export function usePlayerOptional() {
 
 export function rosterStarters(roster: SpiritSlot[]): (SpiritSlot & { id: SpiritId })[] {
   return roster.filter((s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id));
+}
+
+/** Starters run : tous les esprits possédés (pas seulement ceux sur la roue). */
+export function ownedSpiritStarters(
+  unlockedHubIds: SpiritId[],
+  spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>,
+): (SpiritSlot & { id: SpiritId })[] {
+  return unlockedHubIds.map((id) => {
+    const meta = SPIRIT_CATALOG[id];
+    const stats = spiritsByHubId[id];
+    return {
+      id,
+      name: meta.name,
+      tribe: meta.tribe,
+      hp: stats?.hpPct ?? 100,
+      onField: false,
+      hue: meta.hue,
+      rarity: meta.rarity,
+    };
+  });
 }

@@ -267,11 +267,13 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 
 ## Ordre d’implémentation
 
-1. ✅ **Hub desktop** (`/`) — roue ×6, fiche esprit, toggle terrain, CTA run / histoire
+1. ✅ **Hub desktop** (`/`) — roue ×6, échange 2 clics, 3 devant = terrain (slots 0/1/5), réserve bench, retrait
 2. ✅ **`game-core`** — tribus, formules, combat (VIT, Âmes 0→1, capture)
-3. ✅ **Écran `/run`** — run roguelite jouable (starter, vagues, capture, récompenses, reliques)
-4. ✅ **Supabase proto** — auth, profil, roster DB, save run cloud, gacha bienvenue (6 pulls)
-5. Collection / gacha payant / pity, mode histoire, métaprogression run → hub
+3. ✅ **Écran `/run`** — run roguelite : **1 starter** choisi parmi les esprits possédés, puis capture en run
+4. ✅ **Supabase** — auth, profil, roster, gacha (welcome + standard, pity), meta-récompenses fin de run
+5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV depuis `player_spirits`
+6. **À faire** — `/story` (niveau 1), `/quests`, `/more`
+7. **Rappel design** — `profiles.level` + `player_spirits.level` = **histoire** ; run = lvl 1 → monte dans `active_runs` jusqu’à mort, **sans** écrire l’XP run en DB collection
 
 ## Hors scope infra v0
 

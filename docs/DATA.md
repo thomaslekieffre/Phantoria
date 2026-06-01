@@ -23,6 +23,14 @@ Compl?te [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de v?rit? impl?ment?e dans `
 
 Catalogue complet : `packages/game-core/src/characters.ts` ? `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
 
+## Persistance des niveaux
+
+| Donn?e | Mode | Notes |
+|--------|------|-------|
+| `profiles.level` | Histoire / hub | Affich? au sanctuaire ? **pas** le niveau run |
+| `player_spirits.level`, `xp`, `hp_pct` | Histoire / codex | Progression campagne ; **pas** mis ? jour par la fin d'un run roguelite |
+| `CombatState` alli?s (`level`, `xp`) | Run seul | D?part **1** ; monte en combat ; stock? dans `active_runs` ou localStorage ; **reset** ? la mort |
+
 ## Formules v0
 
 ### Stats au niveau
@@ -188,7 +196,7 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Victoire run | Boss final vague 200 + derni?re r?compense ? phase `won` |
 | Capture max | 85 % |
 | R?compenses vagues | Gratuit (3 choix) + boutique ? + reroll ? balls + XP achetables |
-| Save run | `phantoria_run_v1` local **ou** `active_runs` · Continuer au picker |
+| Save run | `phantoria_run_v1` local **ou** `active_runs` ? Continuer au picker |
 | Passifs | Explicites + fallback tribu ? inspect + HUD |
 | Game over UI | Fullscreen bloque capture / combat ; tick auto off |
 | Reliques affich?es | Persistantes uniquement |
@@ -200,4 +208,4 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 - [ ] Formule pity gacha (state par pack)
 - [ ] Phantoballs restantes GDD (Verdeball, Spectraball?)
 - [ ] Crit?res 3? mode histoire
-- [ ] Sync m?taprogression post-run (or hub, XP esprits)
+- [ ] Sync m?taprogression post-run (monnaies hub OK ; **pas** XP/niveau run ? `player_spirits`)

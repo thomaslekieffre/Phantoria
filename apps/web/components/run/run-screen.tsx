@@ -37,7 +37,7 @@ import {
   type CaptureSeqState,
 } from "@/components/run/capture-sequence";
 import { RunStarterPicker, starterCoreKey } from "@/components/run/run-starter-picker";
-import { rosterStarters, usePlayer } from "@/components/providers/player-provider";
+import { ownedSpiritStarters, usePlayer } from "@/components/providers/player-provider";
 import { CORE_TO_HUB } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
@@ -246,8 +246,12 @@ function SoulSlot({
 }
 
 export function RunScreen() {
-  const { roster, refresh: refreshPlayer, user, supabaseEnabled } = usePlayer();
-  const starters = useMemo(() => rosterStarters(roster), [roster]);
+  const { unlockedHubIds, spiritsByHubId, refresh: refreshPlayer, user, supabaseEnabled } =
+    usePlayer();
+  const starters = useMemo(
+    () => ownedSpiritStarters(unlockedHubIds, spiritsByHubId),
+    [unlockedHubIds, spiritsByHubId],
+  );
   const [engine, setEngine] = useState<CombatEngine | null>(null);
   const [specialActor, setSpecialActor] = useState<string | null>(null);
   const [specialTarget, setSpecialTarget] = useState<{ actorId: string; slot: 1 | 2 } | null>(null);

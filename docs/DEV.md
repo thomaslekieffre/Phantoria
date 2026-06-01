@@ -178,29 +178,38 @@ supabase db push
 | Fichier | Rôle |
 |---------|------|
 | `spirits-screen.tsx` | Filtres rareté/tribu/possédé, grille, fiche |
+| `spirit-owned-stats.tsx` | Niveau / XP / PV **histoire** (`spiritsByHubId` ← `player_spirits`) |
 | `spirits.css` | Layout 3 colonnes |
 
 ### Tables
 
 | Table | Rôle |
 |-------|------|
-| `profiles` | Nom affiché, niveau hub |
+| `profiles` | Nom affiché, **`level` = niveau histoire** (affiché au sanctuaire) |
 | `player_currencies` | Or, gemmes, tickets |
-| `player_spirits` | Collection (hub_id → template_key) |
+| `player_spirits` | Collection ; **`level` / `xp` / `hp_pct` = histoire** (codex), pas le run |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |
 
 RLS : chaque joueur ne voit que ses lignes (`auth.uid()`).
 
+### Niveaux : histoire vs run (à ne pas confondre)
+
+| | Histoire / sanctuaire | Roguelite run |
+|--|----------------------|---------------|
+| **Joueur** | `profiles.level` (ligne « niv. » au camp) | — |
+| **Esprit** | `player_spirits.level`, `xp`, `hp_pct` (codex `/spirits`) | **Toujours 1** au départ ; monte dans `CombatState` jusqu’à la mort |
+| **Fin de run** | Inchangé (sauf monnaies via meta-reward) | Niveaux run **jetés** — ne pas persister dans `player_spirits` |
+
+Voir [`GAME_DESIGN.md` — Niveaux](GAME_DESIGN.md#niveaux--progression-deux-pistes).
+
 ### Hub vs run (comportement actuel)
 
 | Hub (`/`) | Run (`/run`) |
 |-----------|----------------|
-| Roue ×6 : jusqu’à 6 esprits possédés placés ; 3 devant = terrain | Au **début** : choix d’**1 starter** parmi les esprits sur la roue (`rosterStarters`) |
-| Hors roue = réserve (ajoutable depuis sanctuaire ou codex) | En run tu pars **seul** ; les autres arrivent par **capture** |
-| Gacha remplit le premier slot vide | — |
-
-Évolution possible : limiter le picker run aux 3 `on_field`, ou pré-remplir l’équipe terrain du hub.
+| Roue ×6 : jusqu’à 6 esprits placés ; 3 devant = terrain (affichage sanctuaire) | **1 starter** parmi tous les esprits **possédés** ; **lvl 1** en run |
+| Hors roue = réserve (ajoutable depuis sanctuaire ou codex) | Capture → roue du **run** ; XP uniquement dans la save run |
+| Gacha remplit le premier slot vide | Mort → reset run ; tickets/gemmes hub seulement |
 
 ### Run → gacha (monnaies hub)
 

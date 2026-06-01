@@ -50,6 +50,13 @@ export type DbPlayerSpirit = {
   hp_pct: number;
 };
 
+/** Progression histoire (DB), pas les niveaux éphémères du run roguelite. */
+export type OwnedSpiritStats = {
+  level: number;
+  xp: number;
+  hpPct: number;
+};
+
 export type DbRosterSlot = {
   slot_index: number;
   spirit_id: string | null;

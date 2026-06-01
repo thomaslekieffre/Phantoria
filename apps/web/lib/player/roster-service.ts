@@ -8,15 +8,32 @@ import {
   type SpiritId,
   type SpiritSlot,
 } from "@/components/hub/roster";
-import { SPIRIT_CATALOG, type DbCurrencies, type DbPlayerSpirit, type DbProfile, type DbRosterSlot } from "./types";
+import {
+  SPIRIT_CATALOG,
+  type DbCurrencies,
+  type DbPlayerSpirit,
+  type DbProfile,
+  type DbRosterSlot,
+  type OwnedSpiritStats,
+} from "./types";
 
 export type PlayerSnapshot = {
   profile: DbProfile;
   currencies: DbCurrencies;
   roster: SpiritSlot[];
   unlockedHubIds: SpiritId[];
+  spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
   spiritCount: number;
 };
+
+export function buildSpiritsByHubId(spirits: DbPlayerSpirit[]): Partial<Record<SpiritId, OwnedSpiritStats>> {
+  const out: Partial<Record<SpiritId, OwnedSpiritStats>> = {};
+  for (const s of spirits) {
+    if (!isSpiritId(s.hub_id)) continue;
+    out[s.hub_id] = { level: s.level, xp: s.xp, hpPct: s.hp_pct };
+  }
+  return out;
+}
 
 export function buildEmptyRoster(): SpiritSlot[] {
   return Array.from({ length: MAX_WHEEL }, (_, i) => emptyWheelSlot(i));
@@ -79,6 +96,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     currencies: currencies as DbCurrencies,
     roster,
     unlockedHubIds,
+    spiritsByHubId: buildSpiritsByHubId((spirits ?? []) as DbPlayerSpirit[]),
     spiritCount: spirits?.length ?? 0,
   };
 }

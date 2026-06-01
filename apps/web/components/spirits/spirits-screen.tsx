@@ -4,17 +4,12 @@ import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Rarity } from "@phantoria/game-core";
 import { GameShell } from "@/components/layout/game-shell";
-import {
-  hpTone,
-  isFieldSlotIndex,
-  isSpiritId,
-  rosterIndexForHubId,
-  type SpiritId,
-} from "@/components/hub/roster";
+import { isFieldSlotIndex, isSpiritId, rosterIndexForHubId, type SpiritId } from "@/components/hub/roster";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 import { usePlayer } from "@/components/providers/player-provider";
 import { STANDARD_GACHA_POOL, type GachaPoolEntry } from "@/lib/player/gacha-pool";
+import { SpiritOwnedStats } from "./spirit-owned-stats";
 import "../hub/hub.css";
 import "./spirits.css";
 
@@ -39,6 +34,7 @@ export function SpiritsScreen() {
     hasSpirits,
     placeSpiritFirstFree,
     removeSpiritFromWheel,
+    spiritsByHubId,
     profile,
   } = usePlayer();
   const ownedSet = useMemo(() => new Set(unlockedHubIds), [unlockedHubIds]);
@@ -75,7 +71,7 @@ export function SpiritsScreen() {
     ? (STANDARD_GACHA_POOL.find((e) => e.hubId === activeId) ?? null)
     : null;
   const activeOwned = activeId ? ownedSet.has(activeId) : false;
-  const activeRoster = activeId ? rosterById.get(activeId) : undefined;
+  const activeStats = activeId ? spiritsByHubId[activeId] : undefined;
   const activeSlotIndex = activeId ? rosterIndexForHubId(roster, activeId) : -1;
   const onWheel = activeSlotIndex >= 0;
   const onField = onWheel && isFieldSlotIndex(activeSlotIndex);
@@ -184,6 +180,7 @@ export function SpiritsScreen() {
                   const owned = ownedSet.has(spirit.hubId);
                   const slotIdx = rosterIndexForHubId(roster, spirit.hubId);
                   const onField = slotIdx >= 0 && isFieldSlotIndex(slotIdx);
+                  const stats = spiritsByHubId[spirit.hubId];
                   const active = activeId === spirit.hubId;
                   return (
                     <li key={spirit.hubId}>
@@ -197,6 +194,11 @@ export function SpiritsScreen() {
                         <span className="spirits-card__rarity">{spirit.rarity}</span>
                         <SpiritPortrait id={spirit.hubId} className="spirits-card__art" />
                         <span className="spirits-card__name">{spirit.name}</span>
+                        {stats ? (
+                          <span className="spirits-card__level" title="Niveau histoire">
+                            H.{stats.level}
+                          </span>
+                        ) : null}
                         <span className="spirits-card__tribe">{spirit.tribe}</span>
                         {!owned ? (
                           <span className="spirits-card__lock" aria-hidden>
@@ -243,34 +245,29 @@ export function SpiritsScreen() {
                   </div>
                 </div>
 
-                {activeOwned && activeRoster ? (
+                {activeOwned && activeStats ? (
                   <>
-                    <div className="spirit-sheet__stat">
-                      <div className="spirit-sheet__stat-head">
-                        <span>Points de vie</span>
-                        <span className="spirit-sheet__stat-val">{activeRoster.hp}%</span>
-                      </div>
-                      <div
-                        className={`spirit-sheet__hp spirit-sheet__hp--${hpTone(activeRoster.hp)}`}
-                        role="progressbar"
-                        aria-valuenow={activeRoster.hp}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <span style={{ width: `${activeRoster.hp}%` }} />
-                      </div>
-                    </div>
-                    <p className="spirits-detail__hint">
-                      Réorganise sur la <Link href="/">roue du camp</Link> (2 clics). Les 3 devant
-                      (haut) partent en combat.
-                    </p>
-                    <button
-                      type="button"
-                      className="spirit-sheet__action spirit-sheet__action--ghost"
-                      onClick={() => void handleRemoveFromWheel()}
-                    >
-                      Retirer de la roue
-                    </button>
+                    <SpiritOwnedStats stats={activeStats} rarity={activeSpirit.rarity} />
+                    {onWheel ? (
+                      <>
+                        <p className="spirits-detail__hint">
+                          Réorganise sur la <Link href="/">roue du camp</Link> (2 clics). Les 3
+                          devant = équipe affichée au sanctuaire.
+                        </p>
+                        <button
+                          type="button"
+                          className="spirit-sheet__action spirit-sheet__action--ghost"
+                          onClick={() => void handleRemoveFromWheel()}
+                        >
+                          Retirer de la roue
+                        </button>
+                      </>
+                    ) : (
+                      <p className="spirits-detail__hint">
+                        Run : <strong>1</strong> esprit au départ, <strong>niveau 1</strong> — la
+                        montée d&apos;XP ne compte que jusqu&apos;à la mort du run.
+                      </p>
+                    )}
                   </>
                 ) : activeOwned ? (
                   <>

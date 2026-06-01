@@ -87,7 +87,18 @@ Jeu **gacha + roguelite** dans un monde fantastique d’esprits : hub, collectio
 | SS → UZ+ | À venir (selon le lore) |
 
 
-**Montée de niveau** : XP en combat + objets XP (shop roguelite, récompenses).
+**Montée de niveau** : XP en combat + objets XP (shop roguelite, récompenses) — voir [Niveaux : histoire vs run](#niveaux--progression-deux-pistes) pour ce qui est persisté.
+
+### Niveaux — progression (deux pistes)
+
+| Contexte | Niveau affiché / utilisé | Persistance |
+|----------|--------------------------|-------------|
+| **Sanctuaire (hub)** | `profiles.level` = **niveau joueur histoire** (pas le run) | DB `profiles` |
+| **Collection / codex** | `player_spirits.level`, `xp`, `hp_pct` = **progression histoire** par esprit | DB `player_spirits` |
+| **Roguelite (`/run`)** | Chaque esprit **commence à 1** au départ du run ; monte **uniquement dans ce run** (XP combat, objets) | `active_runs.state_json` (`CombatState`) — **reset à la mort / fin** |
+| **Mode Histoire** (à venir) | Même esprits DB ; pas de permadeath collection ; échec = niveau raté | `player_spirits` + progression zone |
+
+**Règle d’or** : la fin d’un run **ne doit pas** écrire le niveau / XP roguelite dans `player_spirits`. Les récompenses run → hub = **monnaies** (tickets, gemmes), pas les niveaux de combat du run.
 
 ### Capacités par personnage
 
@@ -201,7 +212,7 @@ Principe : **soft pity** (taux croissant) puis **hard pity** (garantie à 100 pu
 
 ### Structure d’un run
 
-1. **Départ** : 1 perso (choisi parmi les débloqués).
+1. **Départ** : 1 perso (choisi parmi les possédés) — **niveau 1** en run, stats recalculées dans `CombatState` (indépendant du niveau histoire en collection).
 2. **Recrutement** : vaincre un ennemi + lancer une **Phantoball** — capture selon **rareté + PV restants**.
 3. **Roue** : max **6 persos** (style Yo-kai) ; **3 sur le terrain** en même temps ; rotation pour remplacer / combler les trous ; si pleine → **éjecter** un perso pour en accueillir un nouveau.
 4. **Combat** : tour par tour (**VIT**), **vagues d’ennemis** ; seuls les **3 sur le terrain** jouent ; **KO = mort définitive** pour le run (trou sur le terrain jusqu’à rotation).
@@ -399,7 +410,7 @@ Persiste entre les runs :
 - **Arbre de passives** persistant.
 - **Persos de départ** débloquables (persos obtenus au gacha éligibles).
 
-Tout ce qui est **run-only** (roue, buffs temporaires, reliques, balls trouvées en run) est **reset** à la mort ou fin de run.
+Tout ce qui est **run-only** (roue du run, **niveaux / XP de combat**, buffs temporaires, reliques, balls trouvées en run) est **reset** à la mort ou fin de run.
 
 ---
 

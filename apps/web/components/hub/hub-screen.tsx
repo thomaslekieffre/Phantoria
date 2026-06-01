@@ -107,7 +107,7 @@ export function HubScreen() {
         <SceneBackdrop />
         <div className="hub__center">
           <p className="hub__line">
-            Sanctuaire · <strong>{displayName}</strong> · niv. {displayLevel}
+            Sanctuaire · <strong>{displayName}</strong> · histoire niv. {displayLevel}
           </p>
           <SpiritWheel
             roster={roster}
