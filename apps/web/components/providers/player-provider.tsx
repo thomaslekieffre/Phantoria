@@ -10,10 +10,28 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@supabase/supabase-js";
-import { INITIAL_ROSTER, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
+import {
+  INITIAL_ROSTER,
+  isSpiritId,
+  placeSpiritOnSlotLocal,
+  removeFromRosterLocal,
+  rosterIndexForHubId,
+  swapRosterSlotsLocal,
+  type SpiritId,
+  type SpiritSlot,
+} from "@/components/hub/roster";
+import { SPIRIT_CATALOG } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
-import { buildEmptyRoster, fetchPlayerSnapshot, persistRosterField, type PlayerSnapshot } from "@/lib/player/roster-service";
+import {
+  buildEmptyRoster,
+  fetchPlayerSnapshot,
+  persistPlaceSpiritFirstFree,
+  persistPlaceSpiritOnSlot,
+  persistRemoveSpiritFromWheel,
+  persistRosterSwap,
+  type PlayerSnapshot,
+} from "@/lib/player/roster-service";
 
 type PlayerContextValue = {
   ready: boolean;
@@ -28,7 +46,10 @@ type PlayerContextValue = {
   gachaPityStandard: number;
   hasSpirits: boolean;
   refresh: () => Promise<void>;
-  toggleField: (hubId: SpiritId) => Promise<void>;
+  swapRosterSlots: (fromIndex: number, toIndex: number) => Promise<void>;
+  placeSpiritOnSlot: (hubId: SpiritId, slotIndex: number) => Promise<void>;
+  placeSpiritFirstFree: (hubId: SpiritId) => Promise<boolean>;
+  removeSpiritFromWheel: (hubId: SpiritId) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -77,32 +98,90 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [refresh]);
 
-  const toggleField = useCallback(
-    async (hubId: SpiritId) => {
+  const swapRosterSlots = useCallback(
+    async (fromIndex: number, toIndex: number) => {
       if (!isSupabaseEnabled() || !user) {
         setSnapshot((prev) => {
           const roster = prev?.roster ?? INITIAL_ROSTER;
-          const slot = roster.find((s) => s.id === hubId);
-          if (!slot || slot.empty) return prev;
+          return prev ? { ...prev, roster: swapRosterSlotsLocal(roster, fromIndex, toIndex) } : prev;
+        });
+        return;
+      }
 
-          const fieldCount = roster.filter((s) => s.onField).length;
-          const nextOnField = !slot.onField;
-          if (nextOnField && fieldCount >= 3) return prev;
+      const supabase = createClient();
+      const ok = await persistRosterSwap(supabase, fromIndex, toIndex);
+      if (ok) await refresh();
+    },
+    [refresh, user],
+  );
 
-          const nextRoster = roster.map((s) =>
-            s.id === hubId ? { ...s, onField: nextOnField } : s,
-          );
+  const placeSpiritOnSlot = useCallback(
+    async (hubId: SpiritId, slotIndex: number) => {
+      if (!isSupabaseEnabled() || !user) {
+        const meta = SPIRIT_CATALOG[hubId];
+        if (!meta) return;
+        setSnapshot((prev) => {
+          const roster = prev?.roster ?? INITIAL_ROSTER;
+          const nextRoster = placeSpiritOnSlotLocal(roster, slotIndex, {
+            id: hubId,
+            name: meta.name,
+            tribe: meta.tribe,
+            hp: 100,
+            hue: meta.hue,
+            rarity: meta.rarity,
+          });
           return prev ? { ...prev, roster: nextRoster } : prev;
         });
         return;
       }
 
       const supabase = createClient();
-      const slot = snapshot?.roster.find((s) => s.id === hubId);
-      if (!slot || slot.empty) return;
-
-      const ok = await persistRosterField(supabase, hubId, !slot.onField);
+      const ok = await persistPlaceSpiritOnSlot(supabase, hubId, slotIndex);
       if (ok) await refresh();
+    },
+    [refresh, user],
+  );
+
+  const placeSpiritFirstFree = useCallback(
+    async (hubId: SpiritId) => {
+      const roster = snapshot?.roster ?? INITIAL_ROSTER;
+      const freeIndex = roster.findIndex((s) => s.empty);
+      if (freeIndex < 0) return false;
+
+      const fromIndex = roster.findIndex((s) => s.id === hubId);
+      if (fromIndex >= 0) {
+        await swapRosterSlots(fromIndex, freeIndex);
+        return true;
+      }
+
+      if (!isSupabaseEnabled() || !user) return false;
+
+      const supabase = createClient();
+      const ok = await persistPlaceSpiritFirstFree(supabase, hubId);
+      if (ok) await refresh();
+      return ok;
+    },
+    [refresh, snapshot?.roster, swapRosterSlots, user],
+  );
+
+  const removeSpiritFromWheel = useCallback(
+    async (hubId: SpiritId) => {
+      const roster = snapshot?.roster ?? INITIAL_ROSTER;
+      const slotIndex = rosterIndexForHubId(roster, hubId);
+      if (slotIndex < 0) return false;
+
+      if (!isSupabaseEnabled() || !user) {
+        setSnapshot((prev) => {
+          const base = prev?.roster ?? INITIAL_ROSTER;
+          return prev ? { ...prev, roster: removeFromRosterLocal(base, slotIndex) } : prev;
+        });
+        return true;
+      }
+
+      const supabase = createClient();
+      const ok = await persistRemoveSpiritFromWheel(supabase, hubId);
+      if (ok) await refresh();
+      return ok;
     },
     [refresh, snapshot?.roster, user],
   );
@@ -134,10 +213,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
       refresh,
-      toggleField,
+      swapRosterSlots,
+      placeSpiritOnSlot,
+      placeSpiritFirstFree,
+      removeSpiritFromWheel,
       signOut,
     };
-  }, [ready, user, snapshot, refresh, toggleField, signOut]);
+  }, [
+    ready,
+    user,
+    snapshot,
+    refresh,
+    swapRosterSlots,
+    placeSpiritOnSlot,
+    placeSpiritFirstFree,
+    removeSpiritFromWheel,
+    signOut,
+  ]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }

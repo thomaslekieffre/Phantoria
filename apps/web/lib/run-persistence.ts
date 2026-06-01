@@ -107,9 +107,22 @@ export async function saveRun(state: CombatState): Promise<void> {
   } = await supabase.auth.getUser();
 
   if (!isResumablePhase(state.phase)) {
+    if (cloudSaveTimer) {
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = null;
+    }
+    pendingCloudState = null;
     clearLocal();
     if (user) {
-      await supabase.from("active_runs").delete().eq("user_id", user.id);
+      if (state.phase === "won" || state.phase === "lost") {
+        await supabase.from("active_runs").upsert({
+          user_id: user.id,
+          state_json: state,
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        await supabase.from("active_runs").delete().eq("user_id", user.id);
+      }
     }
     return;
   }

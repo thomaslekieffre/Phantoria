@@ -4,6 +4,7 @@ export * from "./tribes";
 export * from "./formulas";
 export * from "./characters";
 export * from "./run-rewards";
+export * from "./run-meta-rewards";
 export * from "./run-waves";
 export * from "./skill-text";
 export * from "./passives";

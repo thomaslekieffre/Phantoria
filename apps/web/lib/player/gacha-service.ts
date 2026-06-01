@@ -7,7 +7,7 @@ import {
   rollGachaRarity,
   type Rarity,
 } from "@phantoria/game-core";
-import type { SpiritId } from "@/components/hub/roster";
+import { isFieldSlotIndex, type SpiritId } from "@/components/hub/roster";
 import {
   pickFromPool,
   pickWelcomeEntry,
@@ -47,8 +47,7 @@ async function assignToRoster(supabase: SupabaseClient, userId: string, spiritId
   const free = (slots ?? []).find((s) => !s.spirit_id);
   if (!free) return;
 
-  const fieldCount = (slots ?? []).filter((s) => s.on_field).length;
-  const onField = fieldCount < 3;
+  const onField = isFieldSlotIndex(free.slot_index);
 
   await supabase
     .from("roster_slots")

@@ -51,7 +51,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 |--------|------|
 | `apps/web` | Client Next.js — hub sanctuaire (`/`), routes secondaires |
 | `apps/web/components/layout/` | Shell desktop (sidebar, topbar, game-shell) |
-| `apps/web/components/hub/` | Hub : roue, portraits, panneau fiche + actions |
+| `apps/web/components/hub/` | Hub : roue ×6, réserve, fiche, bench picker |
+| `apps/web/components/spirits/` | Codex collection `/spirits` |
 | `apps/web/components/run/` | Run roguelite : combat, capture, récompenses, reliques |
 | `packages/game-core/` | Moteur TS pur : tribus, formules, `CombatEngine`, vagues, récompenses |
 | `docs/` | GDD, data, tech, ce fichier |
@@ -61,7 +62,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | Route | Écran |
 |-------|--------|
 | `/` | Sanctuaire (hub) |
-| `/spirits` | Collection (stub) |
+| `/spirits` | **Collection** — grille filtrée, fiche, ajouter/retirer de la roue |
 | `/quests` | Quêtes (stub) |
 | `/gacha` | **Invocations** — bannières packs, autel central, taux à droite, multi ×10 |
 | `/more` | Boutique, inventaire, événements… |
@@ -151,7 +152,33 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` (lecture seule monnaies/esprits côté client + trigger anti-triche pity).
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` (récompenses fin de run) · `20260602110000_roster_field_front_slots.sql` (terrain = slots 0, 1, 5).
+
+### Sanctuaire — roue & roster (`apps/web/components/hub/`)
+
+| Fichier | Rôle |
+|---------|------|
+| `spirit-wheel.tsx` | Roue ×6, compteur terrain, sélection / échange |
+| `hub-screen.tsx` | Orchestration clic 2 slots, bench, fiche |
+| `hub-panel.tsx` | Fiche esprit sélectionné + actions |
+| `hub-bench-picker.tsx` | Liste **hors roue** → placer sur un emplacement libre |
+| `roster.ts` | `FIELD_SLOT_INDICES` [0, 1, 5], swap / place / remove local |
+| `roster-service.ts` | Persistance Supabase : swap, place, remove |
+
+**Règles UX**
+
+- **Terrain** : les 3 emplacements **devant** sur la roue (indices visuels `0`, `1`, `5` — arc du haut). Pas de bouton déployer : `on_field` dérivé de la position.
+- **Réorganiser** : 1er clic sur un slot, 2e clic sur un autre → échange (esprit ↔ esprit ou esprit ↔ vide).
+- **Retirer de la roue** : fiche latérale ou codex — l’esprit reste en collection.
+- **Ajouter à la roue** : panneau **Réserve** au sanctuaire (esprits possédés hors roue) ou bouton dans `/spirits` ; cible = slot libre sélectionné ou premier libre.
+- Gacha : nouvel esprit → premier slot vide ; `on_field` si index ∈ {0, 1, 5}.
+
+### Codex esprits (`apps/web/components/spirits/`)
+
+| Fichier | Rôle |
+|---------|------|
+| `spirits-screen.tsx` | Filtres rareté/tribu/possédé, grille, fiche |
+| `spirits.css` | Layout 3 colonnes |
 
 ### Tables
 
@@ -160,7 +187,7 @@ supabase db push
 | `profiles` | Nom affiché, niveau hub |
 | `player_currencies` | Or, gemmes, tickets |
 | `player_spirits` | Collection (hub_id → template_key) |
-| `roster_slots` | Roue ×6 + `on_field` |
+| `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |
 
 RLS : chaque joueur ne voit que ses lignes (`auth.uid()`).
@@ -169,11 +196,20 @@ RLS : chaque joueur ne voit que ses lignes (`auth.uid()`).
 
 | Hub (`/`) | Run (`/run`) |
 |-----------|----------------|
-| Roue ×6 : esprits **possédés** placés sur les slots | Au **début** d’un run : tu **choisis 1 esprit** parmi tous ceux que tu possèdes |
-| Toggle **sur le terrain** (max 3) = préparation sanctuaire, **cosmétique / futur** | Ce choix **ne lit pas** `on_field` : tous les esprits de la collection sont proposés |
-| Gacha remplit les slots vides | En run tu pars **seul** ; les autres arrivent par **capture** |
+| Roue ×6 : jusqu’à 6 esprits possédés placés ; 3 devant = terrain | Au **début** : choix d’**1 starter** parmi les esprits sur la roue (`rosterStarters`) |
+| Hors roue = réserve (ajoutable depuis sanctuaire ou codex) | En run tu pars **seul** ; les autres arrivent par **capture** |
+| Gacha remplit le premier slot vide | — |
 
-Pas besoin de « lier hub↔run » tant que cette règle te convient. Une évolution possible plus tard : limiter le picker aux 3 `on_field`, ou démarrer avec l’équipe déployée au hub.
+Évolution possible : limiter le picker run aux 3 `on_field`, ou pré-remplir l’équipe terrain du hub.
+
+### Run → gacha (monnaies hub)
+
+Fin de run (`phase` `won` ou `lost`) : `computeRunMetaReward` (TS) + crédit DB via `POST /api/run/meta-reward` → RPC Supabase `claim_run_meta_reward` (migration `20260602100000_claim_run_meta_reward.sql`). Fallback service role si RPC absente. Affiché sur l’écran victoire/défaite (erreur visible si échec).
+
+| Résultat | Tickets (indicatif) | Gemmes |
+|----------|---------------------|--------|
+| Défaite | max(1, vague÷5) | vague÷20 |
+| Victoire | vague÷5 + 3 (+5 si 200 vagues) | vague÷20 + 15 (+25 si clear) |
 
 ## Ordre d’implémentation
 

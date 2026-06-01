@@ -1332,6 +1332,25 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.battle__end-reward {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fde68a;
+  letter-spacing: 0.02em;
+}
+
+.battle__end-error {
+  display: block;
+  margin-top: 0.35rem;
+  max-width: 22rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fca5a5;
+  line-height: 1.35;
+}
+
 .battle__end--win {
   background: rgba(20, 40, 24, 0.82);
 }

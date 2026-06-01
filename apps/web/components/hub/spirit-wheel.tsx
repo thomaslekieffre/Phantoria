@@ -1,18 +1,19 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { hpTone, isSpiritId, MAX_FIELD, type SpiritSlot } from "./roster";
+import { hpTone, isSpiritId, isFieldSlotIndex, MAX_FIELD, MAX_WHEEL, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type SpiritWheelProps = {
   roster: SpiritSlot[];
   selectedId: SpiritSlot["id"] | null;
-  onSelect: (id: SpiritSlot["id"]) => void;
+  pickSlotIndex: number | null;
+  onSlotClick: (slotIndex: number) => void;
 };
 
-export function SpiritWheel({ roster, selectedId, onSelect }: SpiritWheelProps) {
-  const onField = roster.filter((s) => s.onField).length;
+export function SpiritWheel({ roster, selectedId, pickSlotIndex, onSlotClick }: SpiritWheelProps) {
+  const fieldFilled = roster.filter((s, i) => !s.empty && isFieldSlotIndex(i)).length;
   const filled = roster.filter((s) => !s.empty).length;
 
   return (
@@ -21,14 +22,11 @@ export function SpiritWheel({ roster, selectedId, onSelect }: SpiritWheelProps) 
         <div>
           <h2 className="wheel__title">Roue d&apos;esprits</h2>
           <p className="wheel__hint">
-            Clique un esprit pour voir sa fiche · max {MAX_FIELD} sur le terrain
+            2 clics pour échanger · les {MAX_FIELD} devant (haut) = terrain
           </p>
         </div>
-        <div
-          className="wheel__counter"
-          title="Combattants actifs en combat (3 max)"
-        >
-          <span className="wheel__counter-num">{onField}</span>
+        <div className="wheel__counter" title="Combattants actifs (3 premiers emplacements)">
+          <span className="wheel__counter-num">{fieldFilled}</span>
           <span className="wheel__counter-lbl">/ {MAX_FIELD} terrain</span>
         </div>
       </header>
@@ -38,19 +36,20 @@ export function SpiritWheel({ roster, selectedId, onSelect }: SpiritWheelProps) 
         <div className="wheel__ring-glow" aria-hidden />
         {roster.map((slot, i) => {
           const selected = selectedId === slot.id;
+          const isField = !slot.empty && isFieldSlotIndex(i);
+          const isPick = pickSlotIndex === i;
           return (
             <button
-              key={slot.id}
+              key={`${slot.id}-${i}`}
               type="button"
-              className={`wheel__slot ${slot.onField ? "wheel__slot--field" : ""} ${slot.empty ? "wheel__slot--empty" : ""} ${selected ? "wheel__slot--selected" : ""}`}
+              className={`wheel__slot ${isField ? "wheel__slot--field" : ""} ${slot.empty ? "wheel__slot--empty" : ""} ${selected ? "wheel__slot--selected" : ""} ${isPick ? "wheel__slot--pick" : ""}`}
               style={{ "--i": i, "--hue": slot.hue } as CSSProperties}
-              disabled={slot.empty}
-              onClick={() => !slot.empty && onSelect(slot.id)}
-              aria-pressed={selected}
+              onClick={() => onSlotClick(i)}
+              aria-pressed={selected || isPick}
               title={
                 slot.empty
-                  ? "Emplacement libre — capture ou gacha"
-                  : `${slot.name} · ${slot.tribe} · ${slot.hp}% PV`
+                  ? "Emplacement libre — échange ou gacha"
+                  : `${slot.name} · ${slot.tribe} · ${slot.hp}% PV${isField ? " · terrain" : ""}`
               }
             >
               <span className="wheel__bubble">
@@ -82,12 +81,12 @@ export function SpiritWheel({ roster, selectedId, onSelect }: SpiritWheelProps) 
               ) : (
                 <span className="wheel__empty-label">Libre</span>
               )}
-              {slot.onField ? <span className="wheel__tag">Terrain</span> : null}
+              {isField ? <span className="wheel__tag">Terrain</span> : null}
             </button>
           );
         })}
         <div className="wheel__core">
-          <span className="wheel__core-val">{filled}/6</span>
+          <span className="wheel__core-val">{filled}/{MAX_WHEEL}</span>
           <span className="wheel__core-lbl">dans la roue</span>
         </div>
       </div>

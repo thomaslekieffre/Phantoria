@@ -1,32 +1,30 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import { hpTone, isSpiritId, MAX_FIELD, type SpiritSlot } from "./roster";
+import { hpTone, isFieldSlotIndex, isSpiritId, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type HubPanelProps = {
   selected: SpiritSlot | null;
-  onToggleField: (id: SpiritSlot["id"]) => void;
-  fieldCount: number;
+  selectedSlotIndex: number | null;
+  onRemoveFromWheel?: () => void;
+  benchPicker?: ReactNode;
   hasSpirits?: boolean;
   spiritCount?: number;
 };
 
 export function HubPanel({
   selected,
-  onToggleField,
-  fieldCount,
+  selectedSlotIndex,
+  onRemoveFromWheel,
+  benchPicker,
   hasSpirits = true,
   spiritCount = 0,
 }: HubPanelProps) {
-  const canDeploy =
-    selected &&
-    !selected.empty &&
-    !selected.onField &&
-    fieldCount < MAX_FIELD;
-  const canRetire = selected && !selected.empty && selected.onField;
+  const onField =
+    selectedSlotIndex != null && isFieldSlotIndex(selectedSlotIndex) && selected && !selected.empty;
 
   return (
     <aside className="hub-panel" aria-label="Fiche et actions">
@@ -44,9 +42,11 @@ export function HubPanel({
                 {selected.rarity ? <RarityBadge rarity={selected.rarity} size="md" /> : null}
               </h2>
               <span
-                className={`spirit-sheet__status ${selected.onField ? "spirit-sheet__status--on" : ""}`}
+                className={`spirit-sheet__status ${onField ? "spirit-sheet__status--on" : ""}`}
               >
-                {selected.onField ? "Sur le terrain" : "En réserve"}
+                {onField
+                  ? `Sur le terrain · empl. ${(selectedSlotIndex ?? 0) + 1}`
+                  : `En réserve · empl. ${(selectedSlotIndex ?? 0) + 1}`}
               </span>
             </div>
           </div>
@@ -67,24 +67,25 @@ export function HubPanel({
             </div>
           </div>
 
-          <button
-            type="button"
-            className="spirit-sheet__action"
-            disabled={!canDeploy && !canRetire}
-            onClick={() => onToggleField(selected.id)}
-          >
-            {selected.onField
-              ? "Retirer du terrain"
-              : fieldCount >= MAX_FIELD
-                ? "Terrain complet (3/3)"
-                : "Mettre sur le terrain"}
-          </button>
+          <p className="spirit-sheet__hint">
+            2 clics sur la roue pour échanger. Les 3 emplacements devant (haut) partent en combat.
+          </p>
+
+          {onRemoveFromWheel ? (
+            <button
+              type="button"
+              className="spirit-sheet__action spirit-sheet__action--ghost"
+              onClick={onRemoveFromWheel}
+            >
+              Retirer de la roue
+            </button>
+          ) : null}
         </section>
       ) : (
         <section className="spirit-sheet spirit-sheet--empty">
           <p className="spirit-sheet__placeholder">
             {hasSpirits
-              ? "Sélectionne un esprit sur la roue"
+              ? "Sélectionne un emplacement sur la roue"
               : "Roue vide — va au gacha pour invoquer"}
           </p>
           {!hasSpirits ? (
@@ -94,6 +95,8 @@ export function HubPanel({
           ) : null}
         </section>
       )}
+
+      {benchPicker}
 
       <div className="hub-panel__section">
         <Link href="/quests" className="hub-panel__quest">

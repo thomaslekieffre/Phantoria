@@ -318,8 +318,25 @@
   transform: scale(1.1);
 }
 
+.wheel__slot--pick {
+  outline: 2px dashed var(--gold);
+  outline-offset: 4px;
+}
+
+.wheel__slot--pick .wheel__bubble {
+  transform: scale(1.05);
+}
+
+.spirit-sheet__hint {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .wheel__slot--empty {
-  cursor: default;
+  cursor: pointer;
 }
 
 .wheel__bubble {
@@ -566,6 +583,110 @@
 .spirit-sheet__action:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.spirit-sheet__action--ghost {
+  margin-top: 0.75rem;
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.spirit-sheet__action--ghost:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+  background: rgba(248, 113, 113, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Bench (esprits hors roue) */
+.hub-bench {
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+}
+
+.hub-bench__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hub-bench__title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.hub-bench__count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.hub-bench__hint {
+  margin: 0.45rem 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.hub-bench__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+
+.hub-bench__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.45rem 0.35rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--hue) 18%, var(--surface));
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.12s;
+}
+
+.hub-bench__card:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--hue) 55%, var(--border));
+}
+
+.hub-bench__card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hub-bench__art {
+  width: 2.25rem;
+  height: auto;
+}
+
+.hub-bench__name {
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.hub-bench__rarity {
+  margin-top: -0.1rem;
 }
 
 /* Panel */

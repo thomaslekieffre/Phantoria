@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import {
   createRunBattle,
   computeCaptureChance,
+  type RunMetaReward,
   RUN_STARTER_WHEEL_INDEX,
   TRIBE_INFO,
   getTypeMultiplier,
@@ -46,6 +47,7 @@ import { WaveRewardPicker } from "@/components/run/wave-reward-picker";
 import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
+import { claimRunMetaReward } from "@/lib/player/run-meta-client";
 import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
 
 const CORE_TO_HUB_MAP = CORE_TO_HUB;
@@ -244,7 +246,7 @@ function SoulSlot({
 }
 
 export function RunScreen() {
-  const { roster } = usePlayer();
+  const { roster, refresh: refreshPlayer, user, supabaseEnabled } = usePlayer();
   const starters = useMemo(() => rosterStarters(roster), [roster]);
   const [engine, setEngine] = useState<CombatEngine | null>(null);
   const [specialActor, setSpecialActor] = useState<string | null>(null);
@@ -358,25 +360,51 @@ export function RunScreen() {
 
   const bump = () => setRenderTick((n) => n + 1);
 
-  useEffect(() => {
-    if (!isOver) return;
-    setSpecialActor(null);
-    setSpecialTarget(null);
-    setCaptureTarget(null);
-    setInspectTarget(null);
-    setInspectAlly(null);
-    setShowTribeChart(false);
-    setCaptureSeq(null);
-    void clearSavedRun();
-    setSavedSummary(null);
-  }, [isOver]);
+  const [metaReward, setMetaReward] = useState<RunMetaReward | null>(null);
+  const [metaGrantError, setMetaGrantError] = useState<string | null>(null);
+  const metaGrantRef = useRef(false);
 
   useEffect(() => {
-    if (!engine) return;
+    if (!isOver || !engine || metaGrantRef.current) return;
+    metaGrantRef.current = true;
+
+    const state = engine.getState();
+    const outcome = state.phase === "won" ? "won" : "lost";
+
+    void (async () => {
+      setMetaGrantError(null);
+      await saveRun(state);
+
+      if (supabaseEnabled && user) {
+        const { reward, error: grantError } = await claimRunMetaReward(state.wave, outcome);
+        if (grantError) {
+          setMetaGrantError(grantError);
+        } else if (reward) {
+          setMetaReward(reward);
+        }
+        await refreshPlayer();
+      } else if (supabaseEnabled && !user) {
+        setMetaGrantError("Connecte-toi pour récupérer tickets et gemmes sur ton compte.");
+      }
+
+      setSpecialActor(null);
+      setSpecialTarget(null);
+      setCaptureTarget(null);
+      setInspectTarget(null);
+      setInspectAlly(null);
+      setShowTribeChart(false);
+      setCaptureSeq(null);
+      await clearSavedRun();
+      setSavedSummary(null);
+    })();
+  }, [isOver, engine, refreshPlayer, supabaseEnabled, user]);
+
+  useEffect(() => {
+    if (!engine || isOver) return;
     void saveRun(engine.getState()).then(() => {
       void getSavedRunSummary().then(setSavedSummary);
     });
-  }, [engine, renderTick]);
+  }, [engine, renderTick, isOver]);
 
   const weakEnemy =
     !isOver && hasAnyBall(runBalls)
@@ -654,6 +682,9 @@ export function RunScreen() {
   };
 
   const restart = () => {
+    metaGrantRef.current = false;
+    setMetaReward(null);
+    setMetaGrantError(null);
     clearSavedRun();
     setSavedSummary(null);
     setEngine(null);
@@ -1013,6 +1044,13 @@ export function RunScreen() {
         <div className="battle__end battle__end--lose battle__end--screen" role="dialog" aria-label="Défaite">
           <p>Défaite…</p>
           <span className="battle__end-meta">Vague {state.wave}/{RUN_MAX_WAVES}</span>
+          {metaReward ? (
+            <span className="battle__end-reward">
+              +{metaReward.tickets} ticket{metaReward.tickets > 1 ? "s" : ""} · +{metaReward.gems} gemme
+              {metaReward.gems > 1 ? "s" : ""} — crédités au gacha
+            </span>
+          ) : null}
+          {metaGrantError ? <span className="battle__end-error">{metaGrantError}</span> : null}
           <button type="button" className="battle__end-btn" onClick={restart}>
             Recommencer
           </button>
@@ -1025,6 +1063,13 @@ export function RunScreen() {
           <span className="battle__end-meta">
             Run terminé — {RUN_MAX_WAVES} vagues · {runRelics.length} relique{runRelics.length > 1 ? "s" : ""}
           </span>
+          {metaReward ? (
+            <span className="battle__end-reward">
+              +{metaReward.tickets} ticket{metaReward.tickets > 1 ? "s" : ""} · +{metaReward.gems} gemme
+              {metaReward.gems > 1 ? "s" : ""} — crédités au gacha
+            </span>
+          ) : null}
+          {metaGrantError ? <span className="battle__end-error">{metaGrantError}</span> : null}
           <button type="button" className="battle__end-btn" onClick={restart}>
             Nouveau run
           </button>

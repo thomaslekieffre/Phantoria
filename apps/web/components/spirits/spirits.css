@@ -1,0 +1,321 @@
+/* Collection /spirits */
+
+.spirits-scene {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0.75rem 1.25rem 1rem;
+  background: var(--void);
+  overflow: hidden;
+}
+
+.spirits-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+  max-width: 72rem;
+  width: 100%;
+  margin: 0 auto 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.spirits-top__kicker {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.spirits-top__title {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.spirits-top__meta {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.spirits-top__meta strong {
+  color: var(--text);
+}
+
+.spirits-body {
+  display: grid;
+  grid-template-columns: minmax(9rem, 11rem) minmax(0, 1fr) minmax(16rem, 20rem);
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+  max-width: 72rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.spirits-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  box-shadow: var(--hard-shadow);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.spirits-filter-group {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spirits-filter-group legend,
+.spirits-filter-group__label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.spirits-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.spirits-filter-pills--stack {
+  flex-direction: column;
+}
+
+.spirits-pill {
+  padding: 0.35rem 0.55rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.spirits-pill:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.spirits-pill--on {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.spirits-pill--s.spirits-pill--on {
+  background: linear-gradient(135deg, #fde047, #f59e0b);
+}
+
+.spirits-select {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.spirits-grid-wrap {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.spirits-grid-empty {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.spirits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.65rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.spirits-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0.65rem 0.4rem 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--hard-shadow);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.12s, box-shadow 0.1s;
+  text-align: center;
+}
+
+.spirits-card:hover {
+  transform: translate(-1px, -1px);
+  border-color: color-mix(in srgb, var(--hue) 55%, var(--border));
+}
+
+.spirits-card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), var(--hard-shadow);
+}
+
+.spirits-card--locked {
+  opacity: 0.72;
+}
+
+.spirits-card--locked .spirits-card__art {
+  filter: grayscale(0.85) brightness(0.65);
+}
+
+.spirits-card__rarity {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 900;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text);
+}
+
+.spirits-card--s .spirits-card__rarity {
+  color: #fde047;
+}
+
+.spirits-card__art {
+  width: 3.25rem;
+  height: auto;
+  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--hue) 35%, transparent));
+}
+
+.spirits-card__name {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.spirits-card__tribe {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.spirits-card__lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+.spirits-card__owned {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--success);
+}
+
+.spirits-card__field {
+  margin-top: 0.2rem;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--success);
+}
+
+.spirits-detail {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.spirits-detail .spirit-sheet {
+  margin: 0;
+}
+
+.spirits-detail__hero--locked .spirit-sheet__art {
+  filter: grayscale(0.7) brightness(0.75);
+}
+
+.spirits-detail__hint {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.spirits-detail__hint a {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.spirits-detail__cta {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.spirits-detail__template {
+  margin: 1rem 0 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.spirits-detail__template code {
+  font-size: 0.65rem;
+  opacity: 0.85;
+}
+
+@media (max-width: 900px) {
+  .spirits-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .spirits-filters {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .spirits-filter-pills--stack {
+    flex-direction: row;
+  }
+}

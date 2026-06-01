@@ -5,27 +5,100 @@ import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
 import { usePlayer } from "@/components/providers/player-provider";
 import { HubPanel } from "./hub-panel";
-import { isSpiritId, type SpiritSlot } from "./roster";
+import { isSpiritId, rosterIndexForHubId, type SpiritId, type SpiritSlot } from "./roster";
 import { SceneBackdrop } from "./scene-backdrop";
 import { SpiritWheel } from "./spirit-wheel";
+import { HubBenchPicker } from "./hub-bench-picker";
+import { SPIRIT_CATALOG } from "@/lib/player/types";
 import "./hub.css";
 
 export function HubScreen() {
-  const { roster, profile, toggleField, hasSpirits, spiritCount } = usePlayer();
+  const {
+    roster,
+    profile,
+    unlockedHubIds,
+    swapRosterSlots,
+    placeSpiritOnSlot,
+    removeSpiritFromWheel,
+    hasSpirits,
+    spiritCount,
+  } = usePlayer();
   const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>(null);
+  const [pickSlotIndex, setPickSlotIndex] = useState<number | null>(null);
 
   const selected = useMemo(
     () => roster.find((s) => s.id === selectedId && !s.empty) ?? null,
     [roster, selectedId],
   );
 
-  const fieldCount = roster.filter((s) => s.onField).length;
+  const selectedSlotIndex = useMemo(() => {
+    if (!selected || !isSpiritId(selected.id)) return null;
+    const idx = rosterIndexForHubId(roster, selected.id);
+    return idx >= 0 ? idx : null;
+  }, [roster, selected]);
+
   const displayName = profile?.display_name ?? "Tomy";
   const displayLevel = profile?.level ?? 1;
 
-  function handleToggleField(id: SpiritSlot["id"]) {
-    if (!isSpiritId(id)) return;
-    void toggleField(id);
+  const onWheelIds = useMemo(() => {
+    const ids = new Set<SpiritId>();
+    for (const s of roster) {
+      if (!s.empty && isSpiritId(s.id)) ids.add(s.id);
+    }
+    return ids;
+  }, [roster]);
+
+  const benchSpirits = useMemo(
+    () => unlockedHubIds.filter((id) => !onWheelIds.has(id)).map((id) => SPIRIT_CATALOG[id]),
+    [unlockedHubIds, onWheelIds],
+  );
+
+  const wheelFull = roster.every((s) => !s.empty);
+  const targetEmptySlotIndex = useMemo(() => {
+    if (pickSlotIndex != null && roster[pickSlotIndex]?.empty) return pickSlotIndex;
+    return roster.findIndex((s) => s.empty);
+  }, [pickSlotIndex, roster]);
+
+  function handleSlotClick(index: number) {
+    const slot = roster[index];
+    if (!slot) return;
+
+    if (pickSlotIndex === null) {
+      if (!slot.empty) setSelectedId(slot.id);
+      else setSelectedId(null);
+      setPickSlotIndex(index);
+      return;
+    }
+
+    if (pickSlotIndex === index) {
+      setPickSlotIndex(null);
+      return;
+    }
+
+    void swapRosterSlots(pickSlotIndex, index);
+    setPickSlotIndex(null);
+    if (!slot.empty) setSelectedId(slot.id);
+  }
+
+  async function handleRemoveFromWheel() {
+    if (!selected || !isSpiritId(selected.id)) return;
+    const ok = await removeSpiritFromWheel(selected.id);
+    if (ok) {
+      setSelectedId(null);
+      setPickSlotIndex(null);
+    }
+  }
+
+  function handlePlaceBenchSpirit(hubId: SpiritId) {
+    const slotIndex =
+      pickSlotIndex != null && roster[pickSlotIndex]?.empty
+        ? pickSlotIndex
+        : roster.findIndex((s) => s.empty);
+    if (slotIndex < 0) return;
+    void placeSpiritOnSlot(hubId, slotIndex).then(() => {
+      setSelectedId(hubId);
+      setPickSlotIndex(slotIndex);
+    });
   }
 
   return (
@@ -39,7 +112,8 @@ export function HubScreen() {
           <SpiritWheel
             roster={roster}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            pickSlotIndex={pickSlotIndex}
+            onSlotClick={handleSlotClick}
           />
           {!hasSpirits ? (
             <Link href="/gacha" className="hub__gacha-cta">
@@ -49,10 +123,20 @@ export function HubScreen() {
         </div>
         <HubPanel
           selected={selected}
-          onToggleField={handleToggleField}
-          fieldCount={fieldCount}
+          selectedSlotIndex={selectedSlotIndex}
+          onRemoveFromWheel={selected ? () => void handleRemoveFromWheel() : undefined}
           hasSpirits={hasSpirits}
           spiritCount={spiritCount}
+          benchPicker={
+            hasSpirits ? (
+              <HubBenchPicker
+                spirits={benchSpirits}
+                targetSlotIndex={targetEmptySlotIndex >= 0 ? targetEmptySlotIndex : null}
+                wheelFull={wheelFull}
+                onPlace={handlePlaceBenchSpirit}
+              />
+            ) : null
+          }
         />
       </div>
     </GameShell>

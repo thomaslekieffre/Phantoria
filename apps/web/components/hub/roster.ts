@@ -37,14 +37,77 @@ export type SpiritSlot = {
 export const MAX_FIELD = 3;
 export const MAX_WHEEL = 6;
 
-export const INITIAL_ROSTER: SpiritSlot[] = [
-  { id: "bram", name: "Bram", tribe: "Vaillants", hp: 100, onField: true, hue: "#f97316", rarity: "E" },
-  { id: "nyx", name: "Nyx", tribe: "Mystérieux", hp: 72, onField: true, hue: "#a855f7", rarity: "C" },
-  { id: "luma", name: "Luma", tribe: "Mignons", hp: 100, onField: true, hue: "#ec4899", rarity: "B" },
+/** Positions visuelles « devant » sur la roue (arc du haut : 12h, 1h30, 10h30). */
+export const FIELD_SLOT_INDICES: readonly number[] = [0, 1, 5];
+
+const FIELD_SLOT_SET = new Set(FIELD_SLOT_INDICES);
+
+export function isFieldSlotIndex(slotIndex: number): boolean {
+  return FIELD_SLOT_SET.has(slotIndex);
+}
+
+export function emptyWheelSlot(slotIndex: number): SpiritSlot {
+  return {
+    id: `empty-${slotIndex + 1}` as SpiritSlot["id"],
+    name: "Libre",
+    tribe: "—",
+    hp: 0,
+    onField: false,
+    hue: "#475569",
+    empty: true,
+  };
+}
+
+export function placeSpiritOnSlotLocal(
+  roster: SpiritSlot[],
+  slotIndex: number,
+  spirit: Pick<SpiritSlot, "id" | "name" | "tribe" | "hp" | "hue" | "rarity">,
+): SpiritSlot[] {
+  if (slotIndex < 0 || slotIndex >= MAX_WHEEL) return roster;
+
+  const fromIndex = roster.findIndex((s) => s.id === spirit.id);
+  if (fromIndex >= 0) return swapRosterSlotsLocal(roster, fromIndex, slotIndex);
+
+  const next = [...roster];
+  next[slotIndex] = { ...spirit, onField: false, empty: undefined };
+  return applyFieldFlags(next);
+}
+
+export function removeFromRosterLocal(roster: SpiritSlot[], slotIndex: number): SpiritSlot[] {
+  if (slotIndex < 0 || slotIndex >= MAX_WHEEL) return roster;
+  const next = [...roster];
+  next[slotIndex] = emptyWheelSlot(slotIndex);
+  return applyFieldFlags(next);
+}
+
+export function applyFieldFlags(roster: SpiritSlot[]): SpiritSlot[] {
+  return roster.map((s, i) => ({
+    ...s,
+    onField: !s.empty && isFieldSlotIndex(i),
+  }));
+}
+
+export function swapRosterSlotsLocal(roster: SpiritSlot[], fromIndex: number, toIndex: number): SpiritSlot[] {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= MAX_WHEEL || toIndex >= MAX_WHEEL) {
+    return roster;
+  }
+  const next = [...roster];
+  [next[fromIndex], next[toIndex]] = [next[toIndex]!, next[fromIndex]!];
+  return applyFieldFlags(next);
+}
+
+export function rosterIndexForHubId(roster: SpiritSlot[], hubId: SpiritId): number {
+  return roster.findIndex((s) => s.id === hubId);
+}
+
+export const INITIAL_ROSTER: SpiritSlot[] = applyFieldFlags([
+  { id: "bram", name: "Bram", tribe: "Vaillants", hp: 100, onField: false, hue: "#f97316", rarity: "E" },
+  { id: "nyx", name: "Nyx", tribe: "Mystérieux", hp: 72, onField: false, hue: "#a855f7", rarity: "C" },
+  { id: "empty-3", name: "Libre", tribe: "—", hp: 0, onField: false, hue: "#475569", empty: true },
   { id: "kiro", name: "Kiro", tribe: "Malins", hp: 88, onField: false, hue: "#22d3ee", rarity: "D" },
   { id: "empty-5", name: "Libre", tribe: "—", hp: 0, onField: false, hue: "#475569", empty: true },
-  { id: "empty-6", name: "Libre", tribe: "—", hp: 0, onField: false, hue: "#475569", empty: true },
-];
+  { id: "luma", name: "Luma", tribe: "Mignons", hp: 100, onField: false, hue: "#ec4899", rarity: "B" },
+]);
 
 export function hpTone(hp: number) {
   if (hp >= 80) return "ok";
