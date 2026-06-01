@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import type { HubEvent } from "@/lib/hub/hub-events";
 import { hpTone, isFieldSlotIndex, isSpiritId, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
@@ -13,6 +14,8 @@ type HubPanelProps = {
   benchPicker?: ReactNode;
   hasSpirits?: boolean;
   spiritCount?: number;
+  runsCompleted?: number;
+  hubEvent?: HubEvent | null;
 };
 
 export function HubPanel({
@@ -22,6 +25,8 @@ export function HubPanel({
   benchPicker,
   hasSpirits = true,
   spiritCount = 0,
+  runsCompleted = 0,
+  hubEvent = null,
 }: HubPanelProps) {
   const onField =
     selectedSlotIndex != null && isFieldSlotIndex(selectedSlotIndex) && selected && !selected.empty;
@@ -111,20 +116,22 @@ export function HubPanel({
 
       <div className="hub-panel__section hub-panel__stats">
         <div className="hub-panel__stat">
-          <span className="hub-panel__stat-val">12</span>
+          <span className="hub-panel__stat-val">{runsCompleted}</span>
           <span className="hub-panel__stat-lbl">Runs</span>
         </div>
         <div className="hub-panel__stat">
           <span className="hub-panel__stat-val">{spiritCount}</span>
           <span className="hub-panel__stat-lbl">Esprits</span>
         </div>
-        <Link href="/more" className="hub-panel__event">
-          <span className="hub-panel__event-dot" />
-          <span>
-            <span className="hub-panel__event-kicker">Événement</span>
-            <span className="hub-panel__event-title">Lune des captures</span>
-          </span>
-        </Link>
+        {hubEvent ? (
+          <Link href={hubEvent.href} className="hub-panel__event">
+            <span className="hub-panel__event-dot" />
+            <span>
+              <span className="hub-panel__event-kicker">Événement</span>
+              <span className="hub-panel__event-title">{hubEvent.title}</span>
+            </span>
+          </Link>
+        ) : null}
       </div>
 
       <div className="hub-panel__section hub-panel__plays">

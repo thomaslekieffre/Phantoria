@@ -271,9 +271,10 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 2. ✅ **`game-core`** — tribus, formules, combat (VIT, Âmes 0→1, capture)
 3. ✅ **Écran `/run`** — run roguelite : **1 starter** choisi parmi les esprits possédés, puis capture en run
 4. ✅ **Supabase** — auth, profil, roster, gacha (welcome + standard, pity), meta-récompenses fin de run
-5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV depuis `player_spirits`
-6. **À faire** — `/story` (niveau 1), `/quests`, `/more`
-7. **Rappel design** — `profiles.level` + `player_spirits.level` = **histoire** ; run = lvl 1 → monte dans `active_runs` jusqu’à mort, **sans** écrire l’XP run en DB collection
+5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV histoire
+6. ✅ **Profil `/profile`** — identité, stats hub, monnaies, compte
+7. **À faire** — `/story` (niveau 1), `/quests`, boutique `/shop`
+7. **Rappel design** — niveaux sanctuaire = histoire ; run = lvl 1 éphémère
 
 ## Hors scope infra v0
 

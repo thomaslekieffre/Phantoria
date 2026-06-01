@@ -67,7 +67,13 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
   if (!user) return null;
 
   const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, level, welcome_pulls_remaining, gacha_pity_standard").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select(
+        "id, display_name, level, runs_completed, welcome_pulls_remaining, gacha_pity_standard, created_at",
+      )
+      .eq("id", user.id)
+      .single(),
     supabase.from("player_currencies").select("gold, gems, tickets").eq("user_id", user.id).single(),
     supabase.from("player_spirits").select("id, hub_id, template_key, level, xp, hp_pct").eq("user_id", user.id),
     supabase
@@ -91,8 +97,10 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     .map((s) => s.hub_id)
     .filter((id): id is SpiritId => isSpiritId(id));
 
+  const prof = profile as DbProfile & { runs_completed?: number };
+
   return {
-    profile: profile as DbProfile,
+    profile: { ...prof, runs_completed: prof.runs_completed ?? 0 },
     currencies: currencies as DbCurrencies,
     roster,
     unlockedHubIds,

@@ -9,6 +9,7 @@ import { isSpiritId, rosterIndexForHubId, type SpiritId, type SpiritSlot } from 
 import { SceneBackdrop } from "./scene-backdrop";
 import { SpiritWheel } from "./spirit-wheel";
 import { HubBenchPicker } from "./hub-bench-picker";
+import { getActiveHubEvent } from "@/lib/hub/hub-events";
 import { SPIRIT_CATALOG } from "@/lib/player/types";
 import "./hub.css";
 
@@ -22,7 +23,10 @@ export function HubScreen() {
     removeSpiritFromWheel,
     hasSpirits,
     spiritCount,
+    runsCompleted,
   } = usePlayer();
+
+  const hubEvent = useMemo(() => getActiveHubEvent(), []);
   const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>(null);
   const [pickSlotIndex, setPickSlotIndex] = useState<number | null>(null);
 
@@ -127,6 +131,8 @@ export function HubScreen() {
           onRemoveFromWheel={selected ? () => void handleRemoveFromWheel() : undefined}
           hasSpirits={hasSpirits}
           spiritCount={spiritCount}
+          runsCompleted={runsCompleted}
+          hubEvent={hubEvent}
           benchPicker={
             hasSpirits ? (
               <HubBenchPicker

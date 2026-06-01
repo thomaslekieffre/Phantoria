@@ -31,8 +31,10 @@ export type DbProfile = {
   id: string;
   display_name: string;
   level: number;
+  runs_completed: number;
   welcome_pulls_remaining: number;
   gacha_pity_standard: number;
+  created_at?: string;
 };
 
 export type DbCurrencies = {

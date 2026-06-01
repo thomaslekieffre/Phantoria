@@ -80,6 +80,15 @@ async function claimViaAdmin(
 
   await supabase.from("active_runs").delete().eq("user_id", userId);
 
+  const { data: profile } = await supabase.from("profiles").select("runs_completed").eq("id", userId).single();
+
+  if (profile) {
+    await supabase
+      .from("profiles")
+      .update({ runs_completed: (profile.runs_completed ?? 0) + 1 })
+      .eq("id", userId);
+  }
+
   return { reward };
 }
 

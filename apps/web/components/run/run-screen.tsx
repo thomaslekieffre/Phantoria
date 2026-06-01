@@ -48,6 +48,7 @@ import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/compone
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
 import { claimRunMetaReward } from "@/lib/player/run-meta-client";
+import { incrementLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
 
 const CORE_TO_HUB_MAP = CORE_TO_HUB;
@@ -389,6 +390,10 @@ export function RunScreen() {
         await refreshPlayer();
       } else if (supabaseEnabled && !user) {
         setMetaGrantError("Connecte-toi pour récupérer tickets et gemmes sur ton compte.");
+        incrementLocalRunsCompleted();
+      } else {
+        incrementLocalRunsCompleted();
+        await refreshPlayer();
       }
 
       setSpecialActor(null);

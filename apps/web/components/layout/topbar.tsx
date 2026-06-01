@@ -5,7 +5,7 @@ import { IconCoin, IconCube, IconGem } from "@/components/ui/icons";
 import { usePlayer } from "@/components/providers/player-provider";
 
 export function Topbar() {
-  const { currencies, supabaseEnabled, user, signOut } = usePlayer();
+  const { currencies, profile, supabaseEnabled, user, signOut } = usePlayer();
 
   const gold = currencies?.gold ?? 1200;
   const gems = currencies?.gems ?? 35;
@@ -22,9 +22,14 @@ export function Topbar() {
           </Link>
         ) : null}
         {supabaseEnabled && user ? (
-          <button type="button" className="topbar__auth" onClick={() => void signOut()}>
-            Déconnexion
-          </button>
+          <>
+            <Link href="/profile" className="topbar__profile" title="Mon profil">
+              {profile?.display_name ?? "Profil"}
+            </Link>
+            <button type="button" className="topbar__auth" onClick={() => void signOut()}>
+              Déconnexion
+            </button>
+          </>
         ) : null}
 
         <div className="topbar__wallet">

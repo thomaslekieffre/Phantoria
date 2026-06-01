@@ -2,12 +2,14 @@ import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
 import {
   IconBag,
+  IconCamp,
   IconEvent,
   IconShop,
   IconStory,
 } from "@/components/ui/icons";
 
 const LINKS = [
+  { href: "/profile", label: "Profil", sub: "Compte & statistiques", Icon: IconCamp },
   { href: "/story", label: "Histoire", sub: "165 niveaux", Icon: IconStory },
   { href: "/shop", label: "Boutique", sub: "Offres & packs", Icon: IconShop },
   { href: "/inventory", label: "Inventaire", sub: "Objets & Phantoballs", Icon: IconBag },

@@ -20,6 +20,7 @@ import {
   type SpiritId,
   type SpiritSlot,
 } from "@/components/hub/roster";
+import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
@@ -43,6 +44,7 @@ type PlayerContextValue = {
   unlockedHubIds: SpiritId[];
   spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
   spiritCount: number;
+  runsCompleted: number;
   welcomePullsRemaining: number;
   gachaPityStandard: number;
   hasSpirits: boolean;
@@ -67,9 +69,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isSupabaseEnabled());
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<PlayerSnapshot | null>(null);
+  const [statsTick, setStatsTick] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!isSupabaseEnabled()) {
+      setStatsTick((n) => n + 1);
       setReady(true);
       return;
     }
@@ -82,12 +86,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     if (!nextUser) {
       setSnapshot(null);
+      setStatsTick((n) => n + 1);
       setReady(true);
       return;
     }
 
     const next = await fetchPlayerSnapshot(supabase);
     setSnapshot(next);
+    setStatsTick((n) => n + 1);
     setReady(true);
   }, []);
 
@@ -205,6 +211,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const supabaseOn = isSupabaseEnabled();
     const loggedIn = Boolean(user);
     const mockRoster = !supabaseOn || !loggedIn;
+    void statsTick;
 
     return {
       ready,
@@ -218,6 +225,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         : (snapshot?.unlockedHubIds ?? []),
       spiritsByHubId: mockRoster ? MOCK_SPIRITS_BY_HUB : (snapshot?.spiritsByHubId ?? {}),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
+      runsCompleted: mockRoster ? getLocalRunsCompleted() : (snapshot?.profile?.runs_completed ?? 0),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
@@ -238,6 +246,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     placeSpiritFirstFree,
     removeSpiritFromWheel,
     signOut,
+    statsTick,
   ]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

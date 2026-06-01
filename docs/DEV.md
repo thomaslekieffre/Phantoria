@@ -66,6 +66,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/quests` | Quêtes (stub) |
 | `/gacha` | **Invocations** — bannières packs, autel central, taux à droite, multi ×10 |
 | `/more` | Boutique, inventaire, événements… |
+| `/events` | **Événements** — bannière active (ex. Lune des captures) |
+| `/profile` | **Profil** — nom, stats, monnaies, compte |
 | `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
 | `/login` | Connexion Supabase (si env configuré) |
 | `/story` | Mode Histoire (stub, gate si 0 esprit) |
@@ -152,7 +154,23 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` (récompenses fin de run) · `20260602110000_roster_field_front_slots.sql` (terrain = slots 0, 1, 5).
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql`.
+
+**Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
+
+### Profil (`/profile`)
+
+| Fichier | Rôle |
+|---------|------|
+| `profile-screen.tsx` | Fiche joueur : identité, progression, monnaies, compte |
+| `profile.css` | Layout cartes profil |
+| `profile-service.ts` | `persistDisplayName` (2–24 car.) |
+
+Accès : topbar (nom du joueur) · **Plus** → Profil · `/profile`.
+
+### Événements (`/events`)
+
+Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire → page détail + CTA run.
 
 ### Sanctuaire — roue & roster (`apps/web/components/hub/`)
 
@@ -185,7 +203,7 @@ supabase db push
 
 | Table | Rôle |
 |-------|------|
-| `profiles` | Nom affiché, **`level` = niveau histoire** (affiché au sanctuaire) |
+| `profiles` | Nom affiché, **`level` = niveau histoire**, **`runs_completed`** (runs roguelite terminées) |
 | `player_currencies` | Or, gemmes, tickets |
 | `player_spirits` | Collection ; **`level` / `xp` / `hp_pct` = histoire** (codex), pas le run |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
