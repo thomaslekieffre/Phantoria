@@ -9,5 +9,6 @@ export * from "./skill-text";
 export * from "./passives";
 export * from "./xp";
 export * from "./run-save";
+export * from "./gacha";
 export * from "./run-dev";
 export * from "./combat-engine";

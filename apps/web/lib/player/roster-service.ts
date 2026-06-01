@@ -47,6 +47,7 @@ export function buildRosterFromDb(slots: DbRosterSlot[]): SpiritSlot[] {
       hp: spirit.hp_pct,
       onField: Boolean(slot?.on_field),
       hue: meta.hue,
+      rarity: meta.rarity,
     };
   });
 }
@@ -58,7 +59,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
   if (!user) return null;
 
   const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, level, welcome_pulls_remaining").eq("id", user.id).single(),
+    supabase.from("profiles").select("id, display_name, level, welcome_pulls_remaining, gacha_pity_standard").eq("id", user.id).single(),
     supabase.from("player_currencies").select("gold, gems, tickets").eq("user_id", user.id).single(),
     supabase.from("player_spirits").select("id, hub_id, template_key, level, xp, hp_pct").eq("user_id", user.id),
     supabase

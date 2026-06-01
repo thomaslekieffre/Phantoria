@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { hpTone, isSpiritId, MAX_FIELD, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
+import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type SpiritWheelProps = {
   roster: SpiritSlot[];
@@ -56,7 +57,12 @@ export function SpiritWheel({ roster, selectedId, onSelect }: SpiritWheelProps) 
                 {slot.empty ? (
                   <span className="wheel__hole" aria-hidden />
                 ) : isSpiritId(slot.id) ? (
-                  <SpiritPortrait id={slot.id} className="wheel__portrait" />
+                  <>
+                    {slot.rarity ? (
+                      <RarityBadge rarity={slot.rarity} size="xs" className="wheel__rarity" />
+                    ) : null}
+                    <SpiritPortrait id={slot.id} className="wheel__portrait" />
+                  </>
                 ) : null}
               </span>
               {!slot.empty ? (

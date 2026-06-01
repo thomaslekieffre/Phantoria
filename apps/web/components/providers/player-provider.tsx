@@ -25,6 +25,7 @@ type PlayerContextValue = {
   unlockedHubIds: SpiritId[];
   spiritCount: number;
   welcomePullsRemaining: number;
+  gachaPityStandard: number;
   hasSpirits: boolean;
   refresh: () => Promise<void>;
   toggleField: (hubId: SpiritId) => Promise<void>;
@@ -130,6 +131,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         : (snapshot?.unlockedHubIds ?? []),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
+      gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
       refresh,
       toggleField,

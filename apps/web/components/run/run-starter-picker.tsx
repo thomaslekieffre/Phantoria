@@ -5,6 +5,8 @@ import type { CSSProperties } from "react";
 import { HUB_TO_CORE } from "@phantoria/game-core";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { INITIAL_ROSTER, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
+import { RarityBadge } from "@/components/ui/rarity-badge";
+import { rarityForHubId } from "@/lib/spirit-rarity";
 import "./run.css";
 
 const DEFAULT_STARTERS = INITIAL_ROSTER.filter(
@@ -63,6 +65,11 @@ export function RunStarterPicker({
                   style={{ "--hue": s.hue } as CSSProperties}
                   onClick={() => onPick(s.id)}
                 >
+                  <RarityBadge
+                    rarity={s.rarity ?? rarityForHubId(s.id) ?? "E"}
+                    size="sm"
+                    className="run-pick__rarity"
+                  />
                   <SpiritPortrait id={s.id} className="run-pick__portrait" />
                   <span className="run-pick__name">{s.name}</span>
                   <span className="run-pick__tribe">{s.tribe}</span>

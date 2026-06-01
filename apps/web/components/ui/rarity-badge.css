@@ -1,0 +1,65 @@
+.rarity-badge {
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  font-family: var(--font-outfit), sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.rarity-badge--xs {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.2rem;
+  font-size: 0.55rem;
+  border-radius: 0.2rem;
+}
+
+.rarity-badge--sm {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.25rem;
+  font-size: 0.65rem;
+  border-radius: 0.25rem;
+}
+
+.rarity-badge--md {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  border-radius: 0.3rem;
+}
+
+.rarity-badge--s {
+  background: linear-gradient(180deg, #fde047, #ca8a04);
+  color: #422006;
+  box-shadow: 0 0 8px rgba(253, 224, 71, 0.45), 1px 1px 0 var(--ink);
+}
+
+.rarity-badge--a {
+  background: #c084fc;
+  color: #3b0764;
+}
+
+.rarity-badge--b {
+  background: #60a5fa;
+  color: #1e3a8a;
+}
+
+.rarity-badge--c {
+  background: #4ade80;
+  color: #14532d;
+}
+
+.rarity-badge--d {
+  background: #94a3b8;
+  color: #0f172a;
+}
+
+.rarity-badge--e {
+  background: #a8a29e;
+  color: #1c1917;
+}

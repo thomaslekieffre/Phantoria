@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx --test src/formulas.test.ts"
+    "test": "tsx --test src/*.test.ts"
   },
   "devDependencies": {
     "tsx": "^4.22.2",

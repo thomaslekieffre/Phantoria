@@ -10,6 +10,7 @@ import {
 } from "@phantoria/game-core";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { CombatantSkills, CombatantXpBar } from "@/components/run/combatant-skills";
+import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type FoeInspectProps = {
   foe: Combatant;
@@ -58,7 +59,10 @@ export function FoeInspect({ foe, fieldAllies, onClose, onCapture, onOpenChart }
           <CombatSpirit templateKey={foe.templateKey} name={foe.name} className="foe-inspect__sprite" />
         </div>
         <div>
-          <h3 className="foe-inspect__name">{foe.name}</h3>
+          <h3 className="foe-inspect__name">
+            {foe.name}
+            <RarityBadge rarity={foe.rarity} size="md" />
+          </h3>
           <p className="foe-inspect__tribe">
             {tribeInfo.emoji} {tribeInfo.label}
           </p>

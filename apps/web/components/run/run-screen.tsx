@@ -40,6 +40,7 @@ import { rosterStarters, usePlayer } from "@/components/providers/player-provide
 import { CORE_TO_HUB } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
+import { RarityBadge } from "@/components/ui/rarity-badge";
 import { TribeChart } from "@/components/run/tribe-chart";
 import { WaveRewardPicker } from "@/components/run/wave-reward-picker";
 import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
@@ -89,6 +90,7 @@ function AllyFieldSprite({
         className="battle-ally__body"
         style={{ background: `color-mix(in srgb, ${hue} 78%, #1a1028 22%)` }}
       >
+        <RarityBadge rarity={c.rarity} size="xs" className="battle-sprite__rarity" />
         <CombatSpirit templateKey={c.templateKey} name={c.name} className="battle-ally__sprite" />
       </div>
     </button>
@@ -166,10 +168,11 @@ function EnemyFieldSprite({
         className="battle-foe__body"
         style={{ background: `color-mix(in srgb, ${hue} 78%, #1a1028 22%)` }}
       >
+        <RarityBadge rarity={c.rarity} size="xs" className="battle-sprite__rarity" />
         <CombatSpirit templateKey={c.templateKey} name={c.name} className="battle-foe__sprite" />
       </div>
       <span className="battle-foe__tribe">
-        {tribeInfo.emoji} {tribeInfo.label}
+        {tribeInfo.emoji} {tribeInfo.label} · {c.rarity}
       </span>
       {floater ? (
         <span className="battle-foe__dmg" key={floater.id}>

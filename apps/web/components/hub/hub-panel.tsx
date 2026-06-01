@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { hpTone, isSpiritId, MAX_FIELD, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
+import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type HubPanelProps = {
   selected: SpiritSlot | null;
@@ -38,7 +39,10 @@ export function HubPanel({
             <SpiritPortrait id={selected.id} className="spirit-sheet__art" />
             <div className="spirit-sheet__meta">
               <span className="spirit-sheet__tribe">{selected.tribe}</span>
-              <h2 className="spirit-sheet__name">{selected.name}</h2>
+              <h2 className="spirit-sheet__name">
+                {selected.name}
+                {selected.rarity ? <RarityBadge rarity={selected.rarity} size="md" /> : null}
+              </h2>
               <span
                 className={`spirit-sheet__status ${selected.onField ? "spirit-sheet__status--on" : ""}`}
               >

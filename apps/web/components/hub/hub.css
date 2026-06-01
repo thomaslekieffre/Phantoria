@@ -323,16 +323,24 @@
 }
 
 .wheel__bubble {
+  position: relative;
   display: grid;
   width: 3.5rem;
   height: 3.5rem;
   place-items: center;
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
   background: color-mix(in srgb, var(--hue) 82%, #000 18%);
   border: 2px solid var(--ink);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
   transition: transform 0.15s, outline 0.15s;
+}
+
+.wheel__rarity {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  z-index: 3;
 }
 
 .wheel__portrait {
@@ -464,6 +472,10 @@
 }
 
 .spirit-sheet__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-top: 0.15rem;
   font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;

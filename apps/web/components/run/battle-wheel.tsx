@@ -6,6 +6,7 @@ import { CombatSpirit } from "@/components/run/combat-spirit";
 import { hpTone } from "@/components/hub/roster";
 import { CORE_HUE } from "./wheel-map";
 import { RunRelicsTray } from "@/components/run/run-relics-tray";
+import { RarityBadge } from "@/components/ui/rarity-badge";
 
 type BattleWheelProps = {
   slots: (Combatant | null)[];
@@ -57,7 +58,10 @@ export function BattleWheel({
               className="bwheel__pending-sprite"
             />
           </div>
-          <p className="bwheel__pending-name">{pendingRecruit.name}</p>
+          <p className="bwheel__pending-name">
+            {pendingRecruit.name}
+            <RarityBadge rarity={pendingRecruit.rarity} size="xs" className="bwheel__rarity" />
+          </p>
           <p className="bwheel__pending-hint">Clique un slot — remplace l&apos;esprit sur place si occupé</p>
         </div>
       ) : null}
@@ -94,11 +98,14 @@ export function BattleWheel({
                 {empty ? (
                   <span className="bwheel__hole" aria-hidden />
                 ) : (
-                  <CombatSpirit
-                    templateKey={c.templateKey}
-                    name={c.name}
-                    className="bwheel__portrait"
-                  />
+                  <>
+                    <RarityBadge rarity={c.rarity} size="xs" className="bwheel__rarity" />
+                    <CombatSpirit
+                      templateKey={c.templateKey}
+                      name={c.name}
+                      className="bwheel__portrait"
+                    />
+                  </>
                 )}
               </span>
               {!empty && c ? (

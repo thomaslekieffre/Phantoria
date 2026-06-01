@@ -1,7 +1,27 @@
+import type { SpiritId } from "./roster";
+import { SPIRIT_CATALOG } from "@/lib/player/types";
+
 type SpiritPortraitProps = {
-  id: "bram" | "nyx" | "luma" | "kiro";
+  id: SpiritId;
   className?: string;
 };
+
+function GenericPortrait({ hue, className }: { hue: string; className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 64 72" aria-hidden>
+      <ellipse cx="32" cy="62" rx="18" ry="5" fill="rgba(0,0,0,0.3)" />
+      <path
+        d="M18 44c-2-16 10-28 22-28s26 12 24 28c-2 10-10 18-20 18-6 0-12-4-14-10-8 2-14-4-12-8z"
+        fill={hue}
+      />
+      <circle cx="26" cy="40" r="4.5" fill="#fff" />
+      <circle cx="42" cy="40" r="4.5" fill="#fff" />
+      <circle cx="27" cy="41" r="1.8" fill="#0f172a" />
+      <circle cx="43" cy="41" r="1.8" fill="#0f172a" />
+      <path d="M28 48q4 3 8 0" stroke="#0f172a" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function SpiritPortrait({ id, className }: SpiritPortraitProps) {
   if (id === "bram") {
@@ -49,16 +69,20 @@ export function SpiritPortrait({ id, className }: SpiritPortraitProps) {
     );
   }
 
-  return (
-    <svg className={className} viewBox="0 0 64 72" aria-hidden>
-      <ellipse cx="32" cy="62" rx="18" ry="5" fill="rgba(0,0,0,0.3)" />
-      <path d="M20 44c2-16 14-28 26-26 12 2 18 14 16 26-2 10-10 18-18 16-6-2-10-6-12-10-8 3-14-2-12-6z" fill="#164e63" />
-      <circle cx="26" cy="40" r="4.5" fill="#fef08a" />
-      <circle cx="42" cy="40" r="4.5" fill="#fef08a" />
-      <circle cx="27" cy="41" r="1.8" fill="#422006" />
-      <circle cx="43" cy="41" r="1.8" fill="#422006" />
-      <path d="M24 50q8 4 16 0" stroke="#0891b2" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M38 22l8 6-4 8" stroke="#22d3ee" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
-    </svg>
-  );
+  if (id === "kiro") {
+    return (
+      <svg className={className} viewBox="0 0 64 72" aria-hidden>
+        <ellipse cx="32" cy="62" rx="18" ry="5" fill="rgba(0,0,0,0.3)" />
+        <path d="M20 44c2-16 14-28 26-26 12 2 18 14 16 26-2 10-10 18-18 16-6-2-10-6-12-10-8 3-14-2-12-6z" fill="#164e63" />
+        <circle cx="26" cy="40" r="4.5" fill="#fef08a" />
+        <circle cx="42" cy="40" r="4.5" fill="#fef08a" />
+        <circle cx="27" cy="41" r="1.8" fill="#422006" />
+        <circle cx="43" cy="41" r="1.8" fill="#422006" />
+        <path d="M24 50q8 4 16 0" stroke="#0891b2" strokeWidth="2" fill="none" strokeLinecap="round" />
+        <path d="M38 22l8 6-4 8" stroke="#22d3ee" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return <GenericPortrait hue={SPIRIT_CATALOG[id]?.hue ?? "#64748b"} className={className} />;
 }

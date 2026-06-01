@@ -1,20 +1,41 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  GACHA_DUPLICATE_GEMS,
+  GACHA_HARD_PITY,
+  getSRateAtPity,
+  nextPityCounter,
+  rollGachaRarity,
+  type Rarity,
+} from "@phantoria/game-core";
 import type { SpiritId } from "@/components/hub/roster";
-import { SPIRIT_CATALOG } from "./types";
+import {
+  pickFromPool,
+  pickWelcomeEntry,
+  STANDARD_GACHA_POOL,
+  STANDARD_MULTI_PULL_COUNT,
+  STANDARD_PULL_GEM_COST,
+  STANDARD_PULL_TICKET_COST,
+} from "./gacha-pool";
 
 export const WELCOME_PULLS_START = 6;
-export const GACHA_STARTER_POOL: SpiritId[] = ["bram", "nyx", "luma", "kiro"];
-export const GACHA_DUPLICATE_GEMS = 25;
 
 export type GachaPullResult =
-  | { kind: "spirit"; hubId: SpiritId; name: string; tribe: string; hue: string; duplicate: false }
-  | { kind: "duplicate"; hubId: SpiritId; name: string; gems: number };
-
-function pickHubId(owned: Set<string>): SpiritId {
-  const unowned = GACHA_STARTER_POOL.filter((id) => !owned.has(id));
-  const pool = unowned.length > 0 ? unowned : GACHA_STARTER_POOL;
-  return pool[Math.floor(Math.random() * pool.length)]!;
-}
+  | {
+      kind: "spirit";
+      hubId: SpiritId;
+      name: string;
+      tribe: string;
+      hue: string;
+      rarity: Rarity;
+      duplicate: false;
+    }
+  | {
+      kind: "duplicate";
+      hubId: SpiritId;
+      name: string;
+      rarity: Rarity;
+      gems: number;
+    };
 
 async function assignToRoster(supabase: SupabaseClient, userId: string, spiritId: string): Promise<void> {
   const { data: slots } = await supabase
@@ -34,6 +55,55 @@ async function assignToRoster(supabase: SupabaseClient, userId: string, spiritId
     .update({ spirit_id: spiritId, on_field: onField })
     .eq("user_id", userId)
     .eq("slot_index", free.slot_index);
+}
+
+async function grantSpirit(
+  supabase: SupabaseClient,
+  userId: string,
+  entry: { hubId: SpiritId; templateKey: string; name: string; tribe: string; hue: string; rarity: Rarity },
+): Promise<GachaPullResult> {
+  const { data: inserted, error: insertErr } = await supabase
+    .from("player_spirits")
+    .insert({
+      user_id: userId,
+      hub_id: entry.hubId,
+      template_key: entry.templateKey,
+    })
+    .select("id")
+    .single();
+
+  if (insertErr || !inserted) {
+    const { data: currencies } = await supabase
+      .from("player_currencies")
+      .select("gems")
+      .eq("user_id", userId)
+      .single();
+
+    const gems = GACHA_DUPLICATE_GEMS[entry.rarity];
+    await supabase
+      .from("player_currencies")
+      .update({ gems: (currencies?.gems ?? 0) + gems })
+      .eq("user_id", userId);
+
+    return {
+      kind: "duplicate",
+      hubId: entry.hubId,
+      name: entry.name,
+      rarity: entry.rarity,
+      gems,
+    };
+  }
+
+  await assignToRoster(supabase, userId, inserted.id);
+  return {
+    kind: "spirit",
+    hubId: entry.hubId,
+    name: entry.name,
+    tribe: entry.tribe,
+    hue: entry.hue,
+    rarity: entry.rarity,
+    duplicate: false,
+  };
 }
 
 export async function performWelcomePull(supabase: SupabaseClient): Promise<{
@@ -66,51 +136,89 @@ export async function performWelcomePull(supabase: SupabaseClient): Promise<{
     .eq("user_id", user.id);
 
   const owned = new Set((ownedRows ?? []).map((r) => r.hub_id));
-  const hubId = pickHubId(owned);
-  const meta = SPIRIT_CATALOG[hubId];
-
-  const { data: inserted, error: insertErr } = await supabase
-    .from("player_spirits")
-    .insert({
-      user_id: user.id,
-      hub_id: hubId,
-      template_key: meta.templateKey,
-    })
-    .select("id")
-    .single();
-
-  let result: GachaPullResult;
-
-  if (insertErr || !inserted) {
-    const { data: currencies } = await supabase
-      .from("player_currencies")
-      .select("gems")
-      .eq("user_id", user.id)
-      .single();
-
-    const gems = (currencies?.gems ?? 0) + GACHA_DUPLICATE_GEMS;
-    await supabase.from("player_currencies").update({ gems }).eq("user_id", user.id);
-
-    result = {
-      kind: "duplicate",
-      hubId,
-      name: meta.name,
-      gems: GACHA_DUPLICATE_GEMS,
-    };
-  } else {
-    await assignToRoster(supabase, user.id, inserted.id);
-    result = {
-      kind: "spirit",
-      hubId,
-      name: meta.name,
-      tribe: meta.tribe,
-      hue: meta.hue,
-      duplicate: false,
-    };
-  }
+  const entry = pickWelcomeEntry(owned);
+  const result = await grantSpirit(supabase, user.id, entry);
 
   const remaining = profile.welcome_pulls_remaining - 1;
   await supabase.from("profiles").update({ welcome_pulls_remaining: remaining }).eq("id", user.id);
 
   return { result, welcomePullsRemaining: remaining };
 }
+
+export type StandardPullPayment = "ticket" | "gems";
+
+export async function performStandardPull(
+  supabase: SupabaseClient,
+  payment: StandardPullPayment,
+  count = 1,
+): Promise<{
+  results: GachaPullResult[];
+  gachaPityStandard: number;
+  error?: string;
+}> {
+  const pullCount =
+    count === STANDARD_MULTI_PULL_COUNT ? STANDARD_MULTI_PULL_COUNT : count === 1 ? 1 : 0;
+  if (pullCount === 0) {
+    return { results: [], gachaPityStandard: 0, error: "Nombre d'invocations invalide" };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { results: [], gachaPityStandard: 0, error: "Non connecté" };
+
+  const [{ data: profile }, { data: currencies }] = await Promise.all([
+    supabase.from("profiles").select("gacha_pity_standard").eq("id", user.id).single(),
+    supabase.from("player_currencies").select("gems, tickets").eq("user_id", user.id).single(),
+  ]);
+
+  if (!profile || !currencies) {
+    return { results: [], gachaPityStandard: 0, error: "Profil introuvable" };
+  }
+
+  const ticketCost = STANDARD_PULL_TICKET_COST * pullCount;
+  const gemCost = STANDARD_PULL_GEM_COST * pullCount;
+
+  if (payment === "ticket") {
+    if (currencies.tickets < ticketCost) {
+      return {
+        results: [],
+        gachaPityStandard: profile.gacha_pity_standard ?? 0,
+        error: "Pas assez de tickets",
+      };
+    }
+    await supabase
+      .from("player_currencies")
+      .update({ tickets: currencies.tickets - ticketCost })
+      .eq("user_id", user.id);
+  } else {
+    if (currencies.gems < gemCost) {
+      return {
+        results: [],
+        gachaPityStandard: profile.gacha_pity_standard ?? 0,
+        error: "Pas assez de gemmes",
+      };
+    }
+    await supabase
+      .from("player_currencies")
+      .update({ gems: currencies.gems - gemCost })
+      .eq("user_id", user.id);
+  }
+
+  let pity = profile.gacha_pity_standard ?? 0;
+  const results: GachaPullResult[] = [];
+
+  for (let i = 0; i < pullCount; i++) {
+    const rarity = rollGachaRarity(pity);
+    const entry = pickFromPool(STANDARD_GACHA_POOL, rarity);
+    const result = await grantSpirit(supabase, user.id, entry);
+    results.push(result);
+    pity = nextPityCounter(pity, rarity);
+  }
+
+  await supabase.from("profiles").update({ gacha_pity_standard: pity }).eq("id", user.id);
+
+  return { results, gachaPityStandard: pity };
+}
+
+export { GACHA_HARD_PITY, getSRateAtPity };

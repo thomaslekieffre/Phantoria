@@ -125,6 +125,37 @@ export const CHARACTER_CATALOG: Record<string, CharacterTemplate> = {
       },
     },
   },
+  aurore_legende: {
+    key: "aurore_legende",
+    name: "Aurore",
+    tribe: "bienveillants",
+    rarity: "S",
+    base: { hp: 130, atk: 28, def: 16, vit: 12 },
+    skills: {
+      basic: {
+        id: "aurore_basic",
+        name: "Éclat",
+        power: 1,
+        targeting: "single",
+        description: "Lumière pure · 100 % ATK",
+      },
+      special1: {
+        id: "aurore_s1",
+        name: "Aube",
+        power: 1.7,
+        targeting: "single",
+        tribe: "bienveillants",
+        description: "Aube ciblée · 170 % ATK · bonus Bienveillants",
+      },
+      special2: {
+        id: "aurore_s2",
+        name: "Couronne solaire",
+        power: 1.15,
+        targeting: "aoe",
+        description: "Explosion solaire · 115 % ATK zone",
+      },
+    },
+  },
 };
 
 export const ENEMY_TEMPLATES: Record<string, CharacterTemplate> = {
@@ -466,4 +497,9 @@ export const HUB_TO_CORE: Record<string, string> = {
   nyx: "nyx_mysterieux",
   luma: "luma_mignon",
   kiro: "kiro_perfide",
+  roche: "roche_costaud",
+  halo: "halo_bienveillant",
+  murmure: "murmure_sinistre",
+  brise: "brise_insaisissable",
+  aurore: "aurore_legende",
 };

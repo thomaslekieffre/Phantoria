@@ -108,15 +108,23 @@
 }
 
 .bwheel__bubble {
+  position: relative;
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
   place-items: center;
   border-radius: var(--radius-sm, 0.5rem);
-  overflow: hidden;
+  overflow: visible;
   background: color-mix(in srgb, var(--hue) 82%, #000 18%);
   border: 2px solid var(--ink);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.bwheel__rarity {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  z-index: 3;
 }
 
 .bwheel__slot--field .bwheel__bubble {
@@ -274,6 +282,11 @@
 }
 
 .bwheel__pending-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
   margin: 0;
   font-size: 0.82rem;
   font-weight: 900;
@@ -528,6 +541,7 @@
 }
 
 .battle-foe__body {
+  position: relative;
   width: clamp(4.5rem, 8vw, 6.5rem);
   height: clamp(5rem, 12vh, 7.5rem);
   display: grid;
@@ -537,6 +551,13 @@
   border: 2px solid var(--ink);
   box-shadow: 0 6px 0 var(--ink);
   transition: transform 0.15s ease;
+}
+
+.battle-sprite__rarity {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  z-index: 2;
 }
 
 .battle-foe:not(:disabled):hover .battle-foe__body {
@@ -586,6 +607,9 @@
 }
 
 .battle-foe__tribe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.15rem 0.45rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.55);
@@ -698,6 +722,10 @@
 }
 
 .foe-inspect__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin: 0;
   font-family: var(--font-display), sans-serif;
   font-size: 1.15rem;
@@ -1185,6 +1213,7 @@
 }
 
 .battle-ally__body {
+  position: relative;
   width: clamp(4.5rem, 8vw, 6.5rem);
   height: clamp(5rem, 12vh, 7.5rem);
   display: grid;
@@ -2510,6 +2539,7 @@
 }
 
 .run-pick__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2521,6 +2551,13 @@
   box-shadow: var(--hard-shadow);
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.run-pick__rarity {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  z-index: 2;
 }
 
 .run-pick__card:hover {

@@ -63,7 +63,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/` | Sanctuaire (hub) |
 | `/spirits` | Collection (stub) |
 | `/quests` | Quêtes (stub) |
-| `/gacha` | **Invocations** — 6 tirages bienvenue, pool starters |
+| `/gacha` | **Invocations** — bannières packs, autel central, taux à droite, multi ×10 |
 | `/more` | Boutique, inventaire, événements… |
 | `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
 | `/login` | Connexion Supabase (si env configuré) |
@@ -90,6 +90,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 |--------|---------|
 | Nouvel esprit | `characters.ts` |
 | Formule dégâts / capture / âmes | `formulas.ts` + tests |
+| Gacha (poids, pity) | `gacha.ts` + `gacha.test.ts` |
 | Logique combat | `combat-engine.ts` |
 | Ennemis par vague | `run-waves.ts` |
 | Objets / reliques | `run-rewards.ts` |
@@ -123,7 +124,29 @@ supabase db push
 
 - Nouveau compte : **0 esprit**, or/gemmes/tickets à 0, `welcome_pulls_remaining = 6` (roue complète si 6 esprits distincts).
 - Hub roue vide → gacha obligatoire avant run / histoire.
-- Doublon au gacha : +25 gemmes (pas de 2ᵉ ligne `player_spirits`).
+- Doublon au gacha : gemmes selon rareté (pack standard) ; bienvenue privilégie les esprits non possédés.
+- Pack général : **1 ticket** ou **50 gemmes** par tirage · **multi ×10** : 10 tickets ou 500 gemmes · pity `gacha_pity_standard` (hard pity S à 100, compteur avance à chaque tir du multi).
+- Pool bienvenue : 6 esprits (Bram, Nyx, Luma, Kiro, Roche, Halo). Pack standard : + Murmure, Brise, Aurore (S).
+
+### Écran gacha (`apps/web/components/gacha/`)
+
+| Zone | Rôle |
+|------|------|
+| Colonne gauche (`gacha-banners`) | Sélection du pack : **Premiers esprits** (gratuit, badge restants / Terminé) · **Pack standard** |
+| Centre (`gacha-altar`) | Bannière du pack actif, esprits mis en avant, machine, pity (standard), boutons d’invocation |
+| Droite (`gacha-rates`) | Taux par rareté (standard) ou liste garantie sans doublon (bienvenue) |
+
+**Invocations standard** — grille 2×2 : ticket ×1 / ×10, gemmes ×1 / ×10. Après un multi, overlay récap (grille 10 résultats + totaux nouveaux / doublons / gemmes). Tirage simple : overlay carte unique.
+
+| Fichier | Rôle |
+|---------|------|
+| `gacha-screen.tsx` | UI, état pack, appels service |
+| `gacha.css` | Layout 3 colonnes, bannières, taux, reveal |
+| `apps/web/lib/player/gacha-pool.ts` | Pools bienvenue / standard, coûts, `STANDARD_MULTI_PULL_COUNT` (10) |
+| `apps/web/lib/player/gacha-service.ts` | `performWelcomePull`, `performStandardPull(supabase, payment, count)` |
+| `packages/game-core/src/gacha.ts` | Poids raretés, pity dynamique S, `rollGachaRarity`, tests |
+
+Migration : `supabase/migrations/20260531200000_gacha_pity.sql` (`profiles.gacha_pity_standard`).
 
 ### Tables
 

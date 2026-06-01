@@ -1,4 +1,6 @@
+import type { Rarity } from "@phantoria/game-core";
 import type { SpiritId } from "@/components/hub/roster";
+import { entryByHubId, STANDARD_GACHA_POOL, WELCOME_GACHA_POOL } from "./gacha-pool";
 
 export type SpiritMeta = {
   hubId: SpiritId;
@@ -6,20 +8,31 @@ export type SpiritMeta = {
   name: string;
   tribe: string;
   hue: string;
+  rarity: Rarity;
 };
 
-export const SPIRIT_CATALOG: Record<SpiritId, SpiritMeta> = {
-  bram: { hubId: "bram", templateKey: "bram_vaillant", name: "Bram", tribe: "Vaillants", hue: "#f97316" },
-  nyx: { hubId: "nyx", templateKey: "nyx_mysterieux", name: "Nyx", tribe: "Mystérieux", hue: "#a855f7" },
-  luma: { hubId: "luma", templateKey: "luma_mignon", name: "Luma", tribe: "Mignons", hue: "#ec4899" },
-  kiro: { hubId: "kiro", templateKey: "kiro_perfide", name: "Kiro", tribe: "Malins", hue: "#22d3ee" },
-};
+export const SPIRIT_CATALOG: Record<SpiritId, SpiritMeta> = Object.fromEntries(
+  STANDARD_GACHA_POOL.map((e) => [
+    e.hubId,
+    {
+      hubId: e.hubId,
+      templateKey: e.templateKey,
+      name: e.name,
+      tribe: e.tribe,
+      hue: e.hue,
+      rarity: e.rarity,
+    },
+  ]),
+) as Record<SpiritId, SpiritMeta>;
+
+export { WELCOME_GACHA_POOL, STANDARD_GACHA_POOL, entryByHubId };
 
 export type DbProfile = {
   id: string;
   display_name: string;
   level: number;
   welcome_pulls_remaining: number;
+  gacha_pity_standard: number;
 };
 
 export type DbCurrencies = {
