@@ -108,7 +108,7 @@ Mode **dual** :
 ### Setup
 
 1. Créer un projet sur [supabase.com](https://supabase.com).
-2. Copier `apps/web/.env.example` → `apps/web/.env.local` et remplir URL + anon key.
+2. Copier `apps/web/.env.example` → `apps/web/.env.local` et remplir URL, anon key, **service_role** (gacha).
 3. Appliquer la migration :
 
 ```bash
@@ -136,17 +136,21 @@ supabase db push
 | Centre (`gacha-altar`) | Bannière du pack actif, esprits mis en avant, machine, pity (standard), boutons d’invocation |
 | Droite (`gacha-rates`) | Taux par rareté (standard) ou liste garantie sans doublon (bienvenue) |
 
-**Invocations standard** — grille 2×2 : ticket ×1 / ×10, gemmes ×1 / ×10. Après un multi, overlay récap (grille 10 résultats + totaux nouveaux / doublons / gemmes). Tirage simple : overlay carte unique.
+**Invocations standard** — grille 2×2 : ticket ×1 / ×10, gemmes ×1 / ×10. Wallet tickets/gemmes sous le titre. Après un multi : overlay récap (révélation progressive, meilleur tirage surligné, « Tout afficher », Échap). Tirage simple : overlay carte unique (Échap pour fermer).
 
 | Fichier | Rôle |
 |---------|------|
-| `gacha-screen.tsx` | UI, état pack, appels service |
+| `gacha-screen.tsx` | UI, état pack, appels `gacha-client` |
 | `gacha.css` | Layout 3 colonnes, bannières, taux, reveal |
 | `apps/web/lib/player/gacha-pool.ts` | Pools bienvenue / standard, coûts, `STANDARD_MULTI_PULL_COUNT` (10) |
-| `apps/web/lib/player/gacha-service.ts` | `performWelcomePull`, `performStandardPull(supabase, payment, count)` |
+| `apps/web/lib/player/gacha-service.ts` | Logique tirage (appelée par l’API, service role) |
+| `apps/web/lib/player/gacha-client.ts` | `fetch` → `/api/gacha/welcome` et `/api/gacha/standard` |
+| `apps/web/app/api/gacha/*/route.ts` | Auth session + `SUPABASE_SERVICE_ROLE_KEY` + RNG serveur |
 | `packages/game-core/src/gacha.ts` | Poids raretés, pity dynamique S, `rollGachaRarity`, tests |
 
-Migration : `supabase/migrations/20260531200000_gacha_pity.sql` (`profiles.gacha_pity_standard`).
+**Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
+
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` (lecture seule monnaies/esprits côté client + trigger anti-triche pity).
 
 ### Tables
 

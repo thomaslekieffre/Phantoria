@@ -106,20 +106,19 @@ async function grantSpirit(
   };
 }
 
-export async function performWelcomePull(supabase: SupabaseClient): Promise<{
+export async function performWelcomePull(
+  supabase: SupabaseClient,
+  userId: string,
+  random = Math.random,
+): Promise<{
   result: GachaPullResult | null;
   welcomePullsRemaining: number;
   error?: string;
 }> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { result: null, welcomePullsRemaining: 0, error: "Non connecté" };
-
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("welcome_pulls_remaining")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   if (profileErr || !profile) {
@@ -133,14 +132,14 @@ export async function performWelcomePull(supabase: SupabaseClient): Promise<{
   const { data: ownedRows } = await supabase
     .from("player_spirits")
     .select("hub_id")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   const owned = new Set((ownedRows ?? []).map((r) => r.hub_id));
-  const entry = pickWelcomeEntry(owned);
-  const result = await grantSpirit(supabase, user.id, entry);
+  const entry = pickWelcomeEntry(owned, random);
+  const result = await grantSpirit(supabase, userId, entry);
 
   const remaining = profile.welcome_pulls_remaining - 1;
-  await supabase.from("profiles").update({ welcome_pulls_remaining: remaining }).eq("id", user.id);
+  await supabase.from("profiles").update({ welcome_pulls_remaining: remaining }).eq("id", userId);
 
   return { result, welcomePullsRemaining: remaining };
 }
@@ -149,8 +148,10 @@ export type StandardPullPayment = "ticket" | "gems";
 
 export async function performStandardPull(
   supabase: SupabaseClient,
+  userId: string,
   payment: StandardPullPayment,
   count = 1,
+  random = Math.random,
 ): Promise<{
   results: GachaPullResult[];
   gachaPityStandard: number;
@@ -162,14 +163,9 @@ export async function performStandardPull(
     return { results: [], gachaPityStandard: 0, error: "Nombre d'invocations invalide" };
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { results: [], gachaPityStandard: 0, error: "Non connecté" };
-
   const [{ data: profile }, { data: currencies }] = await Promise.all([
-    supabase.from("profiles").select("gacha_pity_standard").eq("id", user.id).single(),
-    supabase.from("player_currencies").select("gems, tickets").eq("user_id", user.id).single(),
+    supabase.from("profiles").select("gacha_pity_standard").eq("id", userId).single(),
+    supabase.from("player_currencies").select("gems, tickets").eq("user_id", userId).single(),
   ]);
 
   if (!profile || !currencies) {
@@ -190,7 +186,7 @@ export async function performStandardPull(
     await supabase
       .from("player_currencies")
       .update({ tickets: currencies.tickets - ticketCost })
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
   } else {
     if (currencies.gems < gemCost) {
       return {
@@ -202,21 +198,21 @@ export async function performStandardPull(
     await supabase
       .from("player_currencies")
       .update({ gems: currencies.gems - gemCost })
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
   }
 
   let pity = profile.gacha_pity_standard ?? 0;
   const results: GachaPullResult[] = [];
 
   for (let i = 0; i < pullCount; i++) {
-    const rarity = rollGachaRarity(pity);
-    const entry = pickFromPool(STANDARD_GACHA_POOL, rarity);
-    const result = await grantSpirit(supabase, user.id, entry);
+    const rarity = rollGachaRarity(pity, random);
+    const entry = pickFromPool(STANDARD_GACHA_POOL, rarity, random);
+    const result = await grantSpirit(supabase, userId, entry);
     results.push(result);
     pity = nextPityCounter(pity, rarity);
   }
 
-  await supabase.from("profiles").update({ gacha_pity_standard: pity }).eq("id", user.id);
+  await supabase.from("profiles").update({ gacha_pity_standard: pity }).eq("id", userId);
 
   return { results, gachaPityStandard: pity };
 }

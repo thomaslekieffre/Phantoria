@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { GACHA_HARD_PITY, GACHA_BASE_WEIGHTS, type Rarity } from "@phantoria/game-core";
@@ -8,7 +8,7 @@ import { GameShell } from "@/components/layout/game-shell";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { IconCube, IconGem } from "@/components/ui/icons";
 import { usePlayer } from "@/components/providers/player-provider";
-import { createClient } from "@/lib/supabase/client";
+import { pullStandardGacha, pullWelcomeGacha } from "@/lib/player/gacha-client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import {
   STANDARD_GACHA_POOL,
@@ -18,8 +18,6 @@ import {
   WELCOME_GACHA_POOL,
 } from "@/lib/player/gacha-pool";
 import {
-  performStandardPull,
-  performWelcomePull,
   WELCOME_PULLS_START,
   type GachaPullResult,
   type StandardPullPayment,
@@ -92,6 +90,14 @@ function RevealOverlay({
   const rarity = pull.rarity;
   const hue = pull.kind === "spirit" ? pull.hue : "#94a3b8";
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div className="gacha-reveal-overlay" role="dialog" aria-modal>
       <div className="gacha-reveal-overlay__burst" aria-hidden />
@@ -118,6 +124,8 @@ function RevealOverlay({
   );
 }
 
+const RARITY_ORDER: Rarity[] = ["S", "A", "B", "C", "D", "E"];
+
 function MultiRevealOverlay({
   pulls,
   onClose,
@@ -125,16 +133,45 @@ function MultiRevealOverlay({
   pulls: GachaPullResult[];
   onClose: () => void;
 }) {
+  const [revealed, setRevealed] = useState(0);
+  const allRevealed = revealed >= pulls.length;
+
   const newSpirits = pulls.filter((p) => p.kind === "spirit").length;
   const dupes = pulls.filter((p) => p.kind === "duplicate").length;
   const gemsGained = pulls.reduce((sum, p) => (p.kind === "duplicate" ? sum + p.gems : sum), 0);
-  const bestRarity = pulls.reduce<Rarity>(
-    (best, p) => {
-      const order: Rarity[] = ["S", "A", "B", "C", "D", "E"];
-      return order.indexOf(p.rarity) < order.indexOf(best) ? p.rarity : best;
-    },
-    "E",
-  );
+
+  const bestIndex = useMemo(() => {
+    let best = 0;
+    for (let i = 1; i < pulls.length; i++) {
+      if (RARITY_ORDER.indexOf(pulls[i]!.rarity) < RARITY_ORDER.indexOf(pulls[best]!.rarity)) {
+        best = i;
+      }
+    }
+    return best;
+  }, [pulls]);
+
+  const bestRarity = pulls[bestIndex]!.rarity;
+
+  useEffect(() => {
+    setRevealed(0);
+  }, [pulls]);
+
+  useEffect(() => {
+    if (allRevealed) return;
+    const timer = window.setTimeout(() => setRevealed((n) => n + 1), 110);
+    return () => window.clearTimeout(timer);
+  }, [revealed, allRevealed]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (allRevealed) onClose();
+        else setRevealed(pulls.length);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [allRevealed, onClose, pulls.length]);
 
   return (
     <div className="gacha-reveal-overlay" role="dialog" aria-modal>
@@ -146,11 +183,17 @@ function MultiRevealOverlay({
           {dupes > 0 ? ` · ${dupes} doublon${dupes > 1 ? "s" : ""}` : ""}
           {gemsGained > 0 ? ` · +${gemsGained} gemmes` : ""}
         </p>
+        {!allRevealed ? (
+          <button type="button" className="gacha-reveal-multi__skip" onClick={() => setRevealed(pulls.length)}>
+            Tout afficher
+          </button>
+        ) : null}
         <ul className="gacha-reveal-multi__grid">
           {pulls.map((pull, i) => (
             <li
               key={`${pull.hubId}-${i}`}
-              className={`gacha-reveal-multi__item ${RARITY_CLASS[pull.rarity]} ${pull.kind === "duplicate" ? "gacha-reveal-multi__item--dup" : ""}`}
+              className={`gacha-reveal-multi__item ${RARITY_CLASS[pull.rarity]} ${pull.kind === "duplicate" ? "gacha-reveal-multi__item--dup" : ""} ${i < revealed ? "gacha-reveal-multi__item--in" : ""} ${i === bestIndex && i < revealed ? "gacha-reveal-multi__item--best" : ""}`}
+              style={{ "--reveal-i": i } as CSSProperties}
             >
               <span className="gacha-reveal-multi__badge">{pull.rarity}</span>
               <SpiritPortrait id={pull.hubId} className="gacha-reveal-multi__art" />
@@ -158,8 +201,8 @@ function MultiRevealOverlay({
             </li>
           ))}
         </ul>
-        <button type="button" className="gacha-reveal-card__btn" onClick={onClose}>
-          Continuer
+        <button type="button" className="gacha-reveal-card__btn" disabled={!allRevealed} onClick={onClose}>
+          {allRevealed ? "Continuer" : `${revealed} / ${pulls.length}`}
         </button>
       </div>
     </div>
@@ -206,8 +249,7 @@ export function GachaScreen() {
     if (!canWelcome || pulling) return;
     setPulling(true);
     setError(null);
-    const supabase = createClient();
-    const { result, error: pullError } = await performWelcomePull(supabase);
+    const { result, error: pullError } = await pullWelcomeGacha();
     await new Promise((r) => setTimeout(r, 900));
     setPulling(false);
     if (pullError) setError(pullError);
@@ -223,8 +265,7 @@ export function GachaScreen() {
 
     setPulling(true);
     setError(null);
-    const supabase = createClient();
-    const { results, error: pullError } = await performStandardPull(supabase, payment, count);
+    const { results, error: pullError } = await pullStandardGacha(payment, count);
     await new Promise((r) => setTimeout(r, multi ? 1400 : 900));
     setPulling(false);
     if (pullError) setError(pullError);
@@ -270,6 +311,16 @@ export function GachaScreen() {
         <header className="gacha-top">
           <p className="gacha-top__eyebrow">Sanctuaire</p>
           <h1 className="gacha-top__title">Autel des invocations</h1>
+          <div className="gacha-top__wallet">
+            <span className="gacha-top__wallet-item">
+              <IconCube className="gacha-top__wallet-ico" aria-hidden />
+              {tickets} ticket{tickets !== 1 ? "s" : ""}
+            </span>
+            <span className="gacha-top__wallet-item">
+              <IconGem className="gacha-top__wallet-ico" aria-hidden />
+              {gems} gemme{gems !== 1 ? "s" : ""}
+            </span>
+          </div>
           {spiritCount > 0 ? (
             <Link href="/" className="gacha-top__link">
               {spiritCount} esprit{spiritCount > 1 ? "s" : ""} — retour hub
