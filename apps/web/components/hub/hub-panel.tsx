@@ -9,9 +9,17 @@ type HubPanelProps = {
   selected: SpiritSlot | null;
   onToggleField: (id: SpiritSlot["id"]) => void;
   fieldCount: number;
+  hasSpirits?: boolean;
+  spiritCount?: number;
 };
 
-export function HubPanel({ selected, onToggleField, fieldCount }: HubPanelProps) {
+export function HubPanel({
+  selected,
+  onToggleField,
+  fieldCount,
+  hasSpirits = true,
+  spiritCount = 0,
+}: HubPanelProps) {
   const canDeploy =
     selected &&
     !selected.empty &&
@@ -71,8 +79,15 @@ export function HubPanel({ selected, onToggleField, fieldCount }: HubPanelProps)
       ) : (
         <section className="spirit-sheet spirit-sheet--empty">
           <p className="spirit-sheet__placeholder">
-            Sélectionne un esprit sur la roue
+            {hasSpirits
+              ? "Sélectionne un esprit sur la roue"
+              : "Roue vide — va au gacha pour invoquer"}
           </p>
+          {!hasSpirits ? (
+            <Link href="/gacha" className="spirit-sheet__action">
+              Ouvrir le gacha
+            </Link>
+          ) : null}
         </section>
       )}
 
@@ -93,7 +108,7 @@ export function HubPanel({ selected, onToggleField, fieldCount }: HubPanelProps)
           <span className="hub-panel__stat-lbl">Runs</span>
         </div>
         <div className="hub-panel__stat">
-          <span className="hub-panel__stat-val">4</span>
+          <span className="hub-panel__stat-val">{spiritCount}</span>
           <span className="hub-panel__stat-lbl">Esprits</span>
         </div>
         <Link href="/more" className="hub-panel__event">
@@ -106,16 +121,32 @@ export function HubPanel({ selected, onToggleField, fieldCount }: HubPanelProps)
       </div>
 
       <div className="hub-panel__section hub-panel__plays">
-        <Link href="/run" className="play play--run">
-          <span className="play__label">Roguelite</span>
-          <span className="play__title">Lancer un run</span>
-          <span className="play__desc">Vagues · capture · roue ×6</span>
-        </Link>
-        <Link href="/story" className="play play--story">
-          <span className="play__label">Campagne</span>
-          <span className="play__title">Mode Histoire</span>
-          <span className="play__desc">11 zones · 165 niveaux</span>
-        </Link>
+        {hasSpirits ? (
+          <Link href="/run" className="play play--run">
+            <span className="play__label">Roguelite</span>
+            <span className="play__title">Lancer un run</span>
+            <span className="play__desc">Vagues · capture · roue ×6</span>
+          </Link>
+        ) : (
+          <span className="play play--run play--locked" aria-disabled>
+            <span className="play__label">Roguelite</span>
+            <span className="play__title">Run verrouillé</span>
+            <span className="play__desc">Invoque un esprit au gacha</span>
+          </span>
+        )}
+        {hasSpirits ? (
+          <Link href="/story" className="play play--story">
+            <span className="play__label">Campagne</span>
+            <span className="play__title">Mode Histoire</span>
+            <span className="play__desc">11 zones · 165 niveaux</span>
+          </Link>
+        ) : (
+          <Link href="/gacha" className="play play--story">
+            <span className="play__label">Campagne</span>
+            <span className="play__title">Gacha d&apos;abord</span>
+            <span className="play__desc">Esprits requis pour l&apos;histoire</span>
+          </Link>
+        )}
       </div>
     </aside>
   );

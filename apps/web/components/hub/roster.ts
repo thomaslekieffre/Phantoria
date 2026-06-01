@@ -28,6 +28,6 @@ export function hpTone(hp: number) {
   return "low";
 }
 
-export function isSpiritId(id: SpiritSlot["id"]): id is SpiritId {
-  return id !== "empty-5" && id !== "empty-6";
+export function isSpiritId(id: SpiritSlot["id"] | string): id is SpiritId {
+  return id === "bram" || id === "nyx" || id === "luma" || id === "kiro";
 }

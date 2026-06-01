@@ -101,16 +101,27 @@ Définis dans `passives.ts` (`PASSIVE_BY_KEY`) — appliqués au spawn et affich
 
 Capture : `getPassiveCaptureResist()` soustrait après `computeCaptureChance`.
 
-#### Sauvegarde run (local)
+#### Sauvegarde run
 
 | Couche | Fichier | Rôle |
 |--------|---------|------|
 | Core | `run-save.ts` | `serializeRun`, `parseRun`, `hydrateCombatState`, `RUN_SAVE_KEY` |
-| Web | `lib/run-persistence.ts` | `saveRun` / `loadSavedRun` / `clearSavedRun` |
+| Web | `lib/run-persistence.ts` | `saveRun` / `loadSavedRun` — **localStorage** si pas d’env Supabase, sinon **`active_runs`** (+ cache local) |
 | UI | `run-screen.tsx` | Auto-save à chaque tick ; effacée si `won` / `lost` |
 | Reprise | `CombatEngine.restore(state)` | Recharge l'état complet |
 
 Phases reprises : `fighting`, `reward_pick` uniquement (`isResumablePhase`).
+
+#### Joueur (Supabase, optionnel)
+
+| Table / module | Rôle |
+|----------------|------|
+| `profiles` | Nom, niveau, `welcome_pulls_remaining` |
+| `player_currencies` | Or, gemmes, tickets hub |
+| `player_spirits` + `roster_slots` | Collection + roue hub |
+| `apps/web/lib/player/*` | `fetchPlayerSnapshot`, gacha bienvenue, roster |
+| `PlayerProvider` | Context React hub / gacha / run |
+| `/login`, middleware | Auth email + refresh session |
 
 #### Terrain & roue
 
@@ -259,8 +270,8 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 1. ✅ **Hub desktop** (`/`) — roue ×6, fiche esprit, toggle terrain, CTA run / histoire
 2. ✅ **`game-core`** — tribus, formules, combat (VIT, Âmes 0→1, capture)
 3. ✅ **Écran `/run`** — run roguelite jouable (starter, vagues, capture, récompenses, reliques)
-4. Collection, gacha, mode histoire complet
-5. Supabase + auth
+4. ✅ **Supabase proto** — auth, profil, roster DB, save run cloud, gacha bienvenue (6 pulls)
+5. Collection / gacha payant / pity, mode histoire, métaprogression run → hub
 
 ## Hors scope infra v0
 

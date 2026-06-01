@@ -7,45 +7,70 @@ import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { INITIAL_ROSTER, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
 import "./run.css";
 
-const STARTERS = INITIAL_ROSTER.filter((s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id));
+const DEFAULT_STARTERS = INITIAL_ROSTER.filter(
+  (s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id),
+);
 
 type RunStarterPickerProps = {
   onPick: (id: SpiritId) => void;
   onContinue?: () => void;
   savedSummary?: { wave: number; phase: "fighting" | "reward_pick" } | null;
+  starters?: (SpiritSlot & { id: SpiritId })[];
 };
 
-export function RunStarterPicker({ onPick, onContinue, savedSummary }: RunStarterPickerProps) {
+export function RunStarterPicker({
+  onPick,
+  onContinue,
+  savedSummary,
+  starters = DEFAULT_STARTERS,
+}: RunStarterPickerProps) {
+  const hasStarters = starters.length > 0;
+
   return (
     <div className="run-pick">
       <div className="run-pick__sky" aria-hidden />
       <div className="run-pick__panel">
         <p className="run-pick__eyebrow">Roguelite</p>
-        <h1 className="run-pick__title">Choisis ton premier esprit</h1>
-        <p className="run-pick__sub">Tu partiras seul — les autres rejoindront via capture.</p>
 
-        {savedSummary && onContinue ? (
-          <button type="button" className="run-pick__continue" onClick={onContinue}>
-            Continuer — vague {savedSummary.wave}
-            {savedSummary.phase === "reward_pick" ? " (boutique)" : ""}
-          </button>
-        ) : null}
+        {!hasStarters ? (
+          <>
+            <h1 className="run-pick__title">Aucun esprit</h1>
+            <p className="run-pick__sub">
+              Invoque tes premiers esprits au gacha avant de lancer un run.
+            </p>
+            <Link href="/gacha" className="run-pick__continue">
+              Aller au gacha
+            </Link>
+          </>
+        ) : (
+          <>
+            <h1 className="run-pick__title">Choisis ton premier esprit</h1>
+            <p className="run-pick__sub">Tu partiras seul — les autres rejoindront via capture.</p>
 
-        <div className="run-pick__grid">
-          {STARTERS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className="run-pick__card"
-              style={{ "--hue": s.hue } as CSSProperties}
-              onClick={() => onPick(s.id)}
-            >
-              <SpiritPortrait id={s.id} className="run-pick__portrait" />
-              <span className="run-pick__name">{s.name}</span>
-              <span className="run-pick__tribe">{s.tribe}</span>
-            </button>
-          ))}
-        </div>
+            {savedSummary && onContinue ? (
+              <button type="button" className="run-pick__continue" onClick={onContinue}>
+                Continuer — vague {savedSummary.wave}
+                {savedSummary.phase === "reward_pick" ? " (boutique)" : ""}
+              </button>
+            ) : null}
+
+            <div className="run-pick__grid">
+              {starters.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="run-pick__card"
+                  style={{ "--hue": s.hue } as CSSProperties}
+                  onClick={() => onPick(s.id)}
+                >
+                  <SpiritPortrait id={s.id} className="run-pick__portrait" />
+                  <span className="run-pick__name">{s.name}</span>
+                  <span className="run-pick__tribe">{s.tribe}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <Link href="/" className="run-pick__back">
           Retour au camp

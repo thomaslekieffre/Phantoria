@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito, Outfit } from "next/font/google";
+import { PlayerProvider } from "@/components/providers/player-provider";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -27,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${nunito.variable} ${outfit.variable} h-full`}>
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        <PlayerProvider>{children}</PlayerProvider>
+      </body>
     </html>
   );
 }

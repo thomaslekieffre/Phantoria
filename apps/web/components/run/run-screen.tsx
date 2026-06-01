@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -36,6 +36,7 @@ import {
   type CaptureSeqState,
 } from "@/components/run/capture-sequence";
 import { RunStarterPicker, starterCoreKey } from "@/components/run/run-starter-picker";
+import { rosterStarters, usePlayer } from "@/components/providers/player-provider";
 import { CORE_TO_HUB } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
@@ -240,13 +241,18 @@ function SoulSlot({
 }
 
 export function RunScreen() {
+  const { roster } = usePlayer();
+  const starters = useMemo(() => rosterStarters(roster), [roster]);
   const [engine, setEngine] = useState<CombatEngine | null>(null);
   const [specialActor, setSpecialActor] = useState<string | null>(null);
   const [specialTarget, setSpecialTarget] = useState<{ actorId: string; slot: 1 | 2 } | null>(null);
   const [captureTarget, setCaptureTarget] = useState<string | null>(null);
   const [inspectTarget, setInspectTarget] = useState<string | null>(null);
   const [inspectAlly, setInspectAlly] = useState<string | null>(null);
-  const [savedSummary, setSavedSummary] = useState(() => getSavedRunSummary());
+  const [savedSummary, setSavedSummary] = useState<{
+    wave: number;
+    phase: "fighting" | "reward_pick";
+  } | null>(null);
   const [showTribeChart, setShowTribeChart] = useState(false);
   const [captureSeq, setCaptureSeq] = useState<CaptureSeqState | null>(null);
   const [floaters, setFloaters] = useState<Floater[]>([]);
@@ -264,8 +270,12 @@ export function RunScreen() {
 
   engineRef.current = engine;
 
+  useEffect(() => {
+    void getSavedRunSummary().then(setSavedSummary);
+  }, []);
+
   const beginRun = (starterId: SpiritId) => {
-    clearSavedRun();
+    void clearSavedRun();
     setSavedSummary(null);
     setEngine(
       createRunBattle({
@@ -284,18 +294,19 @@ export function RunScreen() {
   };
 
   const resumeRun = () => {
-    const saved = loadSavedRun();
-    if (!saved) return;
-    setEngine(CombatEngine.restore(saved));
-    setSpecialActor(null);
-    setSpecialTarget(null);
-    setCaptureTarget(null);
-    setInspectTarget(null);
-    setInspectAlly(null);
-    setShowTribeChart(false);
-    setFloaters([]);
-    lastEventId.current = saved.events.at(-1)?.id ?? 0;
-    setRenderTick((n) => n + 1);
+    void loadSavedRun().then((saved) => {
+      if (!saved) return;
+      setEngine(CombatEngine.restore(saved));
+      setSpecialActor(null);
+      setSpecialTarget(null);
+      setCaptureTarget(null);
+      setInspectTarget(null);
+      setInspectAlly(null);
+      setShowTribeChart(false);
+      setFloaters([]);
+      lastEventId.current = saved.events.at(-1)?.id ?? 0;
+      setRenderTick((n) => n + 1);
+    });
   };
 
   const state = engine?.getState();
@@ -353,14 +364,15 @@ export function RunScreen() {
     setInspectAlly(null);
     setShowTribeChart(false);
     setCaptureSeq(null);
-    clearSavedRun();
+    void clearSavedRun();
     setSavedSummary(null);
   }, [isOver]);
 
   useEffect(() => {
     if (!engine) return;
-    saveRun(engine.getState());
-    setSavedSummary(getSavedRunSummary());
+    void saveRun(engine.getState()).then(() => {
+      void getSavedRunSummary().then(setSavedSummary);
+    });
   }, [engine, renderTick]);
 
   const weakEnemy =
@@ -654,7 +666,12 @@ export function RunScreen() {
 
   if (!engine || !state) {
     return (
-      <RunStarterPicker onPick={beginRun} onContinue={resumeRun} savedSummary={savedSummary} />
+      <RunStarterPicker
+        onPick={beginRun}
+        onContinue={resumeRun}
+        savedSummary={savedSummary}
+        starters={starters}
+      />
     );
   }
 

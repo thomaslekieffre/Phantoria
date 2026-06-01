@@ -1,16 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
+import { usePlayer } from "@/components/providers/player-provider";
 import { HubPanel } from "./hub-panel";
-import { INITIAL_ROSTER, MAX_FIELD, type SpiritSlot } from "./roster";
+import { isSpiritId, type SpiritSlot } from "./roster";
 import { SceneBackdrop } from "./scene-backdrop";
 import { SpiritWheel } from "./spirit-wheel";
 import "./hub.css";
 
 export function HubScreen() {
-  const [roster, setRoster] = useState(INITIAL_ROSTER);
-  const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>("bram");
+  const { roster, profile, toggleField, hasSpirits, spiritCount } = usePlayer();
+  const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>(null);
 
   const selected = useMemo(
     () => roster.find((s) => s.id === selectedId && !s.empty) ?? null,
@@ -18,24 +20,12 @@ export function HubScreen() {
   );
 
   const fieldCount = roster.filter((s) => s.onField).length;
+  const displayName = profile?.display_name ?? "Tomy";
+  const displayLevel = profile?.level ?? 1;
 
-  function toggleField(id: SpiritSlot["id"]) {
-    setRoster((prev) => {
-      const slot = prev.find((s) => s.id === id);
-      if (!slot || slot.empty) return prev;
-
-      if (slot.onField) {
-        return prev.map((s) =>
-          s.id === id ? { ...s, onField: false } : s,
-        );
-      }
-
-      if (prev.filter((s) => s.onField).length >= MAX_FIELD) return prev;
-
-      return prev.map((s) =>
-        s.id === id ? { ...s, onField: true } : s,
-      );
-    });
+  function handleToggleField(id: SpiritSlot["id"]) {
+    if (!isSpiritId(id)) return;
+    void toggleField(id);
   }
 
   return (
@@ -44,18 +34,25 @@ export function HubScreen() {
         <SceneBackdrop />
         <div className="hub__center">
           <p className="hub__line">
-            Sanctuaire · <strong>Tomy</strong> · niv. 12
+            Sanctuaire · <strong>{displayName}</strong> · niv. {displayLevel}
           </p>
           <SpiritWheel
             roster={roster}
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
+          {!hasSpirits ? (
+            <Link href="/gacha" className="hub__gacha-cta">
+              Invoquer tes premiers esprits
+            </Link>
+          ) : null}
         </div>
         <HubPanel
           selected={selected}
-          onToggleField={toggleField}
+          onToggleField={handleToggleField}
           fieldCount={fieldCount}
+          hasSpirits={hasSpirits}
+          spiritCount={spiritCount}
         />
       </div>
     </GameShell>

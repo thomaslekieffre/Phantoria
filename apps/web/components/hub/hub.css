@@ -31,6 +31,25 @@
   font-weight: 800;
 }
 
+.hub__gacha-cta {
+  display: inline-block;
+  align-self: center;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--ink);
+  background: var(--ember);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+  box-shadow: var(--hard-shadow);
+}
+
+.hub__gacha-cta:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 var(--ink);
+}
+
 /* Scene — nuit + lucioles (aplats) */
 .scene {
   position: absolute;
@@ -714,6 +733,12 @@
 
 .play--story {
   background: #1a8fcc;
+}
+
+.play--locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .play__label {

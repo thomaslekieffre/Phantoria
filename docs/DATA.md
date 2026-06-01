@@ -1,202 +1,203 @@
-# Phantoria — Données & formules (v0)
+# Phantoria ? Donn?es & formules (v0)
 
-Complète [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de vérité implémentée dans `packages/game-core`.
+Compl?te [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de v?rit? impl?ment?e dans `packages/game-core`.
 
 ## Personnages (catalogue proto)
 
-| Clé | Nom | Tribu | Rareté | Rôle proto |
+| Cl? | Nom | Tribu | Raret? | R?le proto |
 |-----|-----|-------|--------|------------|
-| `bram_vaillant` | Bram | Vaillants | E | Tank débutant / starter run |
-| `nyx_mysterieux` | Nyx | Mystérieux | C | Rapide |
-| `luma_mignon` | Luma | Mignons | B | Support léger |
+| `bram_vaillant` | Bram | Vaillants | E | Tank d?butant / starter run |
+| `nyx_mysterieux` | Nyx | Myst?rieux | C | Rapide |
+| `luma_mignon` | Luma | Mignons | B | Support l?ger |
 | `kiro_perfide` | Kiro | Perfides | D | Rapide |
 | `ombre_faible` | Ombre errante | Sombres | E | Ennemi tuto vague 1 |
-| `neant_scout` | Éclaireur néant | Néants | D | Ennemi mid |
-| `boss_gardien` | Gardien des brumes | Sombres | B | Boss ×10 |
-| `boss_colosse` | Colosse du néant | Néants | A | Méga boss ×50 |
-| `boss_solmaar` | Solmaar corrompu | Néants | S | Boss final vague 200 |
+| `neant_scout` | ?claireur n?ant | N?ants | D | Ennemi mid |
+| `boss_gardien` | Gardien des brumes | Sombres | B | Boss ?10 |
+| `boss_colosse` | Colosse du n?ant | N?ants | A | M?ga boss ?50 |
+| `boss_solmaar` | Solmaar corrompu | N?ants | S | Boss final vague 200 |
 | `roche_costaud` | Roche errante | Costauds | E | Errant pool vague |
 | `halo_bienveillant` | Halo errant | Bienveillants | E | Errant pool vague |
 | `murmure_sinistre` | Murmure sinistre | Sinistres | D | Errant pool vague |
 | `brise_insaisissable` | Brise fugace | Insaisissables | D | Errant pool vague |
 | `sigille_enma` | Sigille enma | Enma | C | Errant pool vague |
 
-Catalogue complet : `packages/game-core/src/characters.ts` — `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
+Catalogue complet : `packages/game-core/src/characters.ts` ? `ALL_SPIRIT_KEYS` alimente le pool ennemi des vagues.
 
 ## Formules v0
 
 ### Stats au niveau
 
-`mult = 1 + (level - 1) × 0.04` — appliqué à PV, ATK, DEF (pas VIT).
+`mult = 1 + (level - 1) ? 0.04` ? appliqu? ? PV, ATK, DEF (pas VIT).
 
-### Dégâts
-
-```
-dégâts = max(1, floor(ATK × power × typeMult - DEF × 0.35))
-```
-
-`typeMult` : tableau 11×11 dans `tribes.ts` (×2 super efficace, ×0,5 peu efficace, ×0 immunité).
-
-### Âmes
-
-- Jauge `0 → 1` par perso **sur le terrain** (float normalisé).
-- Remplissage proportionnel aux dégâts infligés / subis :
+### D?g?ts
 
 ```
-gain = min(0.5, (dégâts / PV_max) × 0.35) × runModifiers.soulGainMult
+d?g?ts = max(1, floor(ATK ? power ? typeMult - DEF ? 0.35))
 ```
 
-- Spéciale 1 ou 2 : utilisable si jauge **≥ 1** → reset à `0`.
-- Pas de charge sur la réserve (hors terrain).
+`typeMult` : tableau 11?11 dans `tribes.ts` (?2 super efficace, ?0,5 peu efficace, ?0 immunit?).
+
+### ?mes
+
+- Jauge `0 ? 1` par perso **sur le terrain** (float normalis?).
+- Remplissage proportionnel aux d?g?ts inflig?s / subis :
+
+```
+gain = min(0.5, (d?g?ts / PV_max) ? 0.35) ? runModifiers.soulGainMult
+```
+
+- Sp?ciale 1 ou 2 : utilisable si jauge **? 1** ? reset ? `0`.
+- Pas de charge sur la r?serve (hors terrain).
 
 ### Capture
 
 ```
-chance = taux_rareté × mult_ball × (1 + 0.55 × (1 - PV%)) + captureBonus
+chance = taux_raret? ? mult_ball ? (1 + 0.55 ? (1 - PV%)) + captureBonus
 chance -= getPassiveCaptureResist(templateKey)   // passif ennemi
 chance = clamp(chance, 5 %, 85 %)
 ```
 
-- Taux base par rareté : `CAPTURE_RATE_BY_RARITY` (E 70 % → S 1 %).
-- **Plafond 85 %** — jamais garantie à 100 %.
+- Taux base par raret? : `CAPTURE_RATE_BY_RARITY` (E 70 % ? S 1 %).
+- **Plafond 85 %** ? jamais garantie ? 100 %.
 - **Plancher 5 %**.
-- Bonus relique Phantoball renforcée : `+12 %` cumulable (`runModifiers.captureBonus`).
+- Bonus relique Phantoball renforc?e : `+12 %` cumulable (`runModifiers.captureBonus`).
 
 Types de ball run (`phantoballs.ts`) :
-- `standard` ×1
-- Tribales par groupe GDD : Lumi 🟡 · Flam 🔴 · Ombra 🟣 · Glace 🩵 · Terra 🟤 · Néant ⚫
-- Match tribu cible → ×1,5–2,5 · hors tribu → ×0,5
+- `standard` ?1
+- Tribales par groupe GDD : Lumi ?? ? Flam ?? ? Ombra ?? ? Glace ?? ? Terra ?? ? N?ant ?
+- Match tribu cible ? ?1,5?2,5 ? hors tribu ? ?0,5
 
 ### XP (run)
 
 ```
-xpToNext(level, rarity) = floor(16 + level × 9 × tier_rareté)   // cap = MAX_LEVEL_BY_RARITY
-xpFromDefeated(enemy, wave) = floor((10 + lvl×5) × tier × (1 + wave×0.012))
+xpToNext(level, rarity) = floor(16 + level ? 9 ? tier_raret?)   // cap = MAX_LEVEL_BY_RARITY
+xpFromDefeated(enemy, wave) = floor((10 + lvl?5) ? tier ? (1 + wave?0.012))
 ```
 
-- Level up → recalc stats (`refreshStatsForLevel`) en conservant le ratio PV.
-- Sources : KO ennemi (alliés vivants), objets `xp_all` (shop / gratuit).
+- Level up ? recalc stats (`refreshStatsForLevel`) en conservant le ratio PV.
+- Sources : KO ennemi (alli?s vivants), objets `xp_all` (shop / gratuit).
 
 ### Passifs (`passives.ts`)
 
-Appliqués au spawn (`applyPassiveToStats`) + hooks combat (`getPassiveDamageMult`, `getPassiveSoulMult`, `getPassiveCaptureResist`, `getPassiveTurnRegenPct`).
+Appliqu?s au spawn (`applyPassiveToStats`) + hooks combat (`getPassiveDamageMult`, `getPassiveSoulMult`, `getPassiveCaptureResist`, `getPassiveTurnRegenPct`).
 
-| Clé | Passif | Effet principal |
+| Cl? | Passif | Effet principal |
 |-----|--------|-----------------|
-| `bram_vaillant` | Carapace vaillante | +8 % dmg · +5 DEF |
-| `nyx_mysterieux` | Brume intérieure | +25 % âmes · +1 VIT |
-| `luma_mignon` | Douceur réconfortante | Regen 4 % PV/tour |
-| `kiro_perfide` | Lame perfide | +12 % dmg · +3 ATK |
-| `ombre_faible` | Ombre fugace | −8 % capture |
-| `neant_scout` | Éclat corrompu | +10 % dmg · −5 % capture |
+| `bram_vaillant` | Carapace vaillante | +8 % dmg ? +5 DEF |
+| `nyx_mysterieux` | Brume int?rieure | +25 % ?mes ? +1 VIT |
+| `luma_mignon` | Douceur r?confortante | Regen 4 % PV/tour |
+| `kiro_perfide` | Lame perfide | +12 % dmg ? +3 ATK |
+| `ombre_faible` | Ombre fugace | ?8 % capture |
+| `neant_scout` | ?clat corrompu | +10 % dmg ? ?5 % capture |
 | `boss_*` | (boss) | dmg + capture resist + bonus stats |
 | errants + starters | explicite ou `TRIBE_DEFAULT_PASSIVES` | fallback par tribu |
 
-Texte compétence : `description` sur chaque skill dans `characters.ts` · fallback `describeSkill()`.
+Texte comp?tence : `description` sur chaque skill dans `characters.ts` ? fallback `describeSkill()`.
 
 ## Terrain & roue
 
 | Concept | Valeur |
 |---------|--------|
-| Slots roue | 6 (indices `0–5`) |
+| Slots roue | 6 (indices `0?5`) |
 | Terrain (arc haut) | slots **`5`, `0`, `1`** |
-| Max alliés terrain | 3 |
-| Rotation | permute tous les alliés ; auto-fill si trou terrain + réserve |
+| Max alli?s terrain | 3 |
+| Rotation | permute tous les alli?s ; auto-fill si trou terrain + r?serve |
 
 ## Vagues roguelite (`run-waves.ts`)
 
-**Run complet : 200 vagues** (`RUN_MAX_WAVES`). Victoire après le boss final + choix de la dernière récompense.
+**Run complet : 200 vagues** (`RUN_MAX_WAVES`). Victoire apr?s le boss final + choix de la derni?re r?compense.
 
 ### Paliers
 
 | Type | Condition | Boss | Adds |
 |------|-----------|------|------|
-| `normal` | défaut | — | 1–3 esprits pool |
-| `boss` | vague % 10 === 0 | `boss_gardien` (Gardien des brumes) | 1–2 sbires |
-| `mega_boss` | vague % 50 === 0 (sauf 200) | `boss_colosse` (Colosse du néant) | 2 sbires |
+| `normal` | d?faut | ? | 1?3 esprits pool |
+| `boss` | vague % 10 === 0 | `boss_gardien` (Gardien des brumes) | 1?2 sbires |
+| `mega_boss` | vague % 50 === 0 (sauf 200) | `boss_colosse` (Colosse du n?ant) | 2 sbires |
 | `final_boss` | vague === 200 | `boss_solmaar` (Solmaar corrompu) | 2 sbires |
 
-Les clés boss sont **exclues** du pool des vagues normales.
+Les cl?s boss sont **exclues** du pool des vagues normales.
 
 ### Scaling
 
-| Règle | Détail |
+| R?gle | D?tail |
 |-------|--------|
 | Vague 1 solo | 1 ennemi fixe : `ombre_faible` lvl 3 |
 | Niveau ennemi | `wave === 1 ? 3 : 2 + wave` (+ bonus boss) |
 | Stats boss | multiplicateurs par index (`enemyStatMults`) |
-| Nombre ennemis (normal) | 1–3 selon vague et taille équipe alliée |
+| Nombre ennemis (normal) | 1?3 selon vague et taille ?quipe alli?e |
 
-Poids rareté (approx.) : E dès v1, D v2+, C v3+, B v5+, A v8+, S v12+.
+Poids raret? (approx.) : E d?s v1, D v2+, C v3+, B v5+, A v8+, S v12+.
 
-## Récompenses entre vagues (`run-rewards.ts`)
+## R?compenses entre vagues (`run-rewards.ts`)
 
-Après chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
+Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 
 ### Pool actuel
 
 | ID | Nom | Kind | Persistant | Effet |
 |----|-----|------|------------|-------|
-| `lanterne_soin` | Lanterne de soin | `heal_all` | ❌ | +35 % PV max toute la roue |
-| `lanterne_ember` | Lanterne braise | `heal_all` | ❌ | +55 % PV max toute la roue |
-| `offrande` | Offrande du sanctuaire | `soul_fill` | ❌ | +50 % jauge âmes (1 esprit terrain) |
-| `griffe_ardente` | Griffe ardente | `stat_all` atk | ✅ | +8 ATK run |
-| `coquille_verte` | Coquille verte | `stat_all` def | ✅ | +6 DEF run |
-| `veine_vita` | Veine vitale | `stat_all` maxHp | ✅ | +20 PV max run |
-| `vent_vif` | Vent vif | `stat_all` vit | ✅ | +2 VIT run |
-| `filament` | Filament mycélien | `combo_atk_def` | ✅ | +5 ATK et +5 DEF run |
-| `echo_ames` | Écho d'âmes | `soul_mult` | ✅ stackable | +30 % remplissage âmes |
-| `ball_acier` | Phantoball renforcée | `capture_bonus` | ✅ stackable | +12 % capture |
-| `ball_pack` | Lot Phantoballs | `ball_standard` | ❌ | +2 standard |
-| `ball_tribal_random` | Ball tribale aléatoire | `ball_tribal` | ❌ | +1 type aléatoire |
-| `ball_lumi` | Lumiball | `ball_tribal` lumi | ❌ | Mignons & Bienveillants |
-| `ball_flam` | Flamball | `ball_tribal` flam | ❌ | Vaillants & Costauds |
-| `ball_ombra` | Ombraball | `ball_tribal` ombra | ❌ | Sombres & Sinistres |
-| `ball_neant` | Néantball | `ball_tribal` neant | ❌ | Néants ×2,5 |
-| `eclat_xp` | Éclat d'expérience | `xp_all` | ❌ stackable | +35 XP roue |
-| `grande_eclat_xp` | Grande étincelle | `xp_all` | ❌ stackable | +75 XP roue |
-| `offrande_vit` | Offrande du vent | `stat_all` vit | ✅ | +3 VIT run |
-| `relique_ame` | Fragment d'âme | `soul_fill` | ❌ | +80 % jauge (1 terrain) |
+| `lanterne_soin` | Lanterne de soin | `heal_all` | ? | +35 % PV max toute la roue |
+| `lanterne_ember` | Lanterne braise | `heal_all` | ? | +55 % PV max toute la roue |
+| `offrande` | Offrande du sanctuaire | `soul_fill` | ? | +50 % jauge ?mes (1 esprit terrain) |
+| `griffe_ardente` | Griffe ardente | `stat_all` atk | ? | +8 ATK run |
+| `coquille_verte` | Coquille verte | `stat_all` def | ? | +6 DEF run |
+| `veine_vita` | Veine vitale | `stat_all` maxHp | ? | +20 PV max run |
+| `vent_vif` | Vent vif | `stat_all` vit | ? | +2 VIT run |
+| `filament` | Filament myc?lien | `combo_atk_def` | ? | +5 ATK et +5 DEF run |
+| `echo_ames` | ?cho d'?mes | `soul_mult` | ? stackable | +30 % remplissage ?mes |
+| `ball_acier` | Phantoball renforc?e | `capture_bonus` | ? stackable | +12 % capture |
+| `ball_pack` | Lot Phantoballs | `ball_standard` | ? | +2 standard |
+| `ball_tribal_random` | Ball tribale al?atoire | `ball_tribal` | ? | +1 type al?atoire |
+| `ball_lumi` | Lumiball | `ball_tribal` lumi | ? | Mignons & Bienveillants |
+| `ball_flam` | Flamball | `ball_tribal` flam | ? | Vaillants & Costauds |
+| `ball_ombra` | Ombraball | `ball_tribal` ombra | ? | Sombres & Sinistres |
+| `ball_neant` | N?antball | `ball_tribal` neant | ? | N?ants ?2,5 |
+| `eclat_xp` | ?clat d'exp?rience | `xp_all` | ? stackable | +35 XP roue |
+| `grande_eclat_xp` | Grande ?tincelle | `xp_all` | ? stackable | +75 XP roue |
+| `offrande_vit` | Offrande du vent | `stat_all` vit | ? | +3 VIT run |
+| `relique_ame` | Fragment d'?me | `soul_fill` | ? | +80 % jauge (1 terrain) |
 
 **Barre reliques UI** : uniquement les persistants (`isPersistentRunRelic`).
 
-### Règles de tirage
+### R?gles de tirage
 
-- Objets non stackables retirés du pool une fois possédés.
-- Vagues 1–2 : pool légèrement biaisé vers les soins (`heal_all` en tête).
+- Objets non stackables retir?s du pool une fois poss?d?s.
+- Vagues 1?2 : pool l?g?rement biais? vers les soins (`heal_all` en t?te).
 
 ## Persistance
 
-| Scope | État | Implémentation |
+| Scope | ?tat | Impl?mentation |
 |-------|------|----------------|
-| **Run en cours** | ✅ proto | `localStorage` clé `phantoria_run_v1` — phases `fighting` / `reward_pick` |
-| Profil joueur, roster, gacha | ❌ à faire | Supabase |
-| Métaprogression hub | ❌ à faire | — |
+| **Run en cours** | ? proto | `localStorage` `phantoria_run_v1` **ou** table `active_runs` si Supabase |
+| Profil, roster, monnaies | ? proto | Supabase (`profiles`, `player_currencies`, `player_spirits`, `roster_slots`) |
+| Gacha bienvenue | ? proto | 6 pulls gratuits, pool 4 starters ? pas de pity / tickets payants |
+| M?taprogression hub | ? ? faire | Or run ? compte, XP hub, etc. |
 
-## Décisions validées (proto)
+## D?cisions valid?es (proto)
 
 | Sujet | Choix |
 |-------|--------|
-| Fill Âmes | `(dmg/maxHp)×0.35`, cap 0.5 par hit, mult relique |
-| Or run | 100 € départ · `waveClearGold` (vague 1 ≈ 16 €, scale + bonus boss) |
-| Phantoballs run | 5 standard · tribales par type (bonus/malus tribu) · voir `phantoballs.ts` |
+| Fill ?mes | `(dmg/maxHp)?0.35`, cap 0.5 par hit, mult relique |
+| Or run | 100 ? d?part ? `waveClearGold` (vague 1 ? 16 ?, scale + bonus boss) |
+| Phantoballs run | 5 standard ? tribales par type (bonus/malus tribu) ? voir `phantoballs.ts` |
 | Rotation roue | Manuelle + auto-fill trou terrain |
 | Phantoball | En plein combat, placement slot obligatoire |
-| Cible attaque de base | Auto (premier ennemi) — **clic droit** pour marquer un focus (`attackFocusId`) |
-| Défaite run | 0 allié vivant sur la roue entière |
-| Victoire run | Boss final vague 200 + dernière récompense → phase `won` |
+| Cible attaque de base | Auto (premier ennemi) ? **clic droit** pour marquer un focus (`attackFocusId`) |
+| D?faite run | 0 alli? vivant sur la roue enti?re |
+| Victoire run | Boss final vague 200 + derni?re r?compense ? phase `won` |
 | Capture max | 85 % |
-| Récompenses vagues | Gratuit (3 choix) + boutique € + reroll · balls + XP achetables |
-| Save run | `phantoria_run_v1` localStorage · Continuer au picker |
-| Passifs | Explicites + fallback tribu · inspect + HUD |
+| R?compenses vagues | Gratuit (3 choix) + boutique ? + reroll ? balls + XP achetables |
+| Save run | `phantoria_run_v1` local **ou** `active_runs` � Continuer au picker |
+| Passifs | Explicites + fallback tribu ? inspect + HUD |
 | Game over UI | Fullscreen bloque capture / combat ; tick auto off |
-| Reliques affichées | Persistantes uniquement |
+| Reliques affich?es | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |
 
-## Prochaines étapes data
+## Prochaines ?tapes data
 
-- [ ] `data/characters.json` généré depuis Excalidraw / sheet
+- [ ] `data/characters.json` g?n?r? depuis Excalidraw / sheet
 - [ ] Formule pity gacha (state par pack)
-- [ ] Phantoballs restantes GDD (Verdeball, Spectraball…)
-- [ ] Critères 3★ mode histoire
-- [ ] Sync save run serveur (post-Supabase)
+- [ ] Phantoballs restantes GDD (Verdeball, Spectraball?)
+- [ ] Crit?res 3? mode histoire
+- [ ] Sync m?taprogression post-run (or hub, XP esprits)

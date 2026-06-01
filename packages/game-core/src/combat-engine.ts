@@ -497,7 +497,6 @@ export class CombatEngine {
       active: false,
       ko: false,
       souls: 0,
-      xp: pending.xp,
       skills: getTemplate(pending.templateKey).skills,
     };
     applyFieldStatus(recruit);

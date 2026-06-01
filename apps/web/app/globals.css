@@ -246,6 +246,24 @@ body::after {
 .topbar__right {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar__auth {
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topbar__auth:hover {
+  border-color: var(--accent);
 }
 
 .topbar__wallet {
@@ -358,4 +376,100 @@ body::after {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-weight: 600;
+}
+
+/* Login Supabase */
+.login {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login__panel {
+  width: min(100%, 24rem);
+  padding: 1.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  box-shadow: var(--hard-shadow);
+}
+
+.login__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.login__title {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 1.5rem;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.login__field input {
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--void-elevated);
+  color: var(--text);
+  font: inherit;
+}
+
+.login__msg {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+
+.login__submit {
+  margin-top: 0.25rem;
+  padding: 0.65rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--ink);
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.login__submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.login__switch,
+.login__back {
+  display: block;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.login__switch:hover,
+.login__back:hover {
+  color: var(--accent);
 }
