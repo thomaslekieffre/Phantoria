@@ -10,19 +10,37 @@ type SpiritWheelProps = {
   selectedId: SpiritSlot["id"] | null;
   pickSlotIndex: number | null;
   onSlotClick: (slotIndex: number) => void;
+  /** Affichage seul (brief histoire, etc.) */
+  readOnly?: boolean;
+  /** Bulles seules, sans nom / tribu / PV (brief) */
+  compact?: boolean;
+  previewHint?: string;
 };
 
-export function SpiritWheel({ roster, selectedId, pickSlotIndex, onSlotClick }: SpiritWheelProps) {
+export function SpiritWheel({
+  roster,
+  selectedId,
+  pickSlotIndex,
+  onSlotClick,
+  readOnly = false,
+  compact = false,
+  previewHint,
+}: SpiritWheelProps) {
   const fieldFilled = roster.filter((s, i) => !s.empty && isFieldSlotIndex(i)).length;
   const filled = roster.filter((s) => !s.empty).length;
 
   return (
-    <section className="wheel" aria-label="Roue d'esprits">
+    <section
+      className={`wheel ${readOnly ? "wheel--readonly" : ""} ${compact ? "wheel--compact" : ""}`}
+      aria-label="Roue d'esprits"
+    >
       <header className="wheel__head">
         <div>
           <h2 className="wheel__title">Roue d&apos;esprits</h2>
           <p className="wheel__hint">
-            2 clics pour échanger · les {MAX_FIELD} devant (haut) = terrain
+            {readOnly
+              ? (previewHint ?? "Équipe depuis le sanctuaire")
+              : `2 clics pour échanger · les ${MAX_FIELD} devant (haut) = terrain`}
           </p>
         </div>
         <div className="wheel__counter" title="Combattants actifs (3 premiers emplacements)">
@@ -38,20 +56,10 @@ export function SpiritWheel({ roster, selectedId, pickSlotIndex, onSlotClick }: 
           const selected = selectedId === slot.id;
           const isField = !slot.empty && isFieldSlotIndex(i);
           const isPick = pickSlotIndex === i;
-          return (
-            <button
-              key={`${slot.id}-${i}`}
-              type="button"
-              className={`wheel__slot ${isField ? "wheel__slot--field" : ""} ${slot.empty ? "wheel__slot--empty" : ""} ${selected ? "wheel__slot--selected" : ""} ${isPick ? "wheel__slot--pick" : ""}`}
-              style={{ "--i": i, "--hue": slot.hue } as CSSProperties}
-              onClick={() => onSlotClick(i)}
-              aria-pressed={selected || isPick}
-              title={
-                slot.empty
-                  ? "Emplacement libre — échange ou gacha"
-                  : `${slot.name} · ${slot.tribe} · ${slot.hp}% PV${isField ? " · terrain" : ""}`
-              }
-            >
+          const slotClass = `wheel__slot ${isField ? "wheel__slot--field" : ""} ${slot.empty ? "wheel__slot--empty" : ""} ${selected ? "wheel__slot--selected" : ""} ${isPick ? "wheel__slot--pick" : ""}`;
+
+          const slotContent = (
+            <>
               <span className="wheel__bubble">
                 {slot.empty ? (
                   <span className="wheel__hole" aria-hidden />
@@ -64,7 +72,7 @@ export function SpiritWheel({ roster, selectedId, pickSlotIndex, onSlotClick }: 
                   </>
                 ) : null}
               </span>
-              {!slot.empty ? (
+              {!slot.empty && !compact ? (
                 <>
                   <span className="wheel__name">{slot.name}</span>
                   <span className="wheel__tribe">{slot.tribe}</span>
@@ -78,10 +86,45 @@ export function SpiritWheel({ roster, selectedId, pickSlotIndex, onSlotClick }: 
                     <span style={{ width: `${slot.hp}%` }} />
                   </div>
                 </>
-              ) : (
+              ) : slot.empty && !compact ? (
                 <span className="wheel__empty-label">Libre</span>
-              )}
-              {isField ? <span className="wheel__tag">Terrain</span> : null}
+              ) : null}
+              {isField && !compact ? <span className="wheel__tag">Terrain</span> : null}
+            </>
+          );
+
+          if (readOnly) {
+            return (
+              <div
+                key={`${slot.id}-${i}`}
+                className={slotClass}
+                style={{ "--i": i, "--hue": slot.hue } as CSSProperties}
+                title={
+                  slot.empty
+                    ? "Emplacement libre"
+                    : `${slot.name} · ${slot.tribe} · ${slot.hp}% PV${isField ? " · terrain" : ""}`
+                }
+              >
+                {slotContent}
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={`${slot.id}-${i}`}
+              type="button"
+              className={slotClass}
+              style={{ "--i": i, "--hue": slot.hue } as CSSProperties}
+              onClick={() => onSlotClick(i)}
+              aria-pressed={selected || isPick}
+              title={
+                slot.empty
+                  ? "Emplacement libre — échange ou gacha"
+                  : `${slot.name} · ${slot.tribe} · ${slot.hp}% PV${isField ? " · terrain" : ""}`
+              }
+            >
+              {slotContent}
             </button>
           );
         })}

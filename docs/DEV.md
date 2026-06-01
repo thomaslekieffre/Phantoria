@@ -178,7 +178,7 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 
 | Fichier | Rôle |
 |---------|------|
-| `spirit-wheel.tsx` | Roue ×6, compteur terrain, sélection / échange |
+| `spirit-wheel.tsx` | Roue ×6, compteur terrain, sélection / échange · props `readOnly` / `compact` (brief histoire) |
 | `hub-screen.tsx` | Orchestration clic 2 slots, bench, fiche |
 | `hub-panel.tsx` | Fiche esprit sélectionné + actions |
 | `hub-bench-picker.tsx` | Liste **hors roue** → placer sur un emplacement libre |
@@ -197,11 +197,20 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 
 | Fichier | Rôle |
 |---------|------|
-| `story-map-screen.tsx` | Carte zones · niv. 1-1 jouable |
-| `story-battle-screen.tsx` | Briefing → combat (moteur `battleMode: story`) → étoiles |
+| `story-map-screen.tsx` | Carte zone scrollable (chemin SVG, nœuds lanternes, boss 5/10/15) |
+| `story-battle-screen.tsx` | Briefing (`SpiritWheel` readOnly) → combat (`AllyFieldSprite` + `battle__allies`) → étoiles |
+| `story.css` | Carte monde, nœuds, brief avec roue, résultat |
+| `lib/story/story-map-layout.ts` | Positions % des 15 nœuds + courbe SVG du sentier |
+| `lib/story/use-story-progress.ts` | Hook client : save vide au SSR, sync `localStorage` au mount (évite mismatch hydration étoiles) |
 | `lib/story/story-progress.ts` | Étoiles / déblocage (`localStorage`) |
 | `lib/story/story-roster.ts` | Équipe depuis roue sanctuaire + niveaux `player_spirits` |
 | `lib/story/story-result-service.ts` | Persist XP/PV histoire après victoire |
+
+**Carte** : une zone à la fois (flèches), filaments de fond, nœuds numérotés le long d’un sentier en pointillés ; étoiles au-dessus des niveaux terminés ; niveau courant pulsé.
+
+**Briefing** : `SpiritWheel` en `readOnly` + `compact` (bulles seules, sans nom/tribu/PV) · footer : actions à gauche, objectifs ★ à droite · hint « niveaux/PV = progression histoire ».
+
+**Combat** : même rendu terrain que la run (`AllyFieldSprite` dans `battle__allies`) — les 3 devant sur la roue apparaissent sur le fond vert.
 
 **Règles v0** : équipe = esprits sur la roue · pas de capture · 3★ (victoire / sans KO / ≤ N rounds) · défaite = retry sans perte collection.
 

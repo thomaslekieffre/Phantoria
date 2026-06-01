@@ -15,7 +15,7 @@ import {
   type CombatEvent,
   type Combatant,
 } from "@phantoria/game-core";
-import { SpiritPortrait } from "@/components/hub/spirit-portrait";
+import { SpiritWheel } from "@/components/hub/spirit-wheel";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
 import { BattleWheel } from "@/components/run/battle-wheel";
 import { usePlayer } from "@/components/providers/player-provider";
@@ -30,6 +30,7 @@ import { buildStoryAllySetup, rosterHasFieldSpirit } from "@/lib/story/story-ros
 import { recordStoryVictory } from "@/lib/story/story-progress";
 import { persistStorySpiritStats } from "@/lib/story/story-result-service";
 import "../run/run.css";
+import "../hub/hub.css";
 import "./story.css";
 
 type HitFlashKind = "hit" | "super" | "ko";
@@ -98,6 +99,39 @@ function EnemyFieldSprite({
       ) : matchupMult !== undefined && matchupMult <= 0.5 ? (
         <span className="battle-foe__mult battle-foe__mult--weak">{matchupMult <= 0 ? "×0" : "×½"}</span>
       ) : null}
+    </button>
+  );
+}
+
+function AllyFieldSprite({
+  c,
+  acting,
+  hitFlash,
+  inspected,
+  onClick,
+}: {
+  c: Combatant;
+  acting: boolean;
+  hitFlash?: HitFlashKind;
+  inspected?: boolean;
+  onClick?: () => void;
+}) {
+  const hue = combatSpiritHue(c.templateKey);
+  return (
+    <button
+      type="button"
+      className={`battle-ally ${acting ? "battle-ally--act" : ""} ${c.ko ? "battle-ally--ko" : ""} ${inspected ? "battle-ally--inspect" : ""} ${hitFlash ? `battle-ally--${hitFlash}` : ""}`}
+      onClick={onClick}
+      disabled={c.ko || !onClick}
+      aria-label={`Inspecter ${c.name}`}
+    >
+      <div
+        className="battle-ally__body"
+        style={{ background: `color-mix(in srgb, ${hue} 78%, #1a1028 22%)` }}
+      >
+        <RarityBadge rarity={c.rarity} size="xs" className="battle-sprite__rarity" />
+        <CombatSpirit templateKey={c.templateKey} name={c.name} className="battle-ally__sprite" />
+      </div>
     </button>
   );
 }
@@ -356,35 +390,39 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
   if (uiPhase === "intro") {
     return (
-      <div className="story-brief">
+      <div className="story-brief story-brief--with-wheel">
         <p className="story-brief__crumb">
           {zone.emoji} {zone.name} · Niv. {level.index}
         </p>
         <h1 className="story-brief__title">{level.title}</h1>
         <p className="story-brief__text">{level.intro}</p>
-        <ul className="story-brief__team">
-          {allySetup.map((a) => {
-            const hub = a.hubId;
-            return (
-              <li key={hub}>
-                {isSpiritId(hub) ? <SpiritPortrait id={hub} className="story-brief__portrait" /> : null}
-                <span>
-                  Nv. {a.level} · {a.hpPct} % PV
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="story-brief__stars-hint">
-          ★ Victoire · ★★ Aucun KO · ★★★ ≤ {level.starsRound3} rounds
+        <div className="story-brief__wheel">
+          <SpiritWheel
+            roster={roster}
+            selectedId={null}
+            pickSlotIndex={null}
+            onSlotClick={() => {}}
+            readOnly
+            compact
+            previewHint="Niveaux et PV = progression histoire · modifie l'équipe au sanctuaire"
+          />
         </div>
-        <div className="story-brief__actions">
-          <button type="button" className="play play--story" onClick={beginFight}>
-            Commencer
-          </button>
-          <Link href="/story" className="story-brief__back">
-            Carte
-          </Link>
+        <div className="story-brief__footer">
+          <div className="story-brief__actions">
+            <button type="button" className="play play--story" onClick={beginFight}>
+              Commencer
+            </button>
+            <Link href="/story" className="story-brief__back">
+              Carte
+            </Link>
+          </div>
+          <p className="story-brief__stars-hint">
+            ★ Victoire
+            <br />
+            ★★ Aucun KO
+            <br />
+            ★★★ ≤ {level.starsRound3} rounds
+          </p>
         </div>
       </div>
     );
@@ -452,6 +490,15 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     engine.playerSpecial(specialActor, slot);
     setSpecialActor(null);
     bump();
+  };
+
+  const handleAllyInspect = (allyId: string) => {
+    if (!engine || isOver) return;
+    const ally = engine.getCombatant(allyId);
+    if (!ally || ally.ko || ally.side !== "ally") return;
+    setInspectAlly((id) => (id === allyId ? null : allyId));
+    setInspectTarget(null);
+    setShowTribeChart(false);
   };
 
   return (
@@ -525,6 +572,19 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
             })}
           </div>
 
+          <div className="battle__allies" aria-label="Équipe">
+            {fieldAllies.map((c) => (
+              <AllyFieldSprite
+                key={c.instanceId}
+                c={c}
+                acting={current?.instanceId === c.instanceId}
+                hitFlash={hitFlashes[c.instanceId]}
+                inspected={inspectAlly === c.instanceId}
+                onClick={!c.ko && !isOver ? () => handleAllyInspect(c.instanceId) : undefined}
+              />
+            ))}
+          </div>
+
           {floaters.map((f) => (
             <span key={f.id} className="battle__floater">
               −{f.amount}
@@ -548,8 +608,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
                     setInspectAlly(null);
                     return;
                   }
-                  setInspectAlly((id) => (id === c.instanceId ? null : c.instanceId));
-                  setInspectTarget(null);
+                  handleAllyInspect(c.instanceId);
                 }}
               />
             ))}
