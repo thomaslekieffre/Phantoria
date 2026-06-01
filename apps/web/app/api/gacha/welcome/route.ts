@@ -4,7 +4,7 @@ import { secureGachaRandom } from "@/lib/player/gacha-random";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,16 +12,24 @@ export async function POST() {
 
   if (!user) {
     return NextResponse.json(
-      { result: null, welcomePullsRemaining: 0, error: "Non connecté" },
+      { results: [], welcomePullsRemaining: 0, error: "Non connecté" },
       { status: 401 },
     );
+  }
+
+  let all = false;
+  try {
+    const body = await request.json();
+    all = Boolean(body?.all);
+  } catch {
+    /* corps vide = ×1 */
   }
 
   const admin = createAdminClient();
   if (!admin) {
     return NextResponse.json(
       {
-        result: null,
+        results: [],
         welcomePullsRemaining: 0,
         error: "SUPABASE_SERVICE_ROLE_KEY manquante (invocations serveur)",
       },
@@ -29,7 +37,7 @@ export async function POST() {
     );
   }
 
-  const outcome = await performWelcomePull(admin, user.id, secureGachaRandom);
+  const outcome = await performWelcomePull(admin, user.id, { all }, secureGachaRandom);
   const status = outcome.error ? 400 : 200;
   return NextResponse.json(outcome, { status });
 }

@@ -109,9 +109,10 @@ async function grantSpirit(
 export async function performWelcomePull(
   supabase: SupabaseClient,
   userId: string,
+  options: { all?: boolean } = {},
   random = Math.random,
 ): Promise<{
-  result: GachaPullResult | null;
+  results: GachaPullResult[];
   welcomePullsRemaining: number;
   error?: string;
 }> {
@@ -122,26 +123,39 @@ export async function performWelcomePull(
     .single();
 
   if (profileErr || !profile) {
-    return { result: null, welcomePullsRemaining: 0, error: "Profil introuvable" };
+    return { results: [], welcomePullsRemaining: 0, error: "Profil introuvable" };
   }
 
   if (profile.welcome_pulls_remaining <= 0) {
-    return { result: null, welcomePullsRemaining: 0, error: "Plus d'invocations gratuites" };
+    return { results: [], welcomePullsRemaining: 0, error: "Plus d'invocations gratuites" };
   }
 
-  const { data: ownedRows } = await supabase
-    .from("player_spirits")
-    .select("hub_id")
-    .eq("user_id", userId);
+  const pullCount = options.all ? profile.welcome_pulls_remaining : 1;
+  const results: GachaPullResult[] = [];
+  let remaining = profile.welcome_pulls_remaining;
 
-  const owned = new Set((ownedRows ?? []).map((r) => r.hub_id));
-  const entry = pickWelcomeEntry(owned, random);
-  const result = await grantSpirit(supabase, userId, entry);
+  for (let i = 0; i < pullCount; i++) {
+    if (remaining <= 0) break;
 
-  const remaining = profile.welcome_pulls_remaining - 1;
+    const { data: ownedRows } = await supabase
+      .from("player_spirits")
+      .select("hub_id")
+      .eq("user_id", userId);
+
+    const owned = new Set((ownedRows ?? []).map((r) => r.hub_id));
+    const entry = pickWelcomeEntry(owned, random);
+    const result = await grantSpirit(supabase, userId, entry);
+    results.push(result);
+    remaining -= 1;
+  }
+
   await supabase.from("profiles").update({ welcome_pulls_remaining: remaining }).eq("id", userId);
 
-  return { result, welcomePullsRemaining: remaining };
+  if (results.length === 0) {
+    return { results: [], welcomePullsRemaining: remaining, error: "Invocation impossible" };
+  }
+
+  return { results, welcomePullsRemaining: remaining };
 }
 
 export type StandardPullPayment = "ticket" | "gems";

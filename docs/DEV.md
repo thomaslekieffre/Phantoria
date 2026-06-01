@@ -134,13 +134,14 @@ supabase db push
 |------|------|
 | Colonne gauche (`gacha-banners`) | Sélection du pack : **Premiers esprits** (gratuit, badge restants / Terminé) · **Pack standard** |
 | Centre (`gacha-altar`) | Bannière du pack actif, esprits mis en avant, machine, pity (standard), boutons d’invocation |
-| Droite (`gacha-rates`) | Taux par rareté (standard) ou liste garantie sans doublon (bienvenue) |
+| Droite (`gacha-rates`) | Taux par rareté — **clic sur une ligne** → popup portraits + statut possédé |
 
-**Invocations standard** — grille 2×2 : ticket ×1 / ×10, gemmes ×1 / ×10. Wallet tickets/gemmes sous le titre. Après un multi : overlay récap (révélation progressive, meilleur tirage surligné, « Tout afficher », Échap). Tirage simple : overlay carte unique (Échap pour fermer).
+**Invocations** — Bienvenue : ×1 ou **tout invoquer** (restants en un clic). Standard : grille 2×2 ticket/gemmes ×1/×10. Wallet sous le titre. Panneau droit : taux + pity dynamique (S), doublons → gemmes, esprits possédés (✓) ; modal détail par rareté (portrait, tribu, pastille « Possédé »). CTA sanctuaire/run quand bienvenue terminée. Overlays tirage : révélation multi progressive, Échap.
 
 | Fichier | Rôle |
 |---------|------|
 | `gacha-screen.tsx` | UI, état pack, appels `gacha-client` |
+| `gacha-rates-panel.tsx` | Taux, pity, collection ✓, modal détail au clic rareté |
 | `gacha.css` | Layout 3 colonnes, bannières, taux, reveal |
 | `apps/web/lib/player/gacha-pool.ts` | Pools bienvenue / standard, coûts, `STANDARD_MULTI_PULL_COUNT` (10) |
 | `apps/web/lib/player/gacha-service.ts` | Logique tirage (appelée par l’API, service role) |

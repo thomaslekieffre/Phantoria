@@ -2,7 +2,7 @@ import type { GachaPullResult, StandardPullPayment } from "./gacha-service";
 import { STANDARD_MULTI_PULL_COUNT } from "./gacha-pool";
 
 type WelcomeResponse = {
-  result: GachaPullResult | null;
+  results: GachaPullResult[];
   welcomePullsRemaining: number;
   error?: string;
 };
@@ -17,12 +17,16 @@ async function parseJson<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function pullWelcomeGacha(): Promise<WelcomeResponse> {
-  const res = await fetch("/api/gacha/welcome", { method: "POST" });
+export async function pullWelcomeGacha(all = false): Promise<WelcomeResponse> {
+  const res = await fetch("/api/gacha/welcome", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ all }),
+  });
   if (!res.ok) {
     const body = await parseJson<WelcomeResponse>(res).catch(() => ({} as WelcomeResponse));
     return {
-      result: null,
+      results: [],
       welcomePullsRemaining: 0,
       error: body.error ?? "Invocation impossible",
     };

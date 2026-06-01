@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { GACHA_HARD_PITY, GACHA_BASE_WEIGHTS, type Rarity } from "@phantoria/game-core";
+import { GACHA_HARD_PITY, type Rarity } from "@phantoria/game-core";
 import { GameShell } from "@/components/layout/game-shell";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { IconCube, IconGem } from "@/components/ui/icons";
@@ -23,6 +23,7 @@ import {
   type StandardPullPayment,
 } from "@/lib/player/gacha-service";
 import type { SpiritId } from "@/components/hub/roster";
+import { GachaRatesPanel } from "./gacha-rates-panel";
 import "./gacha.css";
 
 const RARITY_CLASS: Record<Rarity, string> = {
@@ -60,7 +61,10 @@ function FeaturedSpirit({
 
 function GachaMachine({ pulling, pack }: { pulling: boolean; pack: PackTab }) {
   return (
-    <div className={`gacha-machine ${pulling ? "gacha-machine--shake" : ""}`} data-pack={pack}>
+    <div
+      className={`gacha-machine ${pulling ? "gacha-machine--shake gacha-machine--active" : ""}`}
+      data-pack={pack}
+    >
       <div className="gacha-machine__halo" aria-hidden />
       <div className="gacha-machine__frame">
         <div className="gacha-machine__horn gacha-machine__horn--l" />
@@ -215,13 +219,16 @@ export function GachaScreen() {
     gachaPityStandard,
     hasSpirits,
     spiritCount,
+    unlockedHubIds,
     currencies,
+    ready,
     refresh,
     supabaseEnabled,
     user,
   } = usePlayer();
 
-  const [pack, setPack] = useState<PackTab>("welcome");
+  const [pack, setPack] = useState<PackTab>("standard");
+  const [packTouched, setPackTouched] = useState(false);
   const [pulling, setPulling] = useState(false);
   const [lastResults, setLastResults] = useState<GachaPullResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +243,23 @@ export function GachaScreen() {
   const canGems = gems >= STANDARD_PULL_GEM_COST;
   const canTicketMulti = tickets >= STANDARD_PULL_TICKET_COST * STANDARD_MULTI_PULL_COUNT;
   const canGemsMulti = gems >= STANDARD_PULL_GEM_COST * STANDARD_MULTI_PULL_COUNT;
+  const ownedIds = useMemo(() => new Set(unlockedHubIds), [unlockedHubIds]);
+  const onboardingDone = hasSpirits && !hasWelcome;
+
+  useEffect(() => {
+    if (!ready || packTouched) return;
+    if (hasWelcome) setPack("welcome");
+    else setPack("standard");
+  }, [ready, hasWelcome, packTouched]);
+
+  useEffect(() => {
+    if (!hasWelcome && pack === "welcome") setPack("standard");
+  }, [hasWelcome, pack]);
+
+  function selectPack(next: PackTab) {
+    setPackTouched(true);
+    setPack(next);
+  }
 
   const featured =
     pack === "welcome"
@@ -245,15 +269,18 @@ export function GachaScreen() {
           return { id, rarity: e.rarity, delay: i * 100 };
         });
 
-  async function invokeWelcome() {
+  async function invokeWelcome(all = false) {
     if (!canWelcome || pulling) return;
+    if (!all && !hasWelcome) return;
+
     setPulling(true);
     setError(null);
-    const { result, error: pullError } = await pullWelcomeGacha();
-    await new Promise((r) => setTimeout(r, 900));
+    const { results, error: pullError } = await pullWelcomeGacha(all);
+    const multi = results.length > 1;
+    await new Promise((r) => setTimeout(r, multi ? 1400 : 900));
     setPulling(false);
     if (pullError) setError(pullError);
-    else if (result) setLastResults([result]);
+    else if (results.length > 0) setLastResults(results);
     await refresh();
   }
 
@@ -333,7 +360,7 @@ export function GachaScreen() {
             <button
               type="button"
               className={`gacha-banner-btn ${pack === "welcome" ? "gacha-banner-btn--on" : ""}`}
-              onClick={() => setPack("welcome")}
+              onClick={() => selectPack("welcome")}
             >
               <div className="gacha-banner-btn__bg gacha-banner-btn__bg--welcome" />
               <span className="gacha-banner-btn__tag">Gratuit</span>
@@ -345,7 +372,7 @@ export function GachaScreen() {
             <button
               type="button"
               className={`gacha-banner-btn ${pack === "standard" ? "gacha-banner-btn--on" : ""}`}
-              onClick={() => setPack("standard")}
+              onClick={() => selectPack("standard")}
             >
               <div className="gacha-banner-btn__bg" />
               <span className="gacha-banner-btn__tag">Général</span>
@@ -415,26 +442,45 @@ export function GachaScreen() {
 
               <div className="gacha-altar__actions">
                 {pack === "welcome" ? (
-                  <button
-                    type="button"
-                    className="gacha-pull gacha-pull--free"
-                    disabled={!hasWelcome || !canWelcome || pulling}
-                    onClick={() => void invokeWelcome()}
-                  >
-                    <span className="gacha-pull__tag">Offre bienvenue</span>
-                    <span className="gacha-pull__main">
-                      <span className="gacha-pull__times">×1</span>
-                      <span className="gacha-pull__label">{hasWelcome ? "Invocation gratuite" : "Pack terminé"}</span>
-                    </span>
-                    <span className="gacha-pull__cost">0</span>
-                  </button>
+                  <div className="gacha-altar__actions-grid gacha-altar__actions-grid--welcome">
+                    <button
+                      type="button"
+                      className={`gacha-pull gacha-pull--free ${pulling ? "gacha-pull--loading" : ""}`}
+                      disabled={!hasWelcome || !canWelcome || pulling}
+                      onClick={() => void invokeWelcome(false)}
+                    >
+                      <span className="gacha-pull__tag">Offre bienvenue</span>
+                      <span className="gacha-pull__main">
+                        <span className="gacha-pull__times">×1</span>
+                        <span className="gacha-pull__label">
+                          {hasWelcome ? "Invocation gratuite" : "Pack terminé"}
+                        </span>
+                      </span>
+                      <span className="gacha-pull__cost">0</span>
+                    </button>
+                    {welcomePullsRemaining > 1 ? (
+                      <button
+                        type="button"
+                        className={`gacha-pull gacha-pull--free ${pulling ? "gacha-pull--loading" : ""}`}
+                        disabled={!canWelcome || pulling}
+                        onClick={() => void invokeWelcome(true)}
+                      >
+                        <span className="gacha-pull__tag">Offre bienvenue</span>
+                        <span className="gacha-pull__main">
+                          <span className="gacha-pull__times">×{welcomePullsRemaining}</span>
+                          <span className="gacha-pull__label">Tout invoquer</span>
+                        </span>
+                        <span className="gacha-pull__cost">0</span>
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {pack === "standard" ? (
                   <div className="gacha-altar__actions-grid">
                     <button
                       type="button"
-                      className="gacha-pull gacha-pull--ticket"
+                      className={`gacha-pull gacha-pull--ticket ${pulling ? "gacha-pull--loading" : ""}`}
                       disabled={pulling || !canTicket}
                       onClick={() => void invokeStandard("ticket", 1)}
                     >
@@ -450,7 +496,7 @@ export function GachaScreen() {
                     </button>
                     <button
                       type="button"
-                      className="gacha-pull gacha-pull--ticket"
+                      className={`gacha-pull gacha-pull--ticket ${pulling ? "gacha-pull--loading" : ""}`}
                       disabled={pulling || !canTicketMulti}
                       onClick={() => void invokeStandard("ticket", STANDARD_MULTI_PULL_COUNT)}
                     >
@@ -466,7 +512,7 @@ export function GachaScreen() {
                     </button>
                     <button
                       type="button"
-                      className="gacha-pull gacha-pull--gem"
+                      className={`gacha-pull gacha-pull--gem ${pulling ? "gacha-pull--loading" : ""}`}
                       disabled={pulling || !canGems}
                       onClick={() => void invokeStandard("gems", 1)}
                     >
@@ -482,7 +528,7 @@ export function GachaScreen() {
                     </button>
                     <button
                       type="button"
-                      className="gacha-pull gacha-pull--gem"
+                      className={`gacha-pull gacha-pull--gem ${pulling ? "gacha-pull--loading" : ""}`}
                       disabled={pulling || !canGemsMulti}
                       onClick={() => void invokeStandard("gems", STANDARD_MULTI_PULL_COUNT)}
                     >
@@ -504,53 +550,25 @@ export function GachaScreen() {
                 {!hasSpirits && !hasWelcome ? (
                   <p className="gacha-hint">Gagne des gemmes (doublons) ou des tickets pour invoquer.</p>
                 ) : null}
+
+                {onboardingDone ? (
+                  <div className="gacha-done-cta">
+                    <p className="gacha-done-cta__text">Roue complète — tu peux partir à l&apos;aventure.</p>
+                    <div className="gacha-done-cta__links">
+                      <Link href="/" className="gacha-done-cta__btn">
+                        Sanctuaire
+                      </Link>
+                      <Link href="/run" className="gacha-done-cta__btn gacha-done-cta__btn--run">
+                        Lancer un run
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           </div>
 
-          {pack === "standard" ? (
-            <aside className="gacha-rates">
-              <h3 className="gacha-rates__title">Taux d'obtention</h3>
-              <div className="gacha-rates__list">
-                {(["S", "A", "B", "C", "D", "E"] as Rarity[]).map((r) => {
-                  const spirits = STANDARD_GACHA_POOL.filter((e) => e.rarity === r);
-                  const rate = Math.round(GACHA_BASE_WEIGHTS[r] * 100);
-                  return (
-                    <div key={r} className={`gacha-rates__row gacha-rarity--${r.toLowerCase()}`}>
-                      <div className="gacha-rates__badge">{r}</div>
-                      <div className="gacha-rates__info">
-                        <span className="gacha-rates__pct">{rate}%</span>
-                        <span className="gacha-rates__spirits">
-                          {spirits.length > 0 ? spirits.map((s) => s.name).join(", ") : "-"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </aside>
-          ) : (
-            <aside className="gacha-rates">
-              <h3 className="gacha-rates__title">Contenu du pack</h3>
-              <div className="gacha-rates__list">
-                {(["B", "C", "D", "E"] as Rarity[]).map((r) => {
-                  const spirits = WELCOME_GACHA_POOL.filter((e) => e.rarity === r);
-                  if (spirits.length === 0) return null;
-                  return (
-                    <div key={r} className={`gacha-rates__row gacha-rarity--${r.toLowerCase()}`}>
-                      <div className="gacha-rates__badge">{r}</div>
-                      <div className="gacha-rates__info">
-                        <span className="gacha-rates__pct">Garantis sans doublon</span>
-                        <span className="gacha-rates__spirits">
-                          {spirits.map((s) => s.name).join(", ")}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </aside>
-          )}
+          <GachaRatesPanel pack={pack} gachaPityStandard={gachaPityStandard} ownedIds={ownedIds} />
         </div>
 
         {lastResults?.length === 1 ? (
