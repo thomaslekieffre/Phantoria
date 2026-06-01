@@ -5,6 +5,7 @@ import { hydrateCombatState } from "./run-save";
 import { applyRunReward, rollRewardChoices, isPersistentRunRelic, rollShopOffers, getRunReward, waveClearGold, RUN_START_GOLD, getShopRerollPrice } from "./run-rewards";
 import { RUN_START_BALLS, createEmptyTribalStock } from "./phantoballs";
 import { getRunWaveSetup, RUN_MAX_WAVES, getRunWaveKind } from "./run-waves";
+import type { StoryLevelDef } from "./story-levels";
 import {
   computeCaptureChance,
   computeDamage,
@@ -22,6 +23,7 @@ import type {
   Side,
   SkillTemplate,
   WheelRotation,
+  BattleMode,
 } from "./types";
 import { MAX_WHEEL, isFieldWheelIndex } from "./types";
 
@@ -125,10 +127,16 @@ function pickTarget(
 export interface CreateBattleOptions {
   wave?: number;
   /** { key, wheelIndex } — défaut = run roguelite (1 perso) */
-  allySetup?: { key: string; wheelIndex: number }[];
+  allySetup?: { key: string; wheelIndex: number; level?: number; hpPct?: number }[];
   enemyKeys?: string[];
+  /** Ennemis scriptés (histoire) — prioritaire sur enemyKeys */
+  enemySetup?: { key: string; level?: number; statMult?: number }[];
   allyLevel?: number;
   enemyLevel?: number;
+  battleMode?: BattleMode;
+  storyLevelId?: string;
+  runGold?: number;
+  runBalls?: import("./phantoballs").RunBallStock;
 }
 
 /** Setup démo / tests — 4 esprits */
@@ -161,24 +169,50 @@ export function createRunBattle(opts: Omit<CreateBattleOptions, "allySetup"> & {
   });
 }
 
+export function createStoryBattle(
+  level: StoryLevelDef,
+  allySetup: { key: string; wheelIndex: number; level?: number; hpPct?: number }[],
+): CombatEngine {
+  const emptyTribal = createEmptyTribalStock();
+  return createBattle({
+    battleMode: "story",
+    storyLevelId: level.id,
+    wave: 1,
+    allySetup,
+    enemySetup: level.enemies,
+    runGold: 0,
+    runBalls: { standard: 0, tribal: emptyTribal },
+  });
+}
+
 export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
   const allySetup = opts.allySetup ?? [...RUN_ALLY_SETUP];
   const wave = opts.wave ?? 1;
   const defaultWave = getRunWaveSetup(wave, allySetup.length);
-  const enemyKeys = opts.enemyKeys ?? defaultWave.enemyKeys;
+  const useEnemySetup = Boolean(opts.enemySetup?.length);
+  const enemyKeys = useEnemySetup ? opts.enemySetup!.map((e) => e.key) : (opts.enemyKeys ?? defaultWave.enemyKeys);
   const allyLevel = opts.allyLevel ?? 5;
   const enemyLevel = opts.enemyLevel ?? defaultWave.enemyLevel;
-  const useDefaultEnemies = !opts.enemyKeys;
+  const useDefaultEnemies = !opts.enemyKeys && !useEnemySetup;
 
   const combatants: Combatant[] = [
     ...allySetup.map((a) => {
-      const c = spawn(a.key, "ally", allyLevel, false, a.wheelIndex);
+      const entry = a as { key: string; wheelIndex: number; level?: number; hpPct?: number };
+      const lvl = entry.level ?? allyLevel;
+      const c = spawn(entry.key, "ally", lvl, false, entry.wheelIndex);
+      if (entry.hpPct != null && entry.hpPct < 100) {
+        c.hp = Math.max(1, Math.floor((c.maxHp * entry.hpPct) / 100));
+      }
       applyFieldStatus(c);
       return c;
     }),
     ...(useDefaultEnemies
       ? spawnEnemiesFromSetup(defaultWave)
-      : enemyKeys.map((k) => spawn(k, "enemy", enemyLevel, true))),
+      : useEnemySetup
+        ? opts.enemySetup!.map((e) =>
+            spawn(e.key, "enemy", e.level ?? enemyLevel, true, -1, e.statMult ?? 1),
+          )
+        : enemyKeys.map((k) => spawn(k, "enemy", enemyLevel, true))),
   ];
 
   const turnQueue = buildTurnQueue(combatants);
@@ -190,6 +224,8 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     turnQueue,
     queueIndex: 0,
     phase: "fighting",
+    battleMode: opts.battleMode ?? "run",
+    storyLevelId: opts.storyLevelId ?? null,
     events: [],
     captureTargetId: null,
     pendingRecruit: null,
@@ -198,8 +234,8 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     rewardChoices: null,
     freeRewardPicked: false,
     shopOffers: null,
-    runGold: RUN_START_GOLD,
-    runBalls: { standard: RUN_START_BALLS.standard, tribal: createEmptyTribalStock() },
+    runGold: opts.runGold ?? RUN_START_GOLD,
+    runBalls: opts.runBalls ?? { standard: RUN_START_BALLS.standard, tribal: createEmptyTribalStock() },
     shopRerollCount: 0,
     attackFocusId: null,
   };
@@ -829,6 +865,12 @@ export class CombatEngine {
     }
     if (enemies.length === 0) {
       if (this.state.pendingRecruit) return false;
+
+      if (this.state.battleMode === "story") {
+        this.state.phase = "won";
+        this.pushEvent("wave_end", "Niveau cleared !");
+        return true;
+      }
 
       this.state.phase = "reward_pick";
       this.state.rewardChoices = rollRewardChoices(this.state.wave, this.state.runRelics);

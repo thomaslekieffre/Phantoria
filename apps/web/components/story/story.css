@@ -1,0 +1,246 @@
+.story-map {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+.story-map__head h1 {
+  font-size: 1.65rem;
+  margin: 0 0 0.35rem;
+}
+
+.story-map__sub {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.story-map__warn {
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--ember);
+  border-radius: var(--radius);
+  background: rgba(var(--ember-rgb), 0.08);
+  font-size: 0.88rem;
+}
+
+.story-map__zones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+}
+
+.story-map__zone-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.55rem 0.85rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 9rem;
+}
+
+.story-map__zone-tab--on {
+  border-color: var(--accent);
+  box-shadow: var(--hard-shadow-accent);
+}
+
+.story-map__zone-tab--lock {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.story-map__zone-emoji {
+  font-size: 1.25rem;
+}
+
+.story-map__zone-name {
+  font-size: 0.78rem;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.story-map__lock {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.story-map__zone-title {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.story-map__nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.story-map__node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.12s ease;
+}
+
+.story-map__node:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--hard-shadow);
+  border-color: var(--accent);
+}
+
+.story-map__node--done {
+  border-color: var(--accent-deep);
+}
+
+.story-map__node--lock,
+.story-map__node--future {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.story-map__node-num {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--accent-soft);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.story-map__node-title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.story-map__hint {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.story-stars {
+  display: inline-flex;
+  gap: 0.1rem;
+}
+
+.story-stars--lg {
+  font-size: 1.75rem;
+  justify-content: center;
+  margin: 0.5rem 0 1rem;
+}
+
+.story-stars__one {
+  color: var(--border-strong);
+}
+
+.story-stars__one--on {
+  color: var(--gold);
+}
+
+.story-brief,
+.story-result {
+  max-width: 36rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--hard-shadow);
+}
+
+.story-brief__crumb {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.35rem;
+}
+
+.story-brief__title,
+.story-result h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.story-brief__text,
+.story-result__text {
+  line-height: 1.55;
+  margin: 0 0 1rem;
+}
+
+.story-brief__team {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.story-brief__team li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+}
+
+.story-brief__portrait {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.story-brief__stars-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.story-brief__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.story-brief__back {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.story-result {
+  text-align: center;
+}
+
+.story-result__meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.story-result__error {
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.battle--story .battle__wave--story {
+  font-size: 0.85rem;
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

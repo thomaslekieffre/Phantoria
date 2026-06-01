@@ -15,7 +15,7 @@ pnpm install          # après clone ou pull avec lockfile changé
 pnpm dev              # Next.js → http://localhost:3000
 pnpm build            # vérif prod locale
 pnpm lint             # ESLint (apps/web)
-pnpm test:core        # tests game-core (47 tests)
+pnpm test:core        # tests game-core (71 tests)
 ```
 
 Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
@@ -70,7 +70,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/profile` | **Profil** — nom, stats, monnaies, compte |
 | `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
 | `/login` | Connexion Supabase (si env configuré) |
-| `/story` | Mode Histoire (stub, gate si 0 esprit) |
+| `/story` | **Mode Histoire** — carte zone 1, niveau 1-1 jouable |
+| `/story/[zone]/[level]` | Combat histoire (équipe roue, niveaux collection) |
 
 ### Composants run (`apps/web/components/run/`)
 
@@ -91,7 +92,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 
 | Besoin | Fichier |
 |--------|---------|
-| Nouvel esprit | `characters.ts` |
+| Nouveau esprit | `characters.ts` |
+| Niveaux histoire | `story-levels.ts` |
 | Formule dégâts / capture / âmes | `formulas.ts` + tests |
 | Gacha (poids, pity) | `gacha.ts` + `gacha.test.ts` |
 | Logique combat | `combat-engine.ts` |
@@ -190,6 +192,18 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 - **Retirer de la roue** : fiche latérale ou codex — l’esprit reste en collection.
 - **Ajouter à la roue** : panneau **Réserve** au sanctuaire (esprits possédés hors roue) ou bouton dans `/spirits` ; cible = slot libre sélectionné ou premier libre.
 - Gacha : nouvel esprit → premier slot vide ; `on_field` si index ∈ {0, 1, 5}.
+
+### Mode histoire (`/story`)
+
+| Fichier | Rôle |
+|---------|------|
+| `story-map-screen.tsx` | Carte zones · niv. 1-1 jouable |
+| `story-battle-screen.tsx` | Briefing → combat (moteur `battleMode: story`) → étoiles |
+| `lib/story/story-progress.ts` | Étoiles / déblocage (`localStorage`) |
+| `lib/story/story-roster.ts` | Équipe depuis roue sanctuaire + niveaux `player_spirits` |
+| `lib/story/story-result-service.ts` | Persist XP/PV histoire après victoire |
+
+**Règles v0** : équipe = esprits sur la roue · pas de capture · 3★ (victoire / sans KO / ≤ N rounds) · défaite = retry sans perte collection.
 
 ### Codex esprits (`apps/web/components/spirits/`)
 

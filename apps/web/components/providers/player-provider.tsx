@@ -21,6 +21,7 @@ import {
   type SpiritSlot,
 } from "@/components/hub/roster";
 import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
+import { loadLocalSpiritStats } from "@/lib/story/story-result-service";
 import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
@@ -223,7 +224,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       unlockedHubIds: mockRoster
         ? (["bram", "nyx", "luma", "kiro"] as SpiritId[])
         : (snapshot?.unlockedHubIds ?? []),
-      spiritsByHubId: mockRoster ? MOCK_SPIRITS_BY_HUB : (snapshot?.spiritsByHubId ?? {}),
+      spiritsByHubId: mockRoster
+        ? { ...MOCK_SPIRITS_BY_HUB, ...loadLocalSpiritStats() }
+        : (snapshot?.spiritsByHubId ?? {}),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
       runsCompleted: mockRoster ? getLocalRunsCompleted() : (snapshot?.profile?.runs_completed ?? 0),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,

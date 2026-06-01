@@ -20,6 +20,8 @@ export function hydrateCombatState(raw: CombatState): CombatState {
     shopRerollCount: raw.shopRerollCount ?? 0,
     freeRewardPicked: raw.freeRewardPicked ?? false,
     attackFocusId: raw.attackFocusId ?? null,
+    battleMode: raw.battleMode ?? "run",
+    storyLevelId: raw.storyLevelId ?? null,
     combatants: raw.combatants.map((c) => ({
       ...c,
       xp: c.xp ?? 0,

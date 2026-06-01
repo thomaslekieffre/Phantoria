@@ -111,6 +111,8 @@ export interface Combatant {
 
 export type CombatPhase = "fighting" | "won" | "lost" | "reward_pick";
 
+export type BattleMode = "run" | "story";
+
 export type CombatEventKind =
   | "turn_start"
   | "attack"
@@ -184,6 +186,10 @@ export interface CombatState {
   turnQueue: string[];
   queueIndex: number;
   phase: CombatPhase;
+  /** Roguelite (défaut) ou histoire */
+  battleMode?: BattleMode;
+  /** Ex. `1-1` en mode histoire */
+  storyLevelId?: string | null;
   events: CombatEvent[];
   /** Ennemi affaibli éligible à la capture */
   captureTargetId: string | null;
