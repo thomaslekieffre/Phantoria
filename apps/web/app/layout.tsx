@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito, Outfit } from "next/font/google";
 import { PlayerProvider } from "@/components/providers/player-provider";
 import "./globals.css";
+import "./responsive.css";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -19,6 +20,13 @@ export const metadata: Metadata = {
   title: "Phantoria",
   description: "Gacha roguelite — jeu web dans le navigateur",
   applicationName: "Phantoria",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#060d0b",
 };
 
 export default function RootLayout({

@@ -225,6 +225,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [hitFlashes, setHitFlashes] = useState<Record<string, HitFlashKind>>({});
   const [resultStars, setResultStars] = useState<0 | 1 | 2 | 3>(0);
+  const [resultGold, setResultGold] = useState(0);
   const [persistError, setPersistError] = useState<string | null>(null);
   const [captureTarget, setCaptureTarget] = useState<string | null>(null);
   const [selectedBall, setSelectedBall] = useState<PhantoballType>("standard");
@@ -247,6 +248,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     resultSaved.current = false;
     setPersistError(null);
     setResultStars(0);
+    setResultGold(0);
     battleStartInvRef.current = inventory;
     const heals = healItemsFromInventory(inventory);
     healStockRef.current = heals;
@@ -311,7 +313,8 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
     void (async () => {
       if (isVictory && (stars as number) >= 1) {
-        await recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
+        const { goldEarned } = await recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
+        setResultGold(goldEarned);
       }
       try {
         await persistStorySpiritStats(allies);
@@ -486,6 +489,9 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
             <StarDisplay count={resultStars} />
             <p className="story-result__text">{level.outro}</p>
             <p className="story-result__meta">Round {state?.round ?? "—"} · progression histoire sauvegardée</p>
+            {resultGold > 0 ? (
+              <p className="story-result__gold">+{resultGold.toLocaleString("fr-FR")} 🪙 or</p>
+            ) : null}
           </>
         ) : (
           <p className="story-result__text">Retente le niveau — ta collection n&apos;est pas perdue.</p>
@@ -718,8 +724,14 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
         <footer className="battle__footer">
           <p className="battle__hint">
-            Clic droit = cibler · jauge pleine = amultime
-            {hasHeals ? " · Objets = soins" : ""}
+            <span className="battle__tip battle__tip--desktop">
+              Clic droit = cibler · jauge pleine = amultime
+              {hasHeals ? " · Objets = soins" : ""}
+            </span>
+            <span className="battle__tip battle__tip--mobile">
+              Fiche → 🎯 Cibler · jauge pleine = amultime
+              {hasHeals ? " · Objets = soins" : ""}
+            </span>
           </p>
           <div className="battle__footer-actions">
             {hasHeals ? (
@@ -768,6 +780,8 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
           fieldAllies={fieldAllies}
           onClose={() => setInspectTarget(null)}
           onOpenChart={() => setShowTribeChart(true)}
+          onFocusTarget={() => handleEnemyFocus(inspectedFoe.instanceId)}
+          focused={attackFocusId === inspectedFoe.instanceId}
           onCapture={
             !inspectedFoe.ko &&
             inspectedFoe.hp / inspectedFoe.maxHp <= 0.4 &&

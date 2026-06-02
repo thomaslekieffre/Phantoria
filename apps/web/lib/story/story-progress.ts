@@ -1,7 +1,10 @@
+import { computeStoryGoldReward, getStoryLevel } from "@phantoria/game-core";
 import { recordDailyStoryWin } from "@/lib/quests/quest-progress";
 import { recordStoryVictoryRemote } from "@/lib/quests/quest-client";
-import { isSupabaseEnabled } from "@/lib/supabase/config";
+import { addLocalGold } from "@/lib/player/local-currencies";
+import { fetchStorySaveFromDb } from "@/lib/player/quest-service";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseEnabled } from "@/lib/supabase/config";
 
 const STORY_KEY = "phantoria_story_v1";
 
@@ -72,16 +75,26 @@ function mergeVictory(
   return next;
 }
 
-/** Persiste victoire histoire (local + Supabase si connecté). */
+/** Persiste victoire histoire (local + Supabase si connecté). Retourne l'or gagné. */
 export async function recordStoryVictory(
   levelId: string,
   stars: 1 | 2 | 3,
   round: number,
-): Promise<StoryLevelProgress> {
+): Promise<{ progress: StoryLevelProgress; goldEarned: number }> {
   const save = loadStorySave();
+  const firstClear = !save.levels[levelId]?.cleared;
+  const levelDef = getStoryLevel(levelId);
+  const goldEarned = levelDef ? computeStoryGoldReward(levelDef, stars, firstClear) : 0;
+
   const next = mergeVictory(save, levelId, stars, round);
   saveStorySave(save);
   recordDailyStoryWin();
+
+  if (goldEarned > 0) {
+    if (!isSupabaseEnabled()) {
+      addLocalGold(goldEarned);
+    }
+  }
 
   if (isSupabaseEnabled()) {
     const supabase = createClient();
@@ -89,11 +102,16 @@ export async function recordStoryVictory(
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await recordStoryVictoryRemote(levelId, stars, round);
+      const remote = await recordStoryVictoryRemote(levelId, stars, round);
+      return {
+        progress: next,
+        goldEarned: remote.goldEarned ?? goldEarned,
+      };
     }
+    if (goldEarned > 0) addLocalGold(goldEarned);
   }
 
-  return next;
+  return { progress: next, goldEarned };
 }
 
 /** Fusionne la save locale vers Supabase (première connexion après offline). */
@@ -106,8 +124,11 @@ export async function syncLocalStoryToRemote(): Promise<void> {
   if (!user) return;
 
   const local = loadStorySave();
+  const remote = await fetchStorySaveFromDb(supabase, user.id);
   for (const [levelId, prog] of Object.entries(local.levels)) {
     if (!prog.cleared || (prog.stars ?? 0) < 1) continue;
+    const remoteProg = remote.levels[levelId];
+    if (remoteProg?.cleared && (remoteProg.stars ?? 0) >= (prog.stars ?? 0)) continue;
     await recordStoryVictoryRemote(levelId, prog.stars as 1 | 2 | 3, prog.bestRound ?? 1);
   }
 }

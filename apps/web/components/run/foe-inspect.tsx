@@ -17,6 +17,8 @@ type FoeInspectProps = {
   fieldAllies: Combatant[];
   onClose: () => void;
   onCapture?: () => void;
+  onFocusTarget?: () => void;
+  focused?: boolean;
   onOpenChart: () => void;
 };
 
@@ -29,7 +31,7 @@ function TribeChip({ tribe }: { tribe: Tribe }) {
   );
 }
 
-export function FoeInspect({ foe, fieldAllies, onClose, onCapture, onOpenChart }: FoeInspectProps) {
+export function FoeInspect({ foe, fieldAllies, onClose, onCapture, onFocusTarget, focused, onOpenChart }: FoeInspectProps) {
   const ratio = foe.maxHp > 0 ? foe.hp / foe.maxHp : 0;
   const matchups = getMatchupsVs(foe.tribe);
   const tribeInfo = TRIBE_INFO[foe.tribe];
@@ -127,6 +129,15 @@ export function FoeInspect({ foe, fieldAllies, onClose, onCapture, onOpenChart }
       ) : null}
 
       <div className="foe-inspect__actions">
+        {onFocusTarget ? (
+          <button
+            type="button"
+            className={`foe-inspect__btn ${focused ? "foe-inspect__btn--focus-on" : "foe-inspect__btn--focus"}`}
+            onClick={onFocusTarget}
+          >
+            {focused ? "✓ Cible active" : "🎯 Cibler"}
+          </button>
+        ) : null}
         <button type="button" className="foe-inspect__btn foe-inspect__btn--chart" onClick={onOpenChart}>
           Table des tribus
         </button>

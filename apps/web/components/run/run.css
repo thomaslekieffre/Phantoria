@@ -866,6 +866,18 @@
   color: var(--ink);
 }
 
+.foe-inspect__btn--focus {
+  background: var(--accent-dim);
+  color: var(--ink);
+}
+
+.foe-inspect__btn--focus-on {
+  background: var(--accent);
+  color: var(--void);
+  border-color: var(--accent);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
 .foe-inspect--ally {
   left: 0;
   right: auto;
@@ -1377,6 +1389,14 @@
   font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+}
+
+.battle__tip--mobile {
+  display: none;
+}
+
+.battle__tip--desktop {
+  display: inline;
 }
 
 .battle__slots {

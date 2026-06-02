@@ -26,11 +26,11 @@ export async function recordStoryVictoryRemote(
   levelId: string,
   stars: 1 | 2 | 3,
   round: number,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; goldEarned?: number }> {
   const res = await fetch("/api/story/victory", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ levelId, stars, round }),
   });
-  return (await res.json()) as { error?: string };
+  return (await res.json()) as { error?: string; goldEarned?: number };
 }

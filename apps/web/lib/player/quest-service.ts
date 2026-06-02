@@ -140,13 +140,15 @@ export async function syncStoryLevelToDb(
   levelId: string,
   stars: 1 | 2 | 3,
   round: number,
-): Promise<{ error?: string }> {
-  const { error } = await supabase.rpc("record_story_victory", {
+): Promise<{ error?: string; goldEarned?: number }> {
+  const { data, error } = await supabase.rpc("record_story_victory", {
     p_level_id: levelId,
     p_stars: stars,
     p_round: round,
   });
-  return error ? { error: error.message } : {};
+  if (error) return { error: error.message };
+  const row = data as { gold_earned?: number } | null;
+  return { goldEarned: row?.gold_earned ?? 0 };
 }
 
 export async function syncQuestDailyFlagRemote(

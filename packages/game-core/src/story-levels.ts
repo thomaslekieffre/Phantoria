@@ -251,3 +251,18 @@ export function computeStoryStars(
   if (opts.round <= level.starsRound3) stars = 3;
   return stars;
 }
+
+/** Or hub gagné après victoire histoire (first clear vs replay). */
+export function computeStoryGoldReward(
+  level: StoryLevelDef,
+  stars: 1 | 2 | 3,
+  firstClear: boolean,
+): number {
+  let base = 12 + level.index * 6 + (level.zoneId - 1) * 30;
+  if (level.index === 5 || level.index === 10 || level.index === 15) {
+    base = Math.floor(base * 1.5);
+  }
+  const total = base + stars * 10;
+  if (firstClear) return total;
+  return Math.max(8, Math.floor(total * 0.3));
+}

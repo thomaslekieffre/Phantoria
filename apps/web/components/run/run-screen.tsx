@@ -898,9 +898,18 @@ export function RunScreen() {
 
       <footer className="battle__hud" aria-label="Jauges d'âmes">
         <p className="battle__hud-tip">
-          {specialTarget
-            ? "Clique un ennemi pour l'amultime"
-            : "Clic droit = cibler · gauche = tribus · jauge pleine = amultime"}
+          {specialTarget ? (
+            "Clique un ennemi pour l'amultime"
+          ) : (
+            <>
+              <span className="battle__tip battle__tip--desktop">
+                Clic droit = cibler · gauche = tribus · jauge pleine = amultime
+              </span>
+              <span className="battle__tip battle__tip--mobile">
+                Toucher = tribus · fiche → 🎯 Cibler · jauge pleine = amultime
+              </span>
+            </>
+          )}
         </p>
         <div className="battle__slots">
           {fieldAllies.map((c) => (
@@ -954,6 +963,12 @@ export function RunScreen() {
           fieldAllies={fieldAllies}
           onClose={() => setInspectTarget(null)}
           onOpenChart={() => setShowTribeChart(true)}
+          onFocusTarget={
+            !captureSeq
+              ? () => handleEnemyFocus(inspectedFoe.instanceId)
+              : undefined
+          }
+          focused={attackFocusId === inspectedFoe.instanceId}
           onCapture={
             inspectedFoe.hp / inspectedFoe.maxHp <= 0.4
               ? () => setCaptureTarget(inspectedFoe.instanceId)

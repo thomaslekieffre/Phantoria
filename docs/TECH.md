@@ -45,7 +45,8 @@ Phantoria/
 - **Sélection** : clic sur un esprit → fiche dans le panneau droit (PV, tribu, terrain/réserve).
 - **Toggle terrain** : bouton « Mettre sur le terrain » / « Retirer du terrain » (état local mock).
 - **Panneau droit** : quête active, stats, événement, CTA Run / Histoire.
-- **Navigation** : sidebar unique (plus de double nav mobile).
+- **Navigation** : sidebar desktop · **bottom nav** ≤768px (`responsive.css`, labels courts).
+- **Mobile** : hub stack vertical · combat plein écran (nav masquée) · fiche ennemi en bottom sheet · bouton **🎯 Cibler** (remplace clic droit) · safe areas iOS (`viewport-fit: cover`).
 
 Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.ts`, `spirit-portrait.tsx`.
 
@@ -275,7 +276,9 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 6. ✅ **Profil `/profile`** — identité, stats hub, monnaies, compte
 7. ✅ **Histoire `/story`** — zone 1 complète (15 niveaux, bosses 5/10/15), étoiles, persist XP collection
 8. ✅ **Inventaire & boutique hub** — `/inventory`, `/shop`, Phantoballs + soins en combat histoire
-9. **À faire** — zone 2+, événements
+9. ✅ **Or victoire histoire** — `computeStoryGoldReward` · RPC `record_story_victory` crédite `player_currencies.gold`
+10. ✅ **Layout mobile** — `responsive.css`, bottom nav, combat touch-friendly
+11. **À faire** — zone 2+, événements
 
 ## Hors scope infra v0
 

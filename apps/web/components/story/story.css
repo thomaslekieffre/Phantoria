@@ -451,6 +451,13 @@
   text-align: center;
 }
 
+.story-result__gold {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold, #fbbf24);
+}
+
 .story-result__meta {
   font-size: 0.85rem;
   color: var(--text-muted);

@@ -25,6 +25,7 @@ import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import type { PlayerInventory } from "@phantoria/game-core";
 import { STARTER_INVENTORY } from "@phantoria/game-core";
 import { loadLocalInventory } from "@/lib/player/inventory-service";
+import { loadLocalGold } from "@/lib/player/local-currencies";
 import { loadLocalSpiritStats } from "@/lib/story/story-result-service";
 import { loadStorySave } from "@/lib/story/story-progress";
 import { loadQuestSave } from "@/lib/quests/quest-progress";
@@ -245,7 +246,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       supabaseEnabled: supabaseOn,
       user,
       profile: snapshot?.profile ?? null,
-      currencies: snapshot?.currencies ?? null,
+      currencies: mockRoster
+        ? clientMounted
+          ? { gold: loadLocalGold(), gems: 35, tickets: 2 }
+          : { gold: 1200, gems: 35, tickets: 2 }
+        : (snapshot?.currencies ?? null),
       roster: mockRoster ? INITIAL_ROSTER : (snapshot?.roster ?? buildEmptyRoster()),
       unlockedHubIds: mockRoster
         ? (["bram", "nyx", "luma", "kiro"] as SpiritId[])

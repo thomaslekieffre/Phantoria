@@ -16,14 +16,15 @@ const LINKS: {
   id: NavId;
   href: string;
   label: string;
+  shortLabel: string;
   badge?: boolean;
   Icon: FC<SVGProps<SVGSVGElement>>;
 }[] = [
-  { id: "camp", href: "/", label: "Sanctuaire", Icon: IconCamp },
-  { id: "spirits", href: "/spirits", label: "Esprits", Icon: IconSpirits },
-  { id: "quests", href: "/quests", label: "Quêtes", badge: true, Icon: IconQuest },
-  { id: "gacha", href: "/gacha", label: "Gacha", Icon: IconGacha },
-  { id: "more", href: "/more", label: "Plus", Icon: IconMore },
+  { id: "camp", href: "/", label: "Sanctuaire", shortLabel: "Camp", Icon: IconCamp },
+  { id: "spirits", href: "/spirits", label: "Esprits", shortLabel: "Esprits", Icon: IconSpirits },
+  { id: "quests", href: "/quests", label: "Quêtes", shortLabel: "Quêtes", badge: true, Icon: IconQuest },
+  { id: "gacha", href: "/gacha", label: "Gacha", shortLabel: "Gacha", Icon: IconGacha },
+  { id: "more", href: "/more", label: "Plus", shortLabel: "Plus", Icon: IconMore },
 ];
 
 export function Sidebar({ active, questBadge = false }: { active: NavId; questBadge?: boolean }) {
@@ -35,7 +36,7 @@ export function Sidebar({ active, questBadge = false }: { active: NavId; questBa
       </div>
 
       <nav className="sidebar__nav" aria-label="Navigation">
-        {LINKS.map(({ id, href, label, badge, Icon }) => (
+        {LINKS.map(({ id, href, label, shortLabel, badge, Icon }) => (
           <Link
             key={id}
             href={href}
@@ -46,7 +47,8 @@ export function Sidebar({ active, questBadge = false }: { active: NavId; questBa
               <Icon className="sidebar__icon" />
               {badge && questBadge ? <span className="sidebar__badge" /> : null}
             </span>
-            {label}
+            <span className="sidebar__label sidebar__label--desktop">{label}</span>
+            <span className="sidebar__label sidebar__label--mobile">{shortLabel}</span>
           </Link>
         ))}
       </nav>

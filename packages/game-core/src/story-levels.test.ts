@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createRunBattle, createStoryBattle } from "./combat-engine";
-import { computeStoryStars, getStoryLevel, getStoryLevelByCoords, levelsForZone } from "./story-levels";
+import { computeStoryStars, getStoryLevel, getStoryLevelByCoords, levelsForZone, computeStoryGoldReward } from "./story-levels";
 
 describe("story mode", () => {
   it("zone 1 contient 15 niveaux", () => {
@@ -126,5 +126,12 @@ describe("story mode", () => {
       }),
       3,
     );
+  });
+
+  it("computeStoryGoldReward — first clear > replay", () => {
+    const first = computeStoryGoldReward(level, 3, true);
+    const replay = computeStoryGoldReward(level, 3, false);
+    assert.ok(first > replay);
+    assert.ok(replay >= 8);
   });
 });

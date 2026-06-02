@@ -18,7 +18,7 @@ pnpm lint             # ESLint (apps/web)
 pnpm test:core        # tests game-core (80 tests)
 ```
 
-Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
+Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop. Pour le mobile : DevTools responsive ≤768px ou tel sur le réseau local (`pnpm dev --hostname 0.0.0.0`).
 
 ## Avant de coder
 
@@ -243,6 +243,8 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 **Zone 1 (Vaillants)** : 15 niveaux dans `story-levels.ts` — ombres → éclaireurs néant → bosses gardien (5, 10) → colosse (15). Déblocage séquentiel sur la carte.
 
 **Objets histoire** : inventaire persistant (`player_inventory`) — Phantoballs et soins achetés à `/shop`, consommés en combat histoire. Reste resynchronisé en fin de fight.
+
+**Or hub** : victoire histoire → `computeStoryGoldReward` (first clear complet, ~30 % en replay) · crédité via RPC `record_story_victory`.
 
 ### Codex esprits (`apps/web/components/spirits/`)
 

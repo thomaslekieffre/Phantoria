@@ -83,6 +83,18 @@ xpFromDefeated(enemy, wave) = floor((10 + lvl?5) ? tier ? (1 + wave?0.012))
 ```
 
 - Level up ? recalc stats (`refreshStatsForLevel`) en conservant le ratio PV.
+
+### Or victoire histoire (hub)
+
+```
+base = 12 + index?6 + (zoneId-1)?30
+boss (index 5/10/15) : base ? 1.5
+total = base + stars?10
+first clear : total
+replay     : max(8, floor(total ? 0.3))
+```
+
+Impl?ment? : `computeStoryGoldReward` ? cr?dit via RPC `record_story_victory`.
 - Sources : KO ennemi (alli?s vivants), objets `xp_all` (shop / gratuit).
 
 ### Passifs (`passives.ts`)
@@ -180,7 +192,7 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | **Run en cours** | ? proto | `localStorage` `phantoria_run_v1` **ou** table `active_runs` si Supabase |
 | Profil, roster, monnaies | ? proto | Supabase (`profiles`, `player_currencies`, `player_spirits`, `roster_slots`) |
 | Gacha bienvenue | ? proto | 6 pulls gratuits, pool 4 starters ? pas de pity / tickets payants |
-| M?taprogression hub | ? ? faire | Or run ? compte, XP hub, etc. |
+| M?taprogression hub | ? partiel | Or histoire ? `player_currencies.gold` (RPC `record_story_victory`) ; local `phantoria_gold_local` hors ligne |
 
 ## D?cisions valid?es (proto)
 
@@ -191,7 +203,7 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | Phantoballs run | 5 standard ? tribales par type (bonus/malus tribu) ? voir `phantoballs.ts` |
 | Rotation roue | Manuelle + auto-fill trou terrain |
 | Phantoball | En plein combat, placement slot obligatoire |
-| Cible attaque de base | Auto (premier ennemi) ? **clic droit** pour marquer un focus (`attackFocusId`) |
+| Cible attaque de base | Auto (premier ennemi) ? **clic droit** desktop / **🎯 Cibler** mobile (`attackFocusId`) |
 | D?faite run | 0 alli? vivant sur la roue enti?re |
 | Victoire run | Boss final vague 200 + derni?re r?compense ? phase `won` |
 | Capture max | 85 % |
