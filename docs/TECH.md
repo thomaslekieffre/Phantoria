@@ -274,8 +274,8 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV histoire
 6. ✅ **Profil `/profile`** — identité, stats hub, monnaies, compte
 7. ✅ **Histoire `/story`** — zone 1 complète (15 niveaux, bosses 5/10/15), étoiles, persist XP collection
-8. **À faire** — zone 2+, boutique `/shop`
-7. **Rappel design** — niveaux sanctuaire = histoire ; run = lvl 1 éphémère
+8. ✅ **Inventaire & boutique hub** — `/inventory`, `/shop`, Phantoballs + soins en combat histoire
+9. **À faire** — zone 2+, événements
 
 ## Hors scope infra v0
 

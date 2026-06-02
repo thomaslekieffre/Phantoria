@@ -174,6 +174,7 @@ export function createRunBattle(opts: Omit<CreateBattleOptions, "allySetup"> & {
 export function createStoryBattle(
   level: StoryLevelDef,
   allySetup: { key: string; wheelIndex: number; level?: number; hpPct?: number; xp?: number }[],
+  opts?: { runBalls?: import("./phantoballs").RunBallStock },
 ): CombatEngine {
   const emptyTribal = createEmptyTribalStock();
   return createBattle({
@@ -183,7 +184,7 @@ export function createStoryBattle(
     allySetup,
     enemySetup: level.enemies,
     runGold: 0,
-    runBalls: { standard: 0, tribal: emptyTribal },
+    runBalls: opts?.runBalls ?? { standard: 0, tribal: emptyTribal },
   });
 }
 
@@ -409,6 +410,20 @@ export class CombatEngine {
   /** @deprecated Utiliser tickTurn() */
   tickEnemyTurn(): boolean {
     return this.tickTurn();
+  }
+
+  /** Soin ciblé (objet histoire) — fraction des PV max */
+  healAlly(instanceId: string, hpPct: number): boolean {
+    if (this.state.phase === "won" || this.state.phase === "lost") return false;
+    if (hpPct <= 0) return false;
+    const ally = this.getCombatant(instanceId);
+    if (!ally || ally.side !== "ally" || ally.ko) return false;
+    const gain = Math.max(1, Math.floor(ally.maxHp * hpPct));
+    const before = ally.hp;
+    ally.hp = Math.min(ally.maxHp, ally.hp + gain);
+    if (ally.hp <= before) return false;
+    this.pushEvent("heal", `${ally.name} +${ally.hp - before} PV`, ally.instanceId);
+    return true;
   }
 
   tryCapture(

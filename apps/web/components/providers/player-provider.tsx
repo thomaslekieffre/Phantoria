@@ -22,6 +22,9 @@ import {
   type SpiritSlot,
 } from "@/components/hub/roster";
 import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
+import type { PlayerInventory } from "@phantoria/game-core";
+import { STARTER_INVENTORY } from "@phantoria/game-core";
+import { loadLocalInventory } from "@/lib/player/inventory-service";
 import { loadLocalSpiritStats } from "@/lib/story/story-result-service";
 import { loadStorySave } from "@/lib/story/story-progress";
 import { loadQuestSave } from "@/lib/quests/quest-progress";
@@ -50,6 +53,7 @@ type PlayerContextValue = {
   roster: SpiritSlot[];
   unlockedHubIds: SpiritId[];
   spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
+  inventory: PlayerInventory;
   spiritCount: number;
   runsCompleted: number;
   storySave: StorySave;
@@ -249,6 +253,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       spiritsByHubId: mockRoster
         ? { ...MOCK_SPIRITS_BY_HUB, ...(clientMounted ? loadLocalSpiritStats() : {}) }
         : (snapshot?.spiritsByHubId ?? {}),
+      inventory: mockRoster
+        ? clientMounted
+          ? loadLocalInventory()
+          : { ...STARTER_INVENTORY }
+        : (snapshot?.inventory ?? { ...STARTER_INVENTORY }),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
       runsCompleted: mockRoster
         ? clientMounted

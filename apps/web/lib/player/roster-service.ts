@@ -13,6 +13,8 @@ import {
   fetchStorySaveFromDb,
   type QuestProgressSnapshot,
 } from "@/lib/player/quest-service";
+import type { PlayerInventory } from "@phantoria/game-core";
+import { fetchPlayerInventoryFromDb } from "@/lib/player/inventory-service";
 import type { StorySave } from "@/lib/story/story-progress";
 import {
   SPIRIT_CATALOG,
@@ -32,6 +34,7 @@ export type PlayerSnapshot = {
   spiritCount: number;
   storySave: StorySave;
   questProgress: QuestProgressSnapshot;
+  inventory: PlayerInventory;
 };
 
 export function buildSpiritsByHubId(spirits: DbPlayerSpirit[]): Partial<Record<SpiritId, OwnedSpiritStats>> {
@@ -74,7 +77,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }, storySave, questProgress] =
+  const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }, storySave, questProgress, inventory] =
     await Promise.all([
     supabase
       .from("profiles")
@@ -92,6 +95,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
       .order("slot_index"),
     fetchStorySaveFromDb(supabase, user.id),
     fetchQuestProgressFromDb(supabase, user.id),
+    fetchPlayerInventoryFromDb(user.id),
   ]);
 
   if (!profile || !currencies) return null;
@@ -119,6 +123,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     spiritCount: spirits?.length ?? 0,
     storySave,
     questProgress,
+    inventory,
   };
 }
 

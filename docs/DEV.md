@@ -15,7 +15,7 @@ pnpm install          # après clone ou pull avec lockfile changé
 pnpm dev              # Next.js → http://localhost:3000
 pnpm build            # vérif prod locale
 pnpm lint             # ESLint (apps/web)
-pnpm test:core        # tests game-core (77 tests)
+pnpm test:core        # tests game-core (80 tests)
 ```
 
 Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
@@ -265,6 +265,8 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 | `player_inventory` | **Objets hub** — Phantoballs, soins (consommables histoire) |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |
+
+RPC : `purchase_shop_item`, `persist_player_inventory`, `persist_story_spirit_stats`.
 
 RLS : chaque joueur ne voit que ses lignes (`auth.uid()`).
 

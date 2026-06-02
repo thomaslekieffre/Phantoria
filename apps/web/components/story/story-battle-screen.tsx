@@ -12,8 +12,20 @@ import {
   describeSkill,
   formatPassiveLine,
   CombatEngine,
+  computeCaptureChance,
+  inventoryToRunBalls,
+  runBallsToInventory,
+  healItemsFromInventory,
+  hasAnyBall,
+  totalTribalBalls,
+  tribalBallMatches,
+  TRIBAL_BALL_IDS,
+  TRIBAL_BALL_INFO,
+  INVENTORY_CATALOG,
   type CombatEvent,
   type Combatant,
+  type InventoryItemId,
+  type PhantoballType,
 } from "@phantoria/game-core";
 import { SpiritWheel } from "@/components/hub/spirit-wheel";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
@@ -29,6 +41,10 @@ import { AllyInspect } from "@/components/run/ally-inspect";
 import { buildStoryAllySetup, rosterHasFieldSpirit } from "@/lib/story/story-roster";
 import { recordStoryVictory } from "@/lib/story/story-progress";
 import { persistStorySpiritStats } from "@/lib/story/story-result-service";
+import {
+  mergeStoryInventoryEnd,
+  persistPlayerInventory,
+} from "@/lib/player/inventory-service";
 import "../run/run.css";
 import "../hub/hub.css";
 import "./story.css";
@@ -188,7 +204,7 @@ function StarDisplay({ count }: { count: number }) {
 type StoryPhase = "intro" | "fight" | "result";
 
 export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; levelIndex: number }) {
-  const { roster, spiritsByHubId, refresh: refreshPlayer, hasSpirits } = usePlayer();
+  const { roster, spiritsByHubId, inventory, refresh: refreshPlayer, hasSpirits } = usePlayer();
   const level = getStoryLevelByCoords(zoneId, levelIndex);
   const zone = getStoryZone(zoneId);
 
@@ -210,11 +226,18 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
   const [hitFlashes, setHitFlashes] = useState<Record<string, HitFlashKind>>({});
   const [resultStars, setResultStars] = useState<0 | 1 | 2 | 3>(0);
   const [persistError, setPersistError] = useState<string | null>(null);
+  const [captureTarget, setCaptureTarget] = useState<string | null>(null);
+  const [selectedBall, setSelectedBall] = useState<PhantoballType>("standard");
+  const [healStock, setHealStock] = useState({ heal_small: 0, heal_medium: 0 });
+  const [healMenuOpen, setHealMenuOpen] = useState(false);
+  const [healPick, setHealPick] = useState<InventoryItemId | null>(null);
 
   const lastEventId = useRef(0);
   const engineRef = useRef<CombatEngine | null>(null);
   const speedRef = useRef<BattleSpeed>(1);
   const resultSaved = useRef(false);
+  const battleStartInvRef = useRef(inventory);
+  const healStockRef = useRef(healStock);
 
   engineRef.current = engine;
   speedRef.current = battleSpeed;
@@ -224,7 +247,13 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     resultSaved.current = false;
     setPersistError(null);
     setResultStars(0);
-    setEngine(createStoryBattle(level, allySetup));
+    battleStartInvRef.current = inventory;
+    const heals = healItemsFromInventory(inventory);
+    healStockRef.current = heals;
+    setHealStock(heals);
+    setCaptureTarget(null);
+    setHealPick(null);
+    setEngine(createStoryBattle(level, allySetup, { runBalls: inventoryToRunBalls(inventory) }));
     setUiPhase("fight");
     setSpecialActor(null);
     setSpecialTarget(null);
@@ -243,7 +272,15 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
   const isVictory = state?.phase === "won";
   const isDefeat = state?.phase === "lost";
   const paused = Boolean(
-    specialActor || specialTarget || inspectTarget || inspectAlly || showTribeChart || isOver,
+    specialActor ||
+      specialTarget ||
+      inspectTarget ||
+      inspectAlly ||
+      showTribeChart ||
+      captureTarget ||
+      healMenuOpen ||
+      healPick ||
+      isOver,
   );
   const attackFocusId = state?.attackFocusId ?? null;
   const targetingActorId = specialTarget?.actorId ?? null;
@@ -278,6 +315,13 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
       }
       try {
         await persistStorySpiritStats(allies);
+        await persistPlayerInventory(
+          mergeStoryInventoryEnd(
+            battleStartInvRef.current,
+            runBallsToInventory(s.runBalls),
+            healStockRef.current,
+          ),
+        );
         await refreshPlayer();
       } catch {
         setPersistError("Progression non sauvegardée — réessaie ou reconnecte-toi.");
@@ -403,9 +447,15 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
             onSlotClick={() => {}}
             readOnly
             compact
-            previewHint="Niveaux et PV = progression histoire · modifie l'équipe au sanctuaire"
+            previewHint="Niveaux et PV = progression histoire · objets depuis /inventory"
           />
         </div>
+        <p className="story-brief__loadout">
+          Emporté : 🔵 {inventory.ball_standard ?? 0} balls · 🏮 {inventory.heal_small ?? 0} soins
+          {(inventory.heal_medium ?? 0) > 0 ? ` · 🔥 ${inventory.heal_medium}` : ""}
+          {" · "}
+          <Link href="/shop">Boutique</Link>
+        </p>
         <div className="story-brief__footer">
           <div className="story-brief__actions">
             <button type="button" className="play play--story" onClick={beginFight}>
@@ -455,6 +505,57 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
   if (!engine || !state) return null;
 
+  const runBalls = state.runBalls;
+  const pendingRecruit = state.pendingRecruit;
+  const weakEnemy = enemies.find((c) => !c.ko && c.hp / c.maxHp <= 0.4) ?? null;
+  const hasHeals = healStock.heal_small > 0 || healStock.heal_medium > 0;
+  const captureConfirm = captureTarget ? (engine.getCombatant(captureTarget) ?? null) : null;
+  const captureConfirmChance = captureConfirm
+    ? Math.round(
+        computeCaptureChance(
+          captureConfirm.rarity,
+          captureConfirm.hp / captureConfirm.maxHp,
+          selectedBall,
+          state.runModifiers.captureBonus,
+          captureConfirm.tribe,
+        ) * 100,
+      )
+    : 0;
+  const selectedBallAvailable = captureConfirm
+    ? selectedBall === "standard"
+      ? runBalls.standard > 0
+      : (runBalls.tribal[selectedBall] ?? 0) > 0
+    : false;
+
+  const handleCapture = () => {
+    if (!engine || !captureTarget || isOver) return;
+    const target = engine.getCombatant(captureTarget);
+    if (!target || target.ko) return;
+    const ball = selectedBall;
+    const hasBall =
+      ball === "standard" ? runBalls.standard > 0 : (runBalls.tribal[ball] ?? 0) > 0;
+    if (!hasBall) return;
+    if (!engine.tryCapture(captureTarget, ball)) return;
+    setCaptureTarget(null);
+    setInspectTarget(null);
+    bump();
+  };
+
+  const handleHealAlly = (allyId: string) => {
+    if (!engine || !healPick || isOver) return;
+    const def = INVENTORY_CATALOG[healPick];
+    if (!def.healPct) return;
+    const stock = healStockRef.current[healPick as "heal_small" | "heal_medium"] ?? 0;
+    if (stock <= 0) return;
+    if (!engine.healAlly(allyId, def.healPct)) return;
+    const next = { ...healStockRef.current, [healPick]: stock - 1 };
+    healStockRef.current = next;
+    setHealStock(next);
+    setHealPick(null);
+    setInspectAlly(null);
+    bump();
+  };
+
   const handleEnemyClick = (foeId: string) => {
     if (!engine || isOver) return;
     const foe = engine.getCombatant(foeId);
@@ -495,6 +596,10 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     if (!engine || isOver) return;
     const ally = engine.getCombatant(allyId);
     if (!ally || ally.ko || ally.side !== "ally") return;
+    if (healPick) {
+      handleHealAlly(allyId);
+      return;
+    }
     setInspectAlly((id) => (id === allyId ? null : allyId));
     setInspectTarget(null);
     setShowTribeChart(false);
@@ -510,9 +615,12 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
           engine.rotateWheel(dir);
           bump();
         }}
-        placementMode={false}
-        pendingRecruit={null}
-        onPickSlot={() => {}}
+        placementMode={Boolean(pendingRecruit)}
+        pendingRecruit={pendingRecruit}
+        onPickSlot={(idx) => {
+          engine.completeCapturePlacement(idx);
+          bump();
+        }}
         relicIds={[]}
       />
 
@@ -535,6 +643,10 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
               )}
             </div>
             <div className="battle__top-right">
+              <span className="battle__balls">
+                🔵{runBalls.standard}
+                {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
+              </span>
               <span className="battle__balls">R.{state.round}</span>
               <BattleSpeedControls speed={battleSpeed} onChange={setBattleSpeed} disabled={isOver} />
               <button type="button" className="battle__tribes-btn" disabled={isOver} onClick={() => setShowTribeChart((v) => !v)}>
@@ -545,6 +657,19 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
               </Link>
             </div>
           </div>
+
+          {weakEnemy && !isOver && !captureTarget && hasAnyBall(runBalls) ? (
+            <button
+              type="button"
+              className="battle__capture-fab"
+              onClick={() => {
+                setCaptureTarget(weakEnemy.instanceId);
+                setInspectTarget(null);
+              }}
+            >
+              Phantoball
+            </button>
+          ) : null}
 
           <div className="battle__enemies">
             {enemies.map((c) => {
@@ -592,7 +717,25 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
         </div>
 
         <footer className="battle__footer">
-          <p className="battle__hint">Clic droit = cibler · jauge pleine = amultime</p>
+          <p className="battle__hint">
+            Clic droit = cibler · jauge pleine = amultime
+            {hasHeals ? " · Objets = soins" : ""}
+          </p>
+          <div className="battle__footer-actions">
+            {hasHeals ? (
+              <button
+                type="button"
+                className="battle__items-btn"
+                disabled={isOver}
+                onClick={() => {
+                  setHealMenuOpen(true);
+                  setInspectAlly(null);
+                }}
+              >
+                🏮 Objets ({healStock.heal_small + healStock.heal_medium})
+              </button>
+            ) : null}
+          </div>
           <div className="battle__slots">
             {fieldAllies.map((c) => (
               <SoulSlot
@@ -620,7 +763,19 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
       ) : null}
 
       {inspectedFoe && !isOver ? (
-        <FoeInspect foe={inspectedFoe} fieldAllies={fieldAllies} onClose={() => setInspectTarget(null)} onOpenChart={() => setShowTribeChart(true)} />
+        <FoeInspect
+          foe={inspectedFoe}
+          fieldAllies={fieldAllies}
+          onClose={() => setInspectTarget(null)}
+          onOpenChart={() => setShowTribeChart(true)}
+          onCapture={
+            !inspectedFoe.ko &&
+            inspectedFoe.hp / inspectedFoe.maxHp <= 0.4 &&
+            hasAnyBall(runBalls)
+              ? () => setCaptureTarget(inspectedFoe.instanceId)
+              : undefined
+          }
+        />
       ) : null}
 
       {showTribeChart && !isOver ? (
@@ -645,6 +800,89 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
               );
             })}
             <button type="button" className="battle__spe-cancel" onClick={() => setSpecialActor(null)}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {healMenuOpen && !isOver ? (
+        <div className="battle__overlay battle__overlay--dim" role="dialog" aria-label="Objets">
+          <div className="battle__spe-menu">
+            <p className="battle__spe-title">Utiliser un objet</p>
+            {(["heal_small", "heal_medium"] as const).map((id) => {
+              const def = INVENTORY_CATALOG[id];
+              const qty = healStock[id];
+              if (qty <= 0) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="battle__spe-btn"
+                  onClick={() => {
+                    setHealPick(id);
+                    setHealMenuOpen(false);
+                  }}
+                >
+                  <span className="battle__spe-btn-name">
+                    {def.emoji} {def.name} ×{qty}
+                  </span>
+                  <span className="battle__spe-btn-desc">{def.description}</span>
+                </button>
+              );
+            })}
+            <button type="button" className="battle__spe-cancel" onClick={() => setHealMenuOpen(false)}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {healPick && !isOver ? (
+        <div className="battle__items-hint">Clique un allié pour {INVENTORY_CATALOG[healPick].name}</div>
+      ) : null}
+
+      {captureTarget && captureConfirm && !isOver ? (
+        <div className="battle__overlay battle__overlay--dim" role="dialog" aria-label="Capture">
+          <div className="battle__spe-menu battle__spe-menu--capture">
+            <p className="battle__spe-title">Capturer {captureConfirm.name} ?</p>
+            <p className="battle__capture-chance">Chance : {captureConfirmChance} %</p>
+            <div className="battle__ball-pick" role="group" aria-label="Type de Phantoball">
+              {runBalls.standard > 0 ? (
+                <button
+                  type="button"
+                  className={`battle__ball-opt ${selectedBall === "standard" ? "battle__ball-opt--on" : ""}`}
+                  onClick={() => setSelectedBall("standard")}
+                >
+                  🔵 Standard ×{runBalls.standard}
+                </button>
+              ) : null}
+              {TRIBAL_BALL_IDS.map((id) => {
+                const count = runBalls.tribal[id] ?? 0;
+                if (count <= 0) return null;
+                const info = TRIBAL_BALL_INFO[id];
+                const matches = tribalBallMatches(id, captureConfirm.tribe);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`battle__ball-opt ${selectedBall === id ? "battle__ball-opt--on" : ""} ${matches ? "battle__ball-opt--match" : ""}`}
+                    onClick={() => setSelectedBall(id)}
+                  >
+                    {info.emoji} {info.name} ×{count}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="battle__spe-btn battle__spe-btn--ball"
+              onClick={handleCapture}
+              disabled={!selectedBallAvailable}
+            >
+              Lancer la Phantoball
+            </button>
+            <button type="button" className="battle__spe-cancel" onClick={() => setCaptureTarget(null)}>
               Annuler
             </button>
           </div>

@@ -128,7 +128,8 @@ export type CombatEventKind =
   | "wave_end"
   | "wave_start"
   | "wheel_rotate"
-  | "level_up";
+  | "level_up"
+  | "heal";
 
 export interface CombatEvent {
   id: number;

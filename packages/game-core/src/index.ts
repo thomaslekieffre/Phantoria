@@ -12,5 +12,6 @@ export * from "./xp";
 export * from "./run-save";
 export * from "./gacha";
 export * from "./run-dev";
+export * from "./inventory";
 export * from "./combat-engine";
 export * from "./story-levels";
