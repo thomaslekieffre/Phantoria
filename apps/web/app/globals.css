@@ -237,6 +237,104 @@ body::after {
   justify-content: flex-end;
   height: 100%;
   padding: 0 1.5rem;
+  gap: 0.75rem;
+}
+
+.topbar__menu,
+.topbar__brand {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .topbar__menu,
+  .topbar__brand {
+    display: flex;
+  }
+
+  .topbar {
+    padding: 0 0.65rem;
+    justify-content: flex-start;
+    gap: 0.35rem;
+  }
+
+  .topbar__spacer {
+    display: none;
+  }
+
+  .topbar__profile,
+  .topbar__auth {
+    display: none;
+  }
+
+  .topbar__right {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .topbar__cur {
+    padding: 0.28rem 0.4rem;
+    font-size: 0.68rem;
+  }
+
+  .topbar__cur-ico {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+}
+
+.topbar__menu {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.22rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.topbar__menu-bar {
+  display: block;
+  width: 1.15rem;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+.topbar__brand {
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.topbar__mark {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.topbar__brand-name {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .topbar__spacer {

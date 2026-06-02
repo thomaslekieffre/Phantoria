@@ -22,6 +22,7 @@ import {
   TRIBAL_BALL_IDS,
   TRIBAL_BALL_INFO,
   INVENTORY_CATALOG,
+  MAX_FIELD,
   type CombatEvent,
   type Combatant,
   type InventoryItemId,
@@ -168,22 +169,63 @@ function SoulSlot({
   const hpRatio = c.maxHp > 0 ? c.hp / c.maxHp : 0;
   const soulPct = Math.round(c.souls * 100);
   const tribeInfo = TRIBE_INFO[c.tribe];
+  const passiveLine = formatPassiveLine(c);
+  const hue = combatSpiritHue(c.templateKey);
   return (
     <button
       type="button"
-      className={`soul-slot ${ready ? "soul-slot--ready" : ""} ${selected ? "soul-slot--sel" : ""} ${c.ko ? "soul-slot--ko" : ""}`}
+      className={`soul-slot ${ready ? "soul-slot--ready" : ""} ${selected ? "soul-slot--sel" : ""} ${c.ko ? "soul-slot--ko" : ""} ${matchupMult !== undefined && matchupMult >= 2 ? "soul-slot--strong" : ""} ${matchupMult !== undefined && matchupMult <= 0.5 ? "soul-slot--weak" : ""}`}
       onClick={onSelect}
       disabled={c.ko}
+      aria-label={`${c.name}, ${tribeInfo.label}, ${c.hp} sur ${c.maxHp} PV, jauge d'âmes ${soulPct} pourcent`}
     >
-      <span className="soul-slot__name">{c.name}</span>
-      <span className="soul-slot__tribe">
-        {tribeInfo.emoji} {tribeInfo.label}
-      </span>
-      <div className={`soul-slot__hp soul-slot__hp--${hpTone(hpRatio)}`}>
-        <span style={{ width: `${hpRatio * 100}%` }} />
+      <div
+        className="soul-slot__portrait"
+        style={{ background: `color-mix(in srgb, ${hue} 75%, #000 25%)` }}
+      >
+        <RarityBadge rarity={c.rarity} size="xs" className="soul-slot__rarity" />
+        <CombatSpirit templateKey={c.templateKey} name={c.name} className="soul-slot__sprite" />
       </div>
-      <div className="soul-slot__meter">
-        <span className="soul-slot__fill" style={{ width: `${soulPct}%` }} />
+      <div className="soul-slot__body">
+        <div className="soul-slot__head">
+          <span className="soul-slot__name">{c.name}</span>
+          <span className="soul-slot__tribe">
+            {tribeInfo.emoji} {tribeInfo.label}
+            {matchupMult !== undefined && matchupMult >= 2 ? " · ×2" : matchupMult !== undefined && matchupMult <= 0.5 ? (matchupMult <= 0 ? " · ×0" : " · ×½") : ""}
+          </span>
+        </div>
+        <div className="soul-slot__stat">
+          <span className="soul-slot__stat-lbl">PV</span>
+          <div
+            className={`soul-slot__hp soul-slot__hp--${hpTone(hpRatio)}`}
+            role="progressbar"
+            aria-valuenow={c.hp}
+            aria-valuemin={0}
+            aria-valuemax={c.maxHp}
+          >
+            <span style={{ width: `${hpRatio * 100}%` }} />
+          </div>
+          <span className="soul-slot__hp-val">
+            {c.hp} / {c.maxHp}
+          </span>
+        </div>
+        <div className="soul-slot__stat soul-slot__stat--souls">
+          <span className="soul-slot__stat-lbl">Âmes</span>
+          <div className="soul-slot__meter" role="progressbar" aria-valuenow={soulPct} aria-valuemin={0} aria-valuemax={100}>
+            <span className="soul-slot__fill" style={{ width: `${soulPct}%` }} />
+            {ready ? <span className="soul-slot__flame" aria-hidden /> : null}
+          </div>
+          <span className="soul-slot__hint">
+            {c.ko ? "KO" : ready ? "Amultime !" : `${soulPct} %`}
+          </span>
+        </div>
+        {passiveLine ? <span className="soul-slot__passive">{passiveLine}</span> : null}
+        {ready && !c.ko ? (
+          <span className="soul-slot__skills">
+            <span title={describeSkill(c.skills.special1)}>{c.skills.special1.name}</span>
+            <span title={describeSkill(c.skills.special2)}>{c.skills.special2.name}</span>
+          </span>
+        ) : null}
       </div>
     </button>
   );
@@ -611,54 +653,98 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     setShowTribeChart(false);
   };
 
+  const wheelFilled = wheelSlots.filter(Boolean).length;
+  const wheelOnField = wheelSlots.filter((s) => s?.active && !s.ko).length;
+  const showAllyFiche =
+    inspectedAlly &&
+    !inspectedAlly.ko &&
+    !showTribeChart &&
+    !specialTarget &&
+    !specialActor &&
+    !isOver &&
+    !healMenuOpen &&
+    !healPick;
+
+  const renderSoulSlots = (className: string) =>
+    fieldAllies.map((c) => (
+      <SoulSlot
+        key={`${className}-${c.instanceId}`}
+        c={c}
+        ready={c.souls >= 1 && !c.ko}
+        selected={specialActor === c.instanceId}
+        matchupMult={inspectTribe ? getTypeMultiplier(c.tribe, inspectTribe) : undefined}
+        onSelect={() => {
+          if (c.ko || isOver) return;
+          if (c.souls >= 1) {
+            setSpecialActor((id) => (id === c.instanceId ? null : c.instanceId));
+            setInspectAlly(null);
+            return;
+          }
+          handleAllyInspect(c.instanceId);
+        }}
+      />
+    ));
+
   return (
     <div className={`battle battle--story ${isOver ? "battle--over" : ""}`}>
-      <BattleWheel
-        slots={wheelSlots}
-        currentId={current?.side === "ally" ? current.instanceId : null}
-        canRotate={!isOver && !paused}
-        onRotate={(dir) => {
-          engine.rotateWheel(dir);
-          bump();
-        }}
-        placementMode={Boolean(pendingRecruit)}
-        pendingRecruit={pendingRecruit}
-        onPickSlot={(idx) => {
-          engine.completeCapturePlacement(idx);
-          bump();
-        }}
-        relicIds={[]}
-      />
-
       <div className="battle__main">
         <div className="battle__field">
           <div className="battle__sky" />
           <div className="battle__ground" />
 
           <div className="battle__top">
-            <div className="battle__top-left">
-              <span className="battle__wave battle__wave--story">
-                {zone.emoji} {level.title}
-              </span>
+            <div className="battle__top-row">
+              <div className="battle__top-left">
+                <div className="battle__wheel-meta">
+                  <span className="battle__wheel-title">Roue</span>
+                  <span className="battle__wheel-count">
+                    {wheelOnField}/{MAX_FIELD} terrain · {wheelFilled}/6
+                  </span>
+                </div>
+                <span className="battle__wave-badge battle__wave-badge--story">
+                  {zone.emoji} {level.title}
+                </span>
+                <span className="battle__wave battle__wave--story">
+                  {zone.emoji} {level.title}
+                </span>
+              </div>
+              <div className="battle__top-center">
+                {current && !isOver ? (
+                  <span className="battle__turn">{current.name} agit…</span>
+                ) : (
+                  <span className="battle__turn battle__turn--idle">Histoire</span>
+                )}
+              </div>
+              <div className="battle__top-right">
+                <span className="battle__balls">
+                  🔵{runBalls.standard}
+                  {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
+                </span>
+                <span className="battle__balls">R.{state.round}</span>
+                <BattleSpeedControls speed={battleSpeed} onChange={setBattleSpeed} disabled={isOver} />
+                <button
+                  type="button"
+                  className="battle__tribes-btn battle__tribes-btn--desktop"
+                  disabled={isOver}
+                  onClick={() => setShowTribeChart((v) => !v)}
+                >
+                  Tribus
+                </button>
+                <Link href="/story" className="battle__quit battle__quit--desktop">
+                  Quitter
+                </Link>
+              </div>
             </div>
-            <div className="battle__top-center">
-              {current && !isOver ? (
-                <span className="battle__turn">{current.name} agit…</span>
-              ) : (
-                <span className="battle__turn battle__turn--idle">Histoire</span>
-              )}
-            </div>
-            <div className="battle__top-right">
-              <span className="battle__balls">
-                🔵{runBalls.standard}
-                {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
-              </span>
-              <span className="battle__balls">R.{state.round}</span>
-              <BattleSpeedControls speed={battleSpeed} onChange={setBattleSpeed} disabled={isOver} />
-              <button type="button" className="battle__tribes-btn" disabled={isOver} onClick={() => setShowTribeChart((v) => !v)}>
+            <div className="battle__top-actions">
+              <button
+                type="button"
+                className="battle__tribes-btn battle__tribes-btn--mobile"
+                disabled={isOver}
+                onClick={() => setShowTribeChart((v) => !v)}
+              >
                 Tribus
               </button>
-              <Link href="/story" className="battle__quit">
+              <Link href="/story" className="battle__quit battle__quit--mobile">
                 Quitter
               </Link>
             </div>
@@ -748,30 +834,50 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
               </button>
             ) : null}
           </div>
-          <div className="battle__slots">
-            {fieldAllies.map((c) => (
-              <SoulSlot
-                key={c.instanceId}
-                c={c}
-                ready={c.souls >= 1 && !c.ko}
-                selected={specialActor === c.instanceId}
-                onSelect={() => {
-                  if (c.ko || isOver) return;
-                  if (c.souls >= 1) {
-                    setSpecialActor((id) => (id === c.instanceId ? null : c.instanceId));
-                    setInspectAlly(null);
-                    return;
-                  }
-                  handleAllyInspect(c.instanceId);
-                }}
-              />
-            ))}
+          <div className="battle__slots battle__slots--hud" aria-label="Jauges d'âmes">
+            {renderSoulSlots("hud")}
           </div>
         </footer>
       </div>
 
-      {inspectedAlly && !isOver ? (
-        <AllyInspect ally={inspectedAlly} onClose={() => setInspectAlly(null)} />
+      <div className="battle__deck" aria-label="Deck">
+        <div className="battle__fiche">
+          {showAllyFiche && inspectedAlly ? (
+            <AllyInspect
+              ally={inspectedAlly}
+              onClose={() => setInspectAlly(null)}
+              className="foe-inspect--in-deck"
+            />
+          ) : (
+            <div className="battle__slots battle__slots--deck" aria-label="Jauges d'âmes">
+              {renderSoulSlots("deck")}
+            </div>
+          )}
+        </div>
+        <BattleWheel
+          slots={wheelSlots}
+          currentId={current?.side === "ally" ? current.instanceId : null}
+          canRotate={!isOver && !paused}
+          onRotate={(dir) => {
+            engine.rotateWheel(dir);
+            bump();
+          }}
+          placementMode={Boolean(pendingRecruit)}
+          pendingRecruit={pendingRecruit}
+          onPickSlot={(idx) => {
+            engine.completeCapturePlacement(idx);
+            bump();
+          }}
+          relicIds={[]}
+        />
+      </div>
+
+      {showAllyFiche && inspectedAlly ? (
+        <AllyInspect
+          ally={inspectedAlly}
+          onClose={() => setInspectAlly(null)}
+          className="foe-inspect--on-desktop"
+        />
       ) : null}
 
       {inspectedFoe && !isOver ? (

@@ -11,6 +11,7 @@ import {
   TRIBE_INFO,
   getTypeMultiplier,
   RUN_MAX_WAVES,
+  MAX_FIELD,
   getRunWaveKind,
   getRunWaveKindLabel,
   TRIBAL_BALL_IDS,
@@ -47,6 +48,7 @@ import { WaveRewardPicker } from "@/components/run/wave-reward-picker";
 import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
+import "./run.css";
 import { claimRunMetaReward } from "@/lib/player/run-meta-client";
 import { recordDailyRun } from "@/lib/quests/quest-progress";
 import { incrementLocalRunsCompleted } from "@/lib/player/run-stats-local";
@@ -204,6 +206,7 @@ function SoulSlot({
   const soulPct = Math.round(c.souls * 100);
   const tribeInfo = TRIBE_INFO[c.tribe];
   const passiveLine = formatPassiveLine(c);
+  const hue = combatSpiritHue(c.templateKey);
   return (
     <button
       type="button"
@@ -212,37 +215,54 @@ function SoulSlot({
       disabled={c.ko}
       aria-label={`${c.name}, ${tribeInfo.label}, ${c.hp} sur ${c.maxHp} PV, jauge d'âmes ${soulPct} pourcent`}
     >
-      <span className="soul-slot__name">{c.name}</span>
-      <span className="soul-slot__tribe">
-        {tribeInfo.emoji} {tribeInfo.label}
-        {matchupMult !== undefined && matchupMult >= 2 ? " · ×2" : matchupMult !== undefined && matchupMult <= 0.5 ? (matchupMult <= 0 ? " · ×0" : " · ×½") : ""}
-      </span>
       <div
-        className={`soul-slot__hp soul-slot__hp--${hpTone(hpRatio)}`}
-        role="progressbar"
-        aria-valuenow={c.hp}
-        aria-valuemin={0}
-        aria-valuemax={c.maxHp}
+        className="soul-slot__portrait"
+        style={{ background: `color-mix(in srgb, ${hue} 75%, #000 25%)` }}
       >
-        <span style={{ width: `${hpRatio * 100}%` }} />
+        <RarityBadge rarity={c.rarity} size="xs" className="soul-slot__rarity" />
+        <CombatSpirit templateKey={c.templateKey} name={c.name} className="soul-slot__sprite" />
       </div>
-      <span className="soul-slot__hp-val">
-        {c.hp}/{c.maxHp} PV
-      </span>
-      <div className="soul-slot__meter" role="progressbar" aria-valuenow={soulPct} aria-valuemin={0} aria-valuemax={100}>
-        <span className="soul-slot__fill" style={{ width: `${soulPct}%` }} />
-        {ready ? <span className="soul-slot__flame" aria-hidden /> : null}
+      <div className="soul-slot__body">
+        <div className="soul-slot__head">
+          <span className="soul-slot__name">{c.name}</span>
+          <span className="soul-slot__tribe">
+            {tribeInfo.emoji} {tribeInfo.label}
+            {matchupMult !== undefined && matchupMult >= 2 ? " · ×2" : matchupMult !== undefined && matchupMult <= 0.5 ? (matchupMult <= 0 ? " · ×0" : " · ×½") : ""}
+          </span>
+        </div>
+        <div className="soul-slot__stat">
+          <span className="soul-slot__stat-lbl">PV</span>
+          <div
+            className={`soul-slot__hp soul-slot__hp--${hpTone(hpRatio)}`}
+            role="progressbar"
+            aria-valuenow={c.hp}
+            aria-valuemin={0}
+            aria-valuemax={c.maxHp}
+          >
+            <span style={{ width: `${hpRatio * 100}%` }} />
+          </div>
+          <span className="soul-slot__hp-val">
+            {c.hp} / {c.maxHp}
+          </span>
+        </div>
+        <div className="soul-slot__stat soul-slot__stat--souls">
+          <span className="soul-slot__stat-lbl">Âmes</span>
+          <div className="soul-slot__meter" role="progressbar" aria-valuenow={soulPct} aria-valuemin={0} aria-valuemax={100}>
+            <span className="soul-slot__fill" style={{ width: `${soulPct}%` }} />
+            {ready ? <span className="soul-slot__flame" aria-hidden /> : null}
+          </div>
+          <span className="soul-slot__hint">
+            {c.ko ? "KO" : ready ? "Amultime !" : `${soulPct} %`}
+          </span>
+        </div>
+        {passiveLine ? <span className="soul-slot__passive">{passiveLine}</span> : null}
+        {ready && !c.ko ? (
+          <span className="soul-slot__skills">
+            <span title={describeSkill(c.skills.special1)}>{c.skills.special1.name}</span>
+            <span title={describeSkill(c.skills.special2)}>{c.skills.special2.name}</span>
+          </span>
+        ) : null}
       </div>
-      <span className="soul-slot__hint">
-        {c.ko ? "KO" : ready ? "Amultime !" : "Âmes"}
-      </span>
-      {passiveLine ? <span className="soul-slot__passive">{passiveLine}</span> : null}
-      {ready && !c.ko ? (
-        <span className="soul-slot__skills">
-          <span title={describeSkill(c.skills.special1)}>{c.skills.special1.name}</span>
-          <span title={describeSkill(c.skills.special2)}>{c.skills.special2.name}</span>
-        </span>
-      ) : null}
     </button>
   );
 }
@@ -739,66 +759,97 @@ export function RunScreen() {
       ? runBalls.standard > 0
       : (runBalls.tribal[selectedBall] ?? 0) > 0;
 
+  const wheelFilled = wheelSlots.filter(Boolean).length;
+  const wheelOnField = wheelSlots.filter((s) => s?.active && !s.ko).length;
+  const showAllyFiche =
+    inspectedAlly &&
+    !inspectedAlly.ko &&
+    !showTribeChart &&
+    !isRewardPick &&
+    !specialTarget &&
+    !specialActor &&
+    !isOver;
+
   return (
     <div className={`battle ${isOver ? "battle--over" : ""}`}>
-      <BattleWheel
-        slots={wheelSlots}
-        currentId={current?.side === "ally" ? current.instanceId : null}
-        canRotate={!isOver && !paused}
-        onRotate={handleRotate}
-        placementMode={Boolean(pendingRecruit && !captureSeq)}
-        pendingRecruit={pendingRecruit}
-        onPickSlot={handlePlacement}
-        relicIds={runRelics}
-      />
-
       <div className="battle__main">
       <div className="battle__field">
         <div className="battle__sky" />
         <div className="battle__ground" />
 
         <div className="battle__top">
-          <div className="battle__top-left">
-            <span className="battle__wave">
-              {isBossWave ? (
-                <span className={`battle__wave-tag battle__wave-tag--${waveKind}`}>{waveKindLabel}</span>
-              ) : null}
-              {state.wave}/{RUN_MAX_WAVES}
-            </span>
-          </div>
-          <div className="battle__top-center">
-            {specialTarget && targetingActor ? (
-              <span className="battle__turn battle__turn--target">
-                {targetingActor.name} — cible pour{" "}
-                {targetingActor.skills[specialTarget.slot === 1 ? "special1" : "special2"].name}
+          <div className="battle__top-row">
+            <div className="battle__top-left">
+              <div className="battle__wheel-meta" aria-hidden={false}>
+                <span className="battle__wheel-title">Roue</span>
+                <span className="battle__wheel-count">
+                  {wheelOnField}/{MAX_FIELD} terrain · {wheelFilled}/6
+                </span>
+              </div>
+              <span className="battle__wave-badge">
+                {isBossWave ? (
+                  <span className={`battle__wave-tag battle__wave-tag--${waveKind}`}>{waveKindLabel}</span>
+                ) : null}
+                {state.wave}/{RUN_MAX_WAVES}
               </span>
-            ) : current && !isOver && !isRewardPick ? (
-              <span className="battle__turn">{current.name} agit…</span>
-            ) : (
-              <span className="battle__turn battle__turn--idle">Combat</span>
-            )}
-          </div>
-          <div className="battle__top-right">
-            <span className="battle__balls" aria-label="Phantoballs">
-              🔵{runBalls.standard}
-              {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
-            </span>
-            <span className="battle__gold" aria-label={`${runGold} euros`}>
-              {runGold} €
-            </span>
-            <BattleSpeedControls
-              speed={battleSpeed}
-              onChange={setBattleSpeed}
-              disabled={isOver || isRewardPick}
-            />
-            {specialTarget ? (
-              <button type="button" className="battle__cancel-target" onClick={cancelTargeting}>
-                Annuler
+              <span className="battle__wave">
+                {isBossWave ? (
+                  <span className={`battle__wave-tag battle__wave-tag--${waveKind}`}>{waveKindLabel}</span>
+                ) : null}
+                {state.wave}/{RUN_MAX_WAVES}
+              </span>
+            </div>
+            <div className="battle__top-center">
+              {specialTarget && targetingActor ? (
+                <span className="battle__turn battle__turn--target">
+                  {targetingActor.name} — cible pour{" "}
+                  {targetingActor.skills[specialTarget.slot === 1 ? "special1" : "special2"].name}
+                </span>
+              ) : current && !isOver && !isRewardPick ? (
+                <span className="battle__turn">{current.name} agit…</span>
+              ) : (
+                <span className="battle__turn battle__turn--idle">Combat</span>
+              )}
+            </div>
+            <div className="battle__top-right">
+              <span className="battle__balls" aria-label="Phantoballs">
+                🔵{runBalls.standard}
+                {totalTribalBalls(runBalls) > 0 ? ` · +${totalTribalBalls(runBalls)} trib.` : ""}
+              </span>
+              <span className="battle__gold" aria-label={`${runGold} euros`}>
+                {runGold} €
+              </span>
+              <BattleSpeedControls
+                speed={battleSpeed}
+                onChange={setBattleSpeed}
+                disabled={isOver || isRewardPick}
+              />
+              {specialTarget ? (
+                <button type="button" className="battle__cancel-target" onClick={cancelTargeting}>
+                  Annuler
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="battle__tribes-btn battle__tribes-btn--desktop"
+                disabled={isOver || isRewardPick}
+                onClick={() => {
+                  if (isOver || isRewardPick) return;
+                  setShowTribeChart((v) => !v);
+                  if (showTribeChart) setInspectTarget(null);
+                }}
+              >
+                Tribus
               </button>
-            ) : null}
+              <Link href="/" className="battle__quit battle__quit--desktop">
+                Quitter
+              </Link>
+            </div>
+          </div>
+          <div className="battle__top-actions">
             <button
               type="button"
-              className="battle__tribes-btn"
+              className="battle__tribes-btn battle__tribes-btn--mobile"
               disabled={isOver || isRewardPick}
               onClick={() => {
                 if (isOver || isRewardPick) return;
@@ -808,7 +859,7 @@ export function RunScreen() {
             >
               Tribus
             </button>
-            <Link href="/" className="battle__quit">
+            <Link href="/" className="battle__quit battle__quit--mobile">
               Quitter
             </Link>
           </div>
@@ -896,7 +947,7 @@ export function RunScreen() {
         ) : null}
       </div>
 
-      <footer className="battle__hud" aria-label="Jauges d'âmes">
+      <footer className="battle__hud" aria-label="Contrôles">
         <p className="battle__hud-tip">
           {specialTarget ? (
             "Clique un ennemi pour l'amultime"
@@ -911,7 +962,7 @@ export function RunScreen() {
             </>
           )}
         </p>
-        <div className="battle__slots">
+        <div className="battle__slots battle__slots--hud" aria-label="Jauges d'âmes">
           {fieldAllies.map((c) => (
             <SoulSlot
               key={c.instanceId}
@@ -935,6 +986,51 @@ export function RunScreen() {
       </footer>
       </div>
 
+      <div className="battle__deck" aria-label="Deck">
+        <div className="battle__fiche">
+          {showAllyFiche && inspectedAlly ? (
+            <AllyInspect
+              ally={inspectedAlly}
+              onClose={() => setInspectAlly(null)}
+              className="foe-inspect--in-deck"
+            />
+          ) : (
+            <div className="battle__slots battle__slots--deck" aria-label="Jauges d'âmes">
+              {fieldAllies.map((c) => (
+                <SoulSlot
+                  key={`deck-${c.instanceId}`}
+                  c={c}
+                  ready={c.souls >= 1 && !c.ko}
+                  selected={specialActor === c.instanceId}
+                  matchupMult={inspectTribe ? getTypeMultiplier(c.tribe, inspectTribe) : undefined}
+                  onSelect={() => {
+                    if (c.ko || isOver || isRewardPick) return;
+                    if (c.souls >= 1) {
+                      setSpecialActor((id) => (id === c.instanceId ? null : c.instanceId));
+                      setCaptureTarget(null);
+                      setInspectAlly(null);
+                      return;
+                    }
+                    handleAllyInspect(c.instanceId);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <BattleWheel
+          slots={wheelSlots}
+          currentId={current?.side === "ally" ? current.instanceId : null}
+          canRotate={!isOver && !paused}
+          onRotate={handleRotate}
+          placementMode={Boolean(pendingRecruit && !captureSeq)}
+          pendingRecruit={pendingRecruit}
+          onPickSlot={handlePlacement}
+          relicIds={runRelics}
+        />
+        {showDevTools && engine ? <RunDevPanel engine={engine} onAction={bump} /> : null}
+      </div>
+
       {isRewardPick ? (
         <WaveRewardPicker
           wave={state.wave}
@@ -951,10 +1047,12 @@ export function RunScreen() {
         />
       ) : null}
 
-      {showDevTools && engine ? <RunDevPanel engine={engine} onAction={bump} /> : null}
-
-      {inspectedAlly && !inspectedAlly.ko && !showTribeChart && !isRewardPick && !specialTarget && !specialActor && !isOver ? (
-        <AllyInspect ally={inspectedAlly} onClose={() => setInspectAlly(null)} />
+      {showAllyFiche && inspectedAlly ? (
+        <AllyInspect
+          ally={inspectedAlly}
+          onClose={() => setInspectAlly(null)}
+          className="foe-inspect--on-desktop"
+        />
       ) : null}
 
       {inspectedFoe && !inspectedFoe.ko && !showTribeChart && !isRewardPick && !specialTarget && !specialActor && !isOver ? (

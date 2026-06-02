@@ -98,11 +98,13 @@
   gap: 0.35rem;
 }
 
-.spirits-filter-pills--stack {
+.spirits-filter-pills--stack,
+.spirits-filter-pills--status {
   flex-direction: column;
 }
 
-.spirits-filter-pills--stack .spirits-pill {
+.spirits-filter-pills--stack .spirits-pill,
+.spirits-filter-pills--status .spirits-pill {
   width: 100%;
   text-align: center;
   padding-block: 0.45rem;
@@ -262,6 +264,17 @@
   color: var(--accent-soft);
 }
 
+.spirits-card__status {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 0.05rem;
+}
+
+.spirits-card__status:empty {
+  display: none;
+}
+
 .spirit-owned-stats {
   display: flex;
   flex-direction: column;
@@ -333,6 +346,10 @@
   overflow-y: auto;
 }
 
+.spirits-detail__close {
+  display: none;
+}
+
 .spirits-detail .spirit-sheet {
   margin: 0;
 }
@@ -371,7 +388,7 @@
   opacity: 0.85;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) and (min-width: 769px) {
   .spirits-body {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
@@ -383,7 +400,319 @@
     align-items: flex-end;
   }
 
-  .spirits-filter-pills--stack {
+  .spirits-filter-pills--status {
     flex-direction: row;
+  }
+}
+
+/* ─── Spirits mobile (≤768px) ─── */
+@media (max-width: 768px) {
+  .spirits-scene {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0.45rem 0 0;
+  }
+
+  .spirits-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0 0 0.45rem;
+    padding: 0 0.75rem 0.45rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .spirits-top__kicker {
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    font-size: 0.58rem;
+  }
+
+  .spirits-top__title {
+    font-size: 1.1rem;
+    line-height: 1.15;
+  }
+
+  .spirits-top__meta {
+    font-size: 0.68rem;
+  }
+
+  .spirits-body {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: none;
+    gap: 0;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .spirits-body__filters {
+    order: 1;
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  .spirits-body__grid {
+    order: 2;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.45rem 0.5rem 0.35rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .spirits-body__grid::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .spirits-body__grid::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+  }
+
+  .spirits-body__detail {
+    order: 3;
+    flex-shrink: 0;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: min(36vh, 16.5rem);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border-top: 2px solid var(--border);
+    background: var(--void);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .spirits-detail {
+    width: 100%;
+  }
+
+  .spirits-body__detail--closed {
+    display: none;
+  }
+
+  .spirits-detail__close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 2;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .spirits-filters {
+    flex-direction: column;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+  }
+
+  .spirits-filter-group legend,
+  .spirits-filter-group__label {
+    font-size: 0.58rem;
+    margin-bottom: 0.1rem;
+  }
+
+  .spirits-filter-pills--status {
+    flex-direction: row;
+    gap: 0.25rem;
+  }
+
+  .spirits-filter-pills--status .spirits-pill {
+    flex: 1;
+    width: auto;
+    padding-block: 0.35rem;
+    font-size: 0.62rem;
+  }
+
+  .spirits-filter-rarity > .spirits-pill {
+    padding-block: 0.35rem;
+    font-size: 0.62rem;
+  }
+
+  .spirits-filter-pills--grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .spirits-filter-pills--grid .spirits-pill {
+    padding-block: 0.35rem;
+    font-size: 0.62rem;
+  }
+
+  .spirits-select {
+    font-size: 0.72rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .spirits-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+    width: 100%;
+    padding-bottom: 0.25rem;
+  }
+
+  .spirits-card {
+    padding: 0.4rem 0.2rem 0.32rem;
+    border-radius: var(--radius);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .spirits-card--active {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+      2px 2px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .spirits-card__art {
+    width: 2.35rem;
+  }
+
+  .spirits-card__rarity {
+    top: 0.2rem;
+    right: 0.2rem;
+    font-size: 0.48rem;
+  }
+
+  .spirits-card__name {
+    font-size: 0.58rem;
+    margin-top: 0.1rem;
+  }
+
+  .spirits-card__level {
+    font-size: 0.48rem;
+  }
+
+  .spirits-card__status {
+    font-size: 0.46rem;
+  }
+
+  .spirits-card__tribe {
+    display: none;
+  }
+
+  .spirits-card__field {
+    font-size: 0.44rem;
+    margin-top: 0.08rem;
+  }
+
+  .spirits-card__owned {
+    font-size: 0.52rem;
+    margin-top: 0.06rem;
+  }
+
+  .spirits-card__lock {
+    font-size: 1.1rem;
+  }
+
+  .spirits-detail .spirit-sheet {
+    position: relative;
+    width: 100%;
+    padding: 0.75rem 2rem 0.65rem 0.75rem;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--surface-2);
+    border: none;
+    border-top: 2px solid var(--border);
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .spirit-sheet__hero {
+    gap: 0.65rem;
+  }
+
+  .spirit-sheet__art {
+    width: 3.25rem;
+  }
+
+  .spirit-sheet__tribe {
+    font-size: 0.55rem;
+  }
+
+  .spirit-sheet__name {
+    font-size: 1.05rem;
+  }
+
+  .spirit-sheet__status {
+    font-size: 0.55rem;
+  }
+
+  .spirit-owned-stats {
+    margin-top: 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .spirit-owned-stats__mode {
+    display: none;
+  }
+
+  .spirit-owned-stats__row {
+    font-size: 0.68rem;
+  }
+
+  .spirit-sheet__stat {
+    margin-top: 0.65rem;
+  }
+
+  .spirits-detail__hint {
+    font-size: 0.68rem;
+    margin-top: 0.55rem;
+    line-height: 1.35;
+  }
+
+  .spirit-sheet__action {
+    margin-top: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .spirits-detail__template {
+    margin-top: 0.55rem;
+    font-size: 0.58rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .spirits-detail__close {
+    display: none;
+  }
+
+  .spirits-body__detail--closed {
+    display: block;
   }
 }

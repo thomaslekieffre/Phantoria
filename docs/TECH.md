@@ -7,7 +7,7 @@ Décisions pour l’implémentation (complète le [GDD — Client web](GAME_DESI
 | Couche | Stack | Notes |
 |--------|--------|--------|
 | **App** | **Next.js** (App Router) + **React** + **TypeScript** | Hub SSR, routes combat, déploiement Vercel / Node |
-| **UI** | **CSS** (+ Tailwind dispo) | **Desktop-first** — layout navigateur plein écran, style « cartes lanterne » |
+| **UI** | **CSS** (+ Tailwind dispo) | Desktop-first + **layout mobile ≤768px** (hub, esprits, gacha, combat) |
 | **Logique jeu** | **`packages/game-core`** (TS pur) | Combat, Âmes, capture, vagues, récompenses — testable sans React |
 | **Backend** | **Supabase** (recommandé) ou Route Handlers Next | Auth, sauvegardes, **gacha côté serveur** |
 | **DB** | Postgres (Supabase) | Profils, roster, pulls, métaprogression |
@@ -15,9 +15,42 @@ Décisions pour l’implémentation (complète le [GDD — Client web](GAME_DESI
 ## Client : jeu web navigateur
 
 - **Cible principale** : PC / écran large, souris + clavier.
-- **Pas de contrainte PWA** en v0 : le jeu se joue dans l’onglet (`http://localhost:3000` en dev).
-- **Layout** : sidebar fixe + topbar + zone de jeu (hub sanctuaire, combat, gacha…).
-- **Responsive** : secondaire ; le combat pourra adapter la largeur plus tard.
+- **Mobile (≤768px)** : navigation bottom bar, pages stack vertical, combat immersif (sans topbar app ni bottom nav).
+- **Layout desktop** : sidebar fixe + topbar + zone de jeu (hub sanctuaire, combat, gacha…).
+- **Safe areas** : `viewport-fit: cover` + `env(safe-area-inset-*)` sur shell et deck combat.
+
+## Layout mobile (≤768px)
+
+Règle d’empilement CSS : les media queries **spécifiques à un écran** vivent en **fin de fichier composant** (`hub.css`, `spirits.css`, `gacha.css`, `run.css`) pour écraser `responsive.css` (importé avant dans `globals.css`).
+
+| Route | Fichiers | Comportement |
+|-------|----------|--------------|
+| **Global** | `responsive.css`, `layout/mobile-menu.tsx`, `topbar.tsx` | Bottom nav · menu hamburger · wallet compact |
+| **Hub `/`** | `hub.css`, `hub-screen.tsx` | Stack stats → quête → event → run · fiche esprit bottom sheet |
+| **Esprits `/spirits`** | `spirits.css` | Grille scrollable · fiche fixe ~36vh bas · bouton × |
+| **Gacha `/gacha`** | `gacha.css` | Tabs packs · autel · CTA pleine largeur |
+| **Run `/run`** | `run.css`, `run-screen.tsx` | Arène · hints · **deck** (fiche \| arc+reliques / roue) |
+| **Histoire combat** | `story-battle-screen.tsx` + `run.css` | Même deck que run · badge niveau · bouton Objets dans footer |
+
+### Combat immersif (`/run`, histoire)
+
+- `.shell:has(.battle)` : masque **topbar app** + **sidebar/bottom nav**.
+- **Header combat** (dans l’arène) : meta roue · tour · € / balls · vitesse · Tribus / Quitter (ligne dédiée mobile).
+- **Deck bas** (`.battle__deck`) :
+  - **Gauche haut** : fiche allié (portrait, PV orange, Âmes teal, passif) ou inspect détaillé (×).
+  - **Gauche bas** : roue circulaire + arc vert terrain (conic-gradient).
+  - **Droite** : badge « Arc vert = terrain » · spins ↺↻ · reliques (run only).
+- **Desktop** : inchangé — roue colonne gauche, jauges dans le HUD/footer.
+- Jauges dupliquées en DOM (`battle__slots--hud` / `--deck`) ; une seule visible selon breakpoint.
+
+### Contrôles mobile vs desktop
+
+| Action desktop | Mobile |
+|----------------|--------|
+| Clic droit ennemi (focus) | 🎯 Cibler dans fiche ennemi |
+| Clic gauche tribus | Toucher esprit / bouton Tribus |
+| Inspect allié (slot vide) | Tap fiche deck |
+| Hints barre bas | Texte `battle__tip--mobile` |
 
 ## Monorepo
 
@@ -46,9 +79,9 @@ Phantoria/
 - **Toggle terrain** : bouton « Mettre sur le terrain » / « Retirer du terrain » (état local mock).
 - **Panneau droit** : quête active, stats, événement, CTA Run / Histoire.
 - **Navigation** : sidebar desktop · **bottom nav** ≤768px (`responsive.css`, labels courts).
-- **Mobile** : hub stack vertical · combat plein écran (nav masquée) · fiche ennemi en bottom sheet · bouton **🎯 Cibler** (remplace clic droit) · safe areas iOS (`viewport-fit: cover`).
+- **Mobile** : ordre vertical sanctuaire · menu hamburger (profil, boutique, inventaire, histoire) · fiche esprit en bottom sheet avec ×.
 
-Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `roster.ts`, `spirit-portrait.tsx`.
+Fichiers clés : `hub-screen.tsx`, `spirit-wheel.tsx`, `hub-panel.tsx`, `mobile-menu.tsx`, `hub.css`.
 
 ### Run roguelite (`/run`)
 

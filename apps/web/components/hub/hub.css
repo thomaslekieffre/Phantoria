@@ -26,6 +26,12 @@
   letter-spacing: 0.02em;
 }
 
+.hub__crumb {
+  color: var(--accent);
+  font-weight: 800;
+  margin-right: 0.15rem;
+}
+
 .hub__line strong {
   color: var(--text);
   font-weight: 800;
@@ -702,10 +708,8 @@
   overflow-y: auto;
 }
 
-.hub-panel__section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.hub-panel__sheet-close {
+  display: none;
 }
 
 .hub-panel__quest {
@@ -788,7 +792,6 @@
 }
 
 .hub-panel__event {
-  grid-column: span 2;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -799,6 +802,19 @@
   border: 1px solid rgba(244, 63, 94, 0.35);
   background: rgba(244, 63, 94, 0.08);
   transition: background 0.15s;
+}
+
+.hub-panel__event-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hub-panel__event-chevron {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  line-height: 1;
 }
 
 .hub-panel__event:hover {
@@ -893,4 +909,244 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* ─── Hub mobile (≤768px) — doit rester dans hub.css pour override la grille desktop ─── */
+@media (max-width: 768px) {
+  .hub {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hub__center {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.35rem 0.85rem 0.25rem;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    flex-shrink: 0;
+  }
+
+  .hub__line {
+    font-size: 0.72rem;
+    text-align: left;
+    align-self: stretch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .wheel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hub-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    border-left: none;
+    border-top: none;
+    padding: 0.35rem 0.85rem 0.75rem;
+    gap: 0.65rem;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .hub-panel__block--stats {
+    order: 1;
+  }
+
+  .hub-panel__block--quest {
+    order: 2;
+  }
+
+  .hub-panel__block--event {
+    order: 3;
+  }
+
+  .hub-panel__block--plays {
+    order: 4;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .hub-panel__block--bench {
+    order: 5;
+    display: none;
+  }
+
+  .hub-panel__block--sheet {
+    order: 6;
+  }
+
+  .hub-panel__block--sheet-empty {
+    display: none;
+  }
+
+  .hub-panel__block--sheet-open {
+    position: fixed;
+    inset: 0;
+    z-index: 160;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.55);
+    pointer-events: auto;
+  }
+
+  .hub-panel__block--sheet-open .spirit-sheet {
+    position: relative;
+    max-height: min(78vh, 28rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    margin-top: auto;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hub-panel__sheet-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 2;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .wheel__head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    text-align: left;
+    gap: 0.5rem;
+  }
+
+  .wheel__head > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .wheel__title {
+    font-size: 1.05rem;
+  }
+
+  .wheel__hint {
+    font-size: 0.68rem;
+    line-height: 1.35;
+  }
+
+  .wheel__counter {
+    padding: 0.35rem 0.6rem;
+    flex-shrink: 0;
+  }
+
+  .wheel__counter-num {
+    font-size: 1.15rem;
+  }
+
+  .wheel__counter-lbl {
+    font-size: 0.62rem;
+  }
+
+  .wheel__arena {
+    width: min(100%, 22rem);
+    height: 15.5rem;
+    min-height: 15.5rem;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .wheel__ring {
+    width: 11.5rem;
+    height: 11.5rem;
+  }
+
+  .wheel__slot {
+    width: 4.25rem;
+    margin: -2.125rem 0 0 -2.125rem;
+    transform: rotate(calc(var(--i) * 60deg)) translateY(-5.85rem)
+      rotate(calc(var(--i) * -60deg));
+  }
+
+  .wheel__bubble {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .wheel__portrait {
+    width: 2.35rem;
+  }
+
+  .wheel__name {
+    font-size: 0.68rem;
+  }
+
+  .wheel__tribe {
+    font-size: 0.55rem;
+  }
+
+  .hub-panel__quest {
+    padding: 0.85rem;
+  }
+
+  .hub-panel__quest-title {
+    font-size: 0.92rem;
+  }
+
+  .hub-panel__stat {
+    padding: 0.7rem 0.5rem;
+  }
+
+  .hub-panel__stat-val {
+    font-size: 1.25rem;
+  }
+
+  .play {
+    padding: 0.95rem 1rem;
+  }
+
+  .play--run .play__title {
+    font-size: 1.25rem;
+  }
+
+  .play__desc {
+    display: none;
+  }
+
+  .play--story {
+    padding: 0.7rem 0.85rem;
+    opacity: 0.92;
+  }
+
+  .play--story .play__title {
+    font-size: 0.95rem;
+  }
+
+  .play--story .play__label {
+    font-size: 0.58rem;
+  }
 }

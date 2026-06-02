@@ -52,6 +52,7 @@ export function SpiritsScreen() {
   const [tribeFilter, setTribeFilter] = useState<string>("all");
   const [ownedFilter, setOwnedFilter] = useState<OwnedFilter>("all");
   const [selectedId, setSelectedId] = useState<SpiritId | null>(null);
+  const [detailOpen, setDetailOpen] = useState(true);
 
   const filtered = useMemo(() => {
     let list = STANDARD_GACHA_POOL;
@@ -79,6 +80,11 @@ export function SpiritsScreen() {
 
   function handleSelect(id: SpiritId) {
     setSelectedId(id);
+    setDetailOpen(true);
+  }
+
+  function handleCloseDetail() {
+    setDetailOpen(false);
   }
 
   async function handlePlaceOnWheel() {
@@ -98,7 +104,7 @@ export function SpiritsScreen() {
     <GameShell active="spirits">
       <div className="spirits-scene">
         <header className="spirits-top">
-          <div>
+          <div className="spirits-top__head">
             <p className="spirits-top__kicker">Codex</p>
             <h1 className="spirits-top__title">Collection d&apos;esprits</h1>
           </div>
@@ -108,8 +114,8 @@ export function SpiritsScreen() {
         </header>
 
         <div className="spirits-body">
-          <aside className="spirits-filters" aria-label="Filtres">
-            <label className="spirits-filter-group">
+          <aside className="spirits-filters spirits-body__filters" aria-label="Filtres">
+            <label className="spirits-filter-group spirits-filter-group--tribe">
               <span className="spirits-filter-group__label">Tribu</span>
               <select
                 className="spirits-select"
@@ -125,9 +131,9 @@ export function SpiritsScreen() {
               </select>
             </label>
 
-            <fieldset className="spirits-filter-group">
+            <fieldset className="spirits-filter-group spirits-filter-group--status">
               <legend>Statut</legend>
-              <div className="spirits-filter-pills spirits-filter-pills--stack">
+              <div className="spirits-filter-pills spirits-filter-pills--status">
                 {(
                   [
                     ["all", "Tous"],
@@ -147,7 +153,7 @@ export function SpiritsScreen() {
               </div>
             </fieldset>
 
-            <fieldset className="spirits-filter-group">
+            <fieldset className="spirits-filter-group spirits-filter-group--rarity">
               <legend>Rareté</legend>
               <div className="spirits-filter-rarity">
                 <button
@@ -173,7 +179,7 @@ export function SpiritsScreen() {
             </fieldset>
           </aside>
 
-          <main className="spirits-grid-wrap" aria-label="Grille des esprits">
+          <main className="spirits-grid-wrap spirits-body__grid" aria-label="Grille des esprits">
             {filtered.length === 0 ? (
               <p className="spirits-grid-empty">Aucun esprit ne correspond à ces filtres.</p>
             ) : (
@@ -198,9 +204,12 @@ export function SpiritsScreen() {
                         <span className="spirits-card__name">{spirit.name}</span>
                         {stats ? (
                           <span className="spirits-card__level" title="Niveau histoire">
-                            H.{stats.level}
+                            Niv. {stats.level}
                           </span>
                         ) : null}
+                        <span className="spirits-card__status">
+                          {!owned ? "Manquant" : spirit.tribe}
+                        </span>
                         <span className="spirits-card__tribe">{spirit.tribe}</span>
                         {!owned ? (
                           <span className="spirits-card__lock" aria-hidden>
@@ -219,9 +228,20 @@ export function SpiritsScreen() {
             )}
           </main>
 
-          <aside className="spirits-detail" aria-label="Fiche esprit">
-            {activeSpirit ? (
+          <aside
+            className={`spirits-detail spirits-body__detail ${!detailOpen ? "spirits-body__detail--closed" : ""}`}
+            aria-label="Fiche esprit"
+          >
+            {activeSpirit && detailOpen ? (
               <section className="spirit-sheet">
+                <button
+                  type="button"
+                  className="spirits-detail__close"
+                  aria-label="Fermer la fiche"
+                  onClick={handleCloseDetail}
+                >
+                  ×
+                </button>
                 <div
                   className={`spirit-sheet__hero ${!activeOwned ? "spirits-detail__hero--locked" : ""}`}
                   style={{ "--hue": activeSpirit.hue } as CSSProperties}

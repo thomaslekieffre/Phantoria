@@ -1625,3 +1625,231 @@
     max-height: 14rem;
   }
 }
+
+/* ─── Gacha mobile (≤768px) ─── */
+@media (max-width: 768px) {
+  .gacha-scene {
+    align-items: stretch;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.45rem 0 calc(0.65rem + env(safe-area-inset-bottom, 0px));
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .gacha-scene::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .gacha-scene::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+  }
+
+  .gacha-scene > .gacha-top,
+  .gacha-scene > .gacha-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  .gacha-top {
+    text-align: left;
+    margin-bottom: 0;
+    padding: 0 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gacha-top__title {
+    font-size: 1.15rem;
+  }
+
+  .gacha-top__wallet {
+    justify-content: flex-start;
+    margin-top: 0.35rem;
+    gap: 0.35rem;
+  }
+
+  .gacha-top__wallet-item {
+    font-size: 0.68rem;
+    padding: 0.22rem 0.48rem;
+  }
+
+  .gacha-top__link {
+    margin-top: 0.35rem;
+    font-size: 0.68rem;
+  }
+
+  .gacha-content {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-content: stretch;
+    align-items: stretch;
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .gacha-banners {
+    flex-direction: row;
+    width: 100%;
+    max-width: none;
+    padding: 0.5rem 0.5rem 0;
+    gap: 0.4rem;
+    order: 1;
+    align-self: stretch;
+  }
+
+  .gacha-banner-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.65rem;
+  }
+
+  .gacha-banner-btn__title {
+    font-size: 0.88rem;
+  }
+
+  .gacha-banner-btn__tag {
+    font-size: 0.55rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .gacha-banner-btn__pill {
+    font-size: 0.58rem;
+    margin-top: 0.35rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .gacha-altar-wrap {
+    order: 2;
+    width: 100%;
+    max-width: none;
+    padding: 0 0.5rem;
+    gap: 0.45rem;
+  }
+
+  .gacha-altar {
+    width: 100%;
+    padding: 0.7rem 0.65rem 0.75rem;
+    border-radius: var(--radius-lg);
+    gap: 0.55rem;
+  }
+
+  .gacha-hero__banner {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .gacha-hero__headline {
+    font-size: 1.05rem;
+  }
+
+  .gacha-hero__headline em {
+    font-size: 1.05rem;
+  }
+
+  .gacha-hero__pitch {
+    font-size: 0.68rem;
+  }
+
+  .gacha-hero__stamp {
+    font-size: 0.58rem;
+  }
+
+  .gacha-altar__featured {
+    gap: 0.35rem;
+  }
+
+  .gacha-featured__orb {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .gacha-featured__art {
+    width: 1.85rem;
+  }
+
+  .gacha-altar .gacha-machine__window {
+    height: 5.25rem;
+  }
+
+  .gacha-altar .gacha-machine__frame {
+    padding: 0.5rem 0.6rem 0.65rem;
+  }
+
+  .gacha-altar .gacha-pull {
+    padding: 0.6rem 0.65rem 0.6rem 0.75rem;
+  }
+
+  .gacha-pull__tag {
+    font-size: 0.55rem;
+  }
+
+  .gacha-pull__times {
+    font-size: 1rem;
+  }
+
+  .gacha-pull__label {
+    font-size: 0.72rem;
+  }
+
+  .gacha-done-cta {
+    margin-top: 0.25rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .gacha-done-cta__links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gacha-done-cta__btn {
+    width: 100%;
+    text-align: center;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .gacha-rates {
+    order: 3;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    align-self: stretch;
+    margin: 0;
+    padding: 0.75rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: none;
+  }
+
+  .gacha-rates__title {
+    font-size: 0.82rem;
+    text-align: left;
+  }
+
+  .gacha-rates__lead {
+    text-align: left;
+    font-size: 0.62rem;
+  }
+
+  .gacha-rates__list {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .gacha-rates__row {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .gacha-rates__spirits {
+    font-size: 0.58rem;
+  }
+}

@@ -130,29 +130,33 @@ export function BattleWheel({
         })}
       </div>
 
-      <div className="bwheel__controls">
-        <button
-          type="button"
-          className="bwheel__spin"
-          disabled={!canRotate || !onRotate}
-          onClick={() => onRotate?.("ccw")}
-          aria-label="Tourner la roue à gauche"
-        >
-          ↺
-        </button>
-        <span className="bwheel__spin-hint">Arc vert = terrain (haut)</span>
-        <button
-          type="button"
-          className="bwheel__spin"
-          disabled={!canRotate || !onRotate}
-          onClick={() => onRotate?.("cw")}
-          aria-label="Tourner la roue à droite"
-        >
-          ↻
-        </button>
-      </div>
+      <div className="bwheel__side">
+        <div className="bwheel__controls">
+          <span className="bwheel__spin-hint">Arc vert = terrain (haut)</span>
+          <div className="bwheel__controls-row">
+            <button
+              type="button"
+              className="bwheel__spin"
+              disabled={!canRotate || !onRotate}
+              onClick={() => onRotate?.("ccw")}
+              aria-label="Tourner la roue à gauche"
+            >
+              ↺
+            </button>
+            <button
+              type="button"
+              className="bwheel__spin"
+              disabled={!canRotate || !onRotate}
+              onClick={() => onRotate?.("cw")}
+              aria-label="Tourner la roue à droite"
+            >
+              ↻
+            </button>
+          </div>
+        </div>
 
-      <RunRelicsTray relicIds={relicIds} variant="sidebar" />
+        <RunRelicsTray relicIds={relicIds} variant="sidebar" />
+      </div>
     </aside>
   );
 }

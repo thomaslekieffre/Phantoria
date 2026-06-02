@@ -20,7 +20,7 @@ const LINKS: {
   badge?: boolean;
   Icon: FC<SVGProps<SVGSVGElement>>;
 }[] = [
-  { id: "camp", href: "/", label: "Sanctuaire", shortLabel: "Camp", Icon: IconCamp },
+  { id: "camp", href: "/", label: "Sanctuaire", shortLabel: "Sanctuaire", Icon: IconCamp },
   { id: "spirits", href: "/spirits", label: "Esprits", shortLabel: "Esprits", Icon: IconSpirits },
   { id: "quests", href: "/quests", label: "Quêtes", shortLabel: "Quêtes", badge: true, Icon: IconQuest },
   { id: "gacha", href: "/gacha", label: "Gacha", shortLabel: "Gacha", Icon: IconGacha },

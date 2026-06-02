@@ -16,16 +16,21 @@ import { RarityBadge } from "@/components/ui/rarity-badge";
 type AllyInspectProps = {
   ally: Combatant;
   onClose: () => void;
+  className?: string;
 };
 
-export function AllyInspect({ ally, onClose }: AllyInspectProps) {
+export function AllyInspect({ ally, onClose, className }: AllyInspectProps) {
   const ratio = ally.maxHp > 0 ? ally.hp / ally.maxHp : 0;
   const tribeInfo = TRIBE_INFO[ally.tribe];
   const hue = combatSpiritHue(ally.templateKey);
   const passiveLine = formatPassiveLine(ally);
 
   return (
-    <aside className="foe-inspect foe-inspect--ally" role="dialog" aria-label={`Esprit ${ally.name}`}>
+    <aside
+      className={`foe-inspect foe-inspect--ally ${className ?? ""}`.trim()}
+      role="dialog"
+      aria-label={`Esprit ${ally.name}`}
+    >
       <div className="foe-inspect__head">
         <p className="foe-inspect__kicker">Allié · terrain</p>
         <button type="button" className="foe-inspect__close" onClick={onClose} aria-label="Fermer">

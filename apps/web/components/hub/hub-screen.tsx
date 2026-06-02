@@ -111,6 +111,9 @@ export function HubScreen() {
         <SceneBackdrop />
         <div className="hub__center">
           <p className="hub__line">
+            <span className="hub__crumb" aria-hidden>
+              ‹
+            </span>{" "}
             Sanctuaire · <strong>{displayName}</strong> · histoire niv. {displayLevel}
           </p>
           <SpiritWheel
@@ -129,6 +132,10 @@ export function HubScreen() {
           selected={selected}
           selectedSlotIndex={selectedSlotIndex}
           onRemoveFromWheel={selected ? () => void handleRemoveFromWheel() : undefined}
+          onClearSelection={() => {
+            setSelectedId(null);
+            setPickSlotIndex(null);
+          }}
           hasSpirits={hasSpirits}
           spiritCount={spiritCount}
           runsCompleted={runsCompleted}
