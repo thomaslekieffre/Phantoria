@@ -7,6 +7,7 @@ export type StoryAllySetup = {
   key: string;
   wheelIndex: number;
   level: number;
+  xp: number;
   hpPct: number;
   hubId: SpiritId;
 };
@@ -30,6 +31,7 @@ export function buildStoryAllySetup(
       key: core,
       wheelIndex: i,
       level: stats.level,
+      xp: stats.xp,
       hpPct: stats.hpPct,
       hubId: slot.id,
     });

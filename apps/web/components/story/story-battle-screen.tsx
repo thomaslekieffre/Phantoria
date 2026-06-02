@@ -256,36 +256,35 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
   const bump = () => setRenderTick((n) => n + 1);
 
   useEffect(() => {
-    if (!isVictory || !engine || !level || resultSaved.current) return;
+    if ((!isVictory && !isDefeat) || !engine || !level || resultSaved.current) return;
     resultSaved.current = true;
 
     const s = engine.getState();
     const allyIds = s.combatants.filter((c) => c.side === "ally").map((c) => c.instanceId);
-    const stars = computeStoryStars(level, {
-      phase: s.phase,
-      round: s.round,
-      events: s.events,
-      allyInstanceIds: allyIds,
-    });
-    setResultStars(stars);
+    const allies = s.combatants.filter((c) => c.side === "ally");
+    const stars = isVictory
+      ? computeStoryStars(level, {
+          phase: s.phase,
+          round: s.round,
+          events: s.events,
+          allyInstanceIds: allyIds,
+        })
+      : 0;
+    setResultStars(stars as 0 | 1 | 2 | 3);
 
     void (async () => {
-      if (stars >= 1) {
+      if (isVictory && (stars as number) >= 1) {
         await recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
-        try {
-          await persistStorySpiritStats(s.combatants.filter((c) => c.side === "ally"));
-          await refreshPlayer();
-        } catch {
-          setPersistError("Progression non sauvegardée — réessaie ou reconnecte-toi.");
-        }
+      }
+      try {
+        await persistStorySpiritStats(allies);
+        await refreshPlayer();
+      } catch {
+        setPersistError("Progression non sauvegardée — réessaie ou reconnecte-toi.");
       }
       setUiPhase("result");
     })();
-  }, [isVictory, engine, level, refreshPlayer]);
-
-  useEffect(() => {
-    if (isDefeat) setUiPhase("result");
-  }, [isDefeat]);
+  }, [isVictory, isDefeat, engine, level, refreshPlayer]);
 
   useEffect(() => {
     if (!engineRef.current) return;

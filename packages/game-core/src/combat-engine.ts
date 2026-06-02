@@ -126,8 +126,8 @@ function pickTarget(
 
 export interface CreateBattleOptions {
   wave?: number;
-  /** { key, wheelIndex } — défaut = run roguelite (1 perso) */
-  allySetup?: { key: string; wheelIndex: number; level?: number; hpPct?: number }[];
+  /** { key, wheelIndex, level?, hpPct?, xp? } — défaut = run roguelite (1 perso) */
+  allySetup?: { key: string; wheelIndex: number; level?: number; hpPct?: number; xp?: number }[];
   enemyKeys?: string[];
   /** Ennemis scriptés (histoire) — prioritaire sur enemyKeys */
   enemySetup?: { key: string; level?: number; statMult?: number }[];
@@ -162,6 +162,8 @@ export function createRunBattle(opts: Omit<CreateBattleOptions, "allySetup"> & {
 
   return createBattle({
     ...opts,
+    battleMode: "run",
+    allyLevel: 1,
     allySetup,
     wave,
     enemyKeys: opts.enemyKeys ?? waveSetup.enemyKeys,
@@ -171,7 +173,7 @@ export function createRunBattle(opts: Omit<CreateBattleOptions, "allySetup"> & {
 
 export function createStoryBattle(
   level: StoryLevelDef,
-  allySetup: { key: string; wheelIndex: number; level?: number; hpPct?: number }[],
+  allySetup: { key: string; wheelIndex: number; level?: number; hpPct?: number; xp?: number }[],
 ): CombatEngine {
   const emptyTribal = createEmptyTribalStock();
   return createBattle({
@@ -197,9 +199,12 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
 
   const combatants: Combatant[] = [
     ...allySetup.map((a) => {
-      const entry = a as { key: string; wheelIndex: number; level?: number; hpPct?: number };
+      const entry = a as { key: string; wheelIndex: number; level?: number; hpPct?: number; xp?: number };
       const lvl = entry.level ?? allyLevel;
       const c = spawn(entry.key, "ally", lvl, false, entry.wheelIndex);
+      if (entry.xp != null) {
+        c.xp = entry.xp;
+      }
       if (entry.hpPct != null && entry.hpPct < 100) {
         c.hp = Math.max(1, Math.floor((c.maxHp * entry.hpPct) / 100));
       }

@@ -15,7 +15,7 @@ pnpm install          # après clone ou pull avec lockfile changé
 pnpm dev              # Next.js → http://localhost:3000
 pnpm build            # vérif prod locale
 pnpm lint             # ESLint (apps/web)
-pnpm test:core        # tests game-core (71 tests)
+pnpm test:core        # tests game-core (77 tests)
 ```
 
 Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu desktop.
@@ -70,7 +70,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/profile` | **Profil** — nom, stats, monnaies, compte |
 | `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
 | `/login` | Connexion Supabase (si env configuré) |
-| `/story` | **Mode Histoire** — carte zone 1, niveau 1-1 jouable |
+| `/story` | **Mode Histoire** — zone 1 complète (15 niveaux), bosses 5/10/15 |
 | `/story/[zone]/[level]` | Combat histoire (équipe roue, niveaux collection) |
 
 ### Composants run (`apps/web/components/run/`)
@@ -236,7 +236,13 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 
 **Combat** : même rendu terrain que la run (`AllyFieldSprite` dans `battle__allies`) — les 3 devant sur la roue apparaissent sur le fond vert.
 
-**Règles v0** : équipe = esprits sur la roue · pas de capture · 3★ (victoire / sans KO / ≤ N rounds) · défaite = retry sans perte collection.
+**Niveaux** : au combat, `buildStoryAllySetup` injecte `level` / `xp` / `hpPct` depuis `player_spirits` (ou `phantoria_spirits_local` hors ligne). Fin de combat (victoire **ou** défaite) → RPC `persist_story_spirit_stats` (RLS gacha = lecture seule sur `player_spirits`). **Run** : `createRunBattle` force `allyLevel: 1` — XP run reste dans `CombatState`, jamais écrit dans `player_spirits`.
+
+**Règles v0** : équipe = esprits sur la roue · capture si balls en inventaire · 3★ (victoire / sans KO / ≤ N rounds) · défaite = retry sans perte collection.
+
+**Zone 1 (Vaillants)** : 15 niveaux dans `story-levels.ts` — ombres → éclaireurs néant → bosses gardien (5, 10) → colosse (15). Déblocage séquentiel sur la carte.
+
+**Objets histoire** : inventaire persistant (`player_inventory`) — Phantoballs et soins achetés à `/shop`, consommés en combat histoire. Reste resynchronisé en fin de fight.
 
 ### Codex esprits (`apps/web/components/spirits/`)
 
@@ -256,6 +262,7 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 | `player_quest_claims` | Quêtes réclamées |
 | `player_quest_daily` | Flags quotidiens (date UTC) |
 | `player_spirits` | Collection ; **`level` / `xp` / `hp_pct` = histoire** (codex), pas le run |
+| `player_inventory` | **Objets hub** — Phantoballs, soins (consommables histoire) |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |
 

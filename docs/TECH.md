@@ -273,8 +273,8 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 4. ✅ **Supabase** — auth, profil, roster, gacha (welcome + standard, pity), meta-récompenses fin de run
 5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV histoire
 6. ✅ **Profil `/profile`** — identité, stats hub, monnaies, compte
-7. ✅ **Histoire `/story`** — niveau 1-1 (zone Vaillants), étoiles, persist XP collection
-8. **À faire** — niveaux histoire 1-2+, `/quests`, boutique `/shop`
+7. ✅ **Histoire `/story`** — zone 1 complète (15 niveaux, bosses 5/10/15), étoiles, persist XP collection
+8. **À faire** — zone 2+, boutique `/shop`
 7. **Rappel design** — niveaux sanctuaire = histoire ; run = lvl 1 éphémère
 
 ## Hors scope infra v0

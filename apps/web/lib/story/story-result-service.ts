@@ -33,7 +33,7 @@ function hubIdFromCombatant(c: Combatant): SpiritId | null {
   return hub && isSpiritId(hub) ? hub : null;
 }
 
-/** Persiste XP / PV histoire après victoire (DB ou localStorage). */
+/** Persiste niveau / XP / PV histoire après combat (DB ou localStorage). */
 export async function persistStorySpiritStats(allies: Combatant[]): Promise<void> {
   const updates: Partial<Record<SpiritId, OwnedSpiritStats>> = {};
 
@@ -61,11 +61,17 @@ export async function persistStorySpiritStats(allies: Combatant[]): Promise<void
     return;
   }
 
-  for (const [hubId, stats] of Object.entries(updates) as [SpiritId, OwnedSpiritStats][]) {
-    await supabase
-      .from("player_spirits")
-      .update({ level: stats.level, xp: stats.xp, hp_pct: stats.hpPct })
-      .eq("user_id", user.id)
-      .eq("hub_id", hubId);
-  }
+  const payload = (Object.entries(updates) as [SpiritId, OwnedSpiritStats][]).map(
+    ([hubId, stats]) => ({
+      hub_id: hubId,
+      level: stats.level,
+      xp: stats.xp,
+      hp_pct: stats.hpPct,
+    }),
+  );
+
+  const { error } = await supabase.rpc("persist_story_spirit_stats", {
+    p_updates: payload,
+  });
+  if (error) throw new Error(error.message);
 }

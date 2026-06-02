@@ -32,7 +32,7 @@ export function xpFromDefeated(
 
 export type LevelUpResult = { leveled: boolean; newLevel: number; levelsGained: number };
 
-/** Ajoute de l'XP et monte de niveau si besoin (run uniquement) */
+/** Ajoute de l'XP et monte de niveau si besoin (run éphémère ou histoire persistée côté web) */
 export function grantXp(combatant: Combatant, amount: number): LevelUpResult {
   const cap = MAX_LEVEL_BY_RARITY[combatant.rarity];
   if (combatant.level >= cap || amount <= 0) {
