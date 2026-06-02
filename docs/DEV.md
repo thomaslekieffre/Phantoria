@@ -156,7 +156,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql`.
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql`.
 
 **Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
 
@@ -292,12 +292,14 @@ Voir [`GAME_DESIGN.md` — Niveaux](GAME_DESIGN.md#niveaux--progression-deux-pis
 
 ### Run → gacha (monnaies hub)
 
-Fin de run (`phase` `won` ou `lost`) : `computeRunMetaReward` (TS) + crédit DB via `POST /api/run/meta-reward` → RPC Supabase `claim_run_meta_reward` (migration `20260602100000_claim_run_meta_reward.sql`). Fallback service role si RPC absente. Affiché sur l’écran victoire/défaite (erreur visible si échec).
+Fin de run (`phase` `won` ou `lost`) : `computeRunMetaReward` (TS) + crédit DB via `POST /api/run/meta-reward` → RPC Supabase `claim_run_meta_reward` (alignée par `20260601140000_run_meta_reward_balance.sql`). Fallback service role si RPC absente. UI : `run-end-recap.tsx`.
 
 | Résultat | Tickets (indicatif) | Gemmes |
 |----------|---------------------|--------|
-| Défaite | max(1, vague÷5) | vague÷20 |
-| Victoire | vague÷5 + 3 (+5 si 200 vagues) | vague÷20 + 15 (+25 si clear) |
+| Défaite | `floor(vague/30)` | `floor(vague/40)` |
+| Victoire | idem + 1 (+1 si vague ≥ 50, +2 si clear 200) | idem + 5 (+20 si clear 200) |
+
+1 ticket = 1 tirage standard (`STANDARD_PULL_TICKET_COST`).
 
 ## Ordre d’implémentation
 

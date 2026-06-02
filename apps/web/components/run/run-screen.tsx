@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { RunEndRecap } from "./run-end-recap";
 import { useSearchParams } from "next/navigation";
 import {
   createRunBattle,
@@ -388,6 +389,7 @@ export function RunScreen() {
 
   const [metaReward, setMetaReward] = useState<RunMetaReward | null>(null);
   const [metaGrantError, setMetaGrantError] = useState<string | null>(null);
+  const [metaPending, setMetaPending] = useState(false);
   const metaGrantRef = useRef(false);
 
   useEffect(() => {
@@ -400,6 +402,7 @@ export function RunScreen() {
 
     void (async () => {
       setMetaGrantError(null);
+      setMetaPending(true);
       await saveRun(state);
 
       if (supabaseEnabled && user) {
@@ -417,6 +420,8 @@ export function RunScreen() {
         incrementLocalRunsCompleted();
         await refreshPlayer();
       }
+
+      setMetaPending(false);
 
       setSpecialActor(null);
       setSpecialTarget(null);
@@ -1164,40 +1169,17 @@ export function RunScreen() {
         </div>
       ) : null}
 
-      {isDefeat ? (
-        <div className="battle__end battle__end--lose battle__end--screen" role="dialog" aria-label="Défaite">
-          <p>Défaite…</p>
-          <span className="battle__end-meta">Vague {state.wave}/{RUN_MAX_WAVES}</span>
-          {metaReward ? (
-            <span className="battle__end-reward">
-              +{metaReward.tickets} ticket{metaReward.tickets > 1 ? "s" : ""} · +{metaReward.gems} gemme
-              {metaReward.gems > 1 ? "s" : ""} — crédités au gacha
-            </span>
-          ) : null}
-          {metaGrantError ? <span className="battle__end-error">{metaGrantError}</span> : null}
-          <button type="button" className="battle__end-btn" onClick={restart}>
-            Recommencer
-          </button>
-        </div>
-      ) : null}
-
-      {isVictory ? (
-        <div className="battle__end battle__end--win battle__end--screen" role="dialog" aria-label="Victoire">
-          <p>Victoire !</p>
-          <span className="battle__end-meta">
-            Run terminé — {RUN_MAX_WAVES} vagues · {runRelics.length} relique{runRelics.length > 1 ? "s" : ""}
-          </span>
-          {metaReward ? (
-            <span className="battle__end-reward">
-              +{metaReward.tickets} ticket{metaReward.tickets > 1 ? "s" : ""} · +{metaReward.gems} gemme
-              {metaReward.gems > 1 ? "s" : ""} — crédités au gacha
-            </span>
-          ) : null}
-          {metaGrantError ? <span className="battle__end-error">{metaGrantError}</span> : null}
-          <button type="button" className="battle__end-btn" onClick={restart}>
-            Nouveau run
-          </button>
-        </div>
+      {isOver && state ? (
+        <RunEndRecap
+          outcome={isVictory ? "won" : "lost"}
+          wave={state.wave}
+          runGold={runGold}
+          relicIds={runRelics}
+          metaReward={metaReward}
+          metaPending={metaPending}
+          metaGrantError={metaGrantError}
+          onRestart={restart}
+        />
       ) : null}
     </div>
   );

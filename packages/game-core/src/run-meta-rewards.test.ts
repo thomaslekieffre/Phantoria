@@ -4,16 +4,16 @@ import { computeRunMetaReward } from "./run-meta-rewards";
 import { RUN_MAX_WAVES } from "./run-waves";
 
 describe("computeRunMetaReward", () => {
-  it("défaite vague 1 donne au moins 1 ticket", () => {
+  it("défaite vague 1 ne donne rien", () => {
     const r = computeRunMetaReward(1, "lost");
-    assert.equal(r.tickets, 1);
+    assert.equal(r.tickets, 0);
     assert.equal(r.gems, 0);
   });
 
-  it("victoire complète bonus", () => {
+  it("victoire complète bonus modéré", () => {
     const r = computeRunMetaReward(RUN_MAX_WAVES, "won");
-    assert.ok(r.tickets >= 8);
-    assert.ok(r.gems >= 40);
+    assert.ok(r.tickets >= 9);
+    assert.ok(r.gems >= 25);
   });
 
   it("victoire partielle > défaite même vague", () => {
@@ -22,5 +22,10 @@ describe("computeRunMetaReward", () => {
     const lose = computeRunMetaReward(wave, "lost");
     assert.ok(win.tickets > lose.tickets);
     assert.ok(win.gems >= lose.gems);
+  });
+
+  it("vague 30 défaite donne 1 ticket", () => {
+    const r = computeRunMetaReward(30, "lost");
+    assert.equal(r.tickets, 1);
   });
 });

@@ -26,6 +26,11 @@ export function hydrateCombatState(raw: CombatState): CombatState {
       ...c,
       xp: c.xp ?? 0,
     })),
+    runModifiers: {
+      soulGainMult: raw.runModifiers?.soulGainMult ?? 1,
+      specialPowerMult: raw.runModifiers?.specialPowerMult ?? 1,
+      captureBonus: raw.runModifiers?.captureBonus ?? 0,
+    },
   };
 }
 

@@ -146,6 +146,7 @@ export type RunRewardKind =
   | "stat_all"
   | "combo_atk_def"
   | "soul_mult"
+  | "special_mult"
   | "capture_bonus"
   | "soul_fill"
   | "ball_standard"
@@ -170,6 +171,8 @@ export interface RunRewardDef {
 
 export interface RunModifiers {
   soulGainMult: number;
+  /** Multiplicateur dégâts amultime (1 = base) */
+  specialPowerMult: number;
   captureBonus: number;
 }
 

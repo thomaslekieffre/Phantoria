@@ -1480,6 +1480,209 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* ─── Récap fin de run ─── */
+.run-recap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.62);
+  pointer-events: auto;
+}
+
+.run-recap--won {
+  background: rgba(12, 28, 18, 0.78);
+}
+
+.run-recap--lost {
+  background: rgba(28, 12, 16, 0.78);
+}
+
+.run-recap__card {
+  width: min(100%, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+  border: 2px solid var(--ink);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--surface);
+  box-shadow: var(--hard-shadow);
+  color: var(--ink);
+  text-align: center;
+}
+
+.run-recap__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.run-recap__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.run-recap__title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.run-recap__subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.run-recap__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.run-recap__stat {
+  padding: 0.55rem 0.65rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.run-recap__stat dt {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.run-recap__stat dd {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.run-recap__relics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-recap__relic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.run-recap__relic-name {
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-recap__gacha {
+  padding: 0.75rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.run-recap__gacha-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.run-recap__gacha-reward {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #b45309;
+}
+
+.run-recap__gacha-sep {
+  margin: 0 0.35rem;
+  opacity: 0.5;
+}
+
+.run-recap__gacha-pending {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.run-recap__gacha-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.run-recap__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b91c1c;
+  line-height: 1.35;
+}
+
+.run-recap__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.run-recap__btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  font-weight: 800;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--hard-shadow);
+}
+
+.run-recap__btn--primary {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.run-recap--won .run-recap__btn--primary {
+  background: #86efac;
+}
+
+.run-recap__btn--gacha {
+  background: #fde68a;
+  color: var(--ink);
+}
+
 /* ─── HUD bas — jauges d'âmes ─── */
 .battle__hud {
   padding: 0.5rem 1rem 0.85rem;

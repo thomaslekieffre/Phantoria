@@ -16,10 +16,18 @@ export type RunWaveSetup = {
   enemyStatMults: number[];
 };
 
-const BOSS_KEY = "boss_gardien";
-const MEGA_BOSS_KEY = "boss_colosse";
 const FINAL_BOSS_KEY = "boss_solmaar";
-const BOSS_KEYS = new Set([BOSS_KEY, MEGA_BOSS_KEY, FINAL_BOSS_KEY]);
+/** Templates boss dédiés — exclus du pool sauf boss final (lore) */
+const LEGACY_BOSS_KEYS = new Set(["boss_gardien", "boss_colosse", FINAL_BOSS_KEY]);
+
+const RARITY_ORDER: Record<Rarity, number> = {
+  E: 0,
+  D: 1,
+  C: 2,
+  B: 3,
+  A: 4,
+  S: 5,
+};
 
 const RARITY_WEIGHT_BY_WAVE: Record<Rarity, (wave: number) => number> = {
   E: () => 1,
@@ -52,10 +60,15 @@ export function getRunWaveKindLabel(kind: RunWaveKind): string {
 
 function spiritPoolForWave(wave: number): string[] {
   return ALL_SPIRIT_KEYS.filter((key) => {
-    if (BOSS_KEYS.has(key)) return false;
+    if (LEGACY_BOSS_KEYS.has(key)) return false;
     const rarity = getTemplate(key).rarity;
     return RARITY_WEIGHT_BY_WAVE[rarity](wave) > 0;
   });
+}
+
+function bossPoolForWave(wave: number, kind: RunWaveKind): string[] {
+  const minOrder = kind === "mega_boss" ? RARITY_ORDER.A : RARITY_ORDER.B;
+  return spiritPoolForWave(wave).filter((key) => RARITY_ORDER[getTemplate(key).rarity] >= minOrder);
 }
 
 function pickWeightedUnique(
@@ -91,6 +104,15 @@ function pickWeightedUnique(
   }
 
   return picks;
+}
+
+function pickBossSpirit(wave: number, kind: RunWaveKind, rng: () => number): string {
+  const pool = bossPoolForWave(wave, kind);
+  if (pool.length === 0) {
+    const fallback = spiritPoolForWave(wave);
+    return pickWeightedUnique(fallback, 1, wave, rng)[0] ?? "ombre_faible";
+  }
+  return pickWeightedUnique(pool, 1, wave, rng)[0]!;
 }
 
 function enemyLevelForWave(wave: number): number {
@@ -147,15 +169,17 @@ export function getRunWaveSetup(
   }
 
   if (kind === "mega_boss") {
+    const bossKey = pickBossSpirit(wave, kind, rng);
     const adds = pickMinions(wave, 2, rng);
-    const keys = [MEGA_BOSS_KEY, ...adds];
+    const keys = [bossKey, ...adds];
     return setupFromKeys(kind, wave, keys, level + 3, [1.35, ...adds.map(() => 1)]);
   }
 
   if (kind === "boss") {
+    const bossKey = pickBossSpirit(wave, kind, rng);
     const addCount = wave >= 60 ? 2 : 1;
     const adds = pickMinions(wave, addCount, rng);
-    const keys = [BOSS_KEY, ...adds];
+    const keys = [bossKey, ...adds];
     return setupFromKeys(kind, wave, keys, level + 1, [1.25, ...adds.map(() => 1)]);
   }
 

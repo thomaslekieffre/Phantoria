@@ -178,7 +178,7 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 
 | Catégorie | `kind` | Barre reliques | Exemples |
 |-----------|--------|----------------|----------|
-| **Persistant** (tout le run) | `stat_all`, `combo_atk_def`, `soul_mult`, `capture_bonus` | ✅ affiché | Griffe ardente, Écho d’âmes, Phantoball renforcée |
+| **Persistant** (tout le run) | `stat_all`, `combo_atk_def`, `soul_mult`, `special_mult`, `capture_bonus` | ✅ affiché | Griffe ardente, Prisme d'amultime, Écho d’âmes, Phantoball renforcée |
 | **Usage unique** | `heal_all`, `soul_fill`, `ball_standard`, `ball_tribal`, `xp_all` | ❌ masqué | Lanterne, Offrande, lots Phantoballs, Éclats XP |
 
 **Économie run** — `RUN_START_GOLD` = 100 € · vague 1 ≈ 16 € (`waveClearGold`) · prix shop via `getShopPrice` · reroll `getShopRerollPrice(wave, count)`.
@@ -187,22 +187,23 @@ Pool dans `run-rewards.ts` (`RUN_REWARD_POOL`). Deux catégories :
 
 Stock Phantoballs : `RUN_START_BALLS` (5 standard) · tribales par type (`phantoballs.ts`) · achat shop (`ball_lumi`, `ball_flam`, … ou aléatoire).
 
-- Reliques persistantes stockées dans `CombatState.runRelics` ; modificateurs dans `runModifiers` (`soulGainMult`, `captureBonus`).
+- Reliques persistantes stockées dans `CombatState.runRelics` ; modificateurs dans `runModifiers` (`soulGainMult`, `specialPowerMult`, `captureBonus`).
 - Objets non stackables exclus du tirage une fois possédés ; stackables (Écho d’âmes, Phantoball) cumulables.
 - Tooltip au survol : nom + description (`run-relics-tray.tsx`).
 
 #### Ennemis & vagues
 
 - **200 vagues max** (`RUN_MAX_WAVES`) — run fini à la victoire sur le boss final.
-- Pool normal = esprits du catalogue (`ALL_SPIRIT_KEYS`, hors bosses dédiés), tirage pondéré par rareté.
+- Pool normal = esprits du catalogue (`ALL_SPIRIT_KEYS`, hors `boss_gardien` / `boss_colosse` / `boss_solmaar`), tirage pondéré par rareté.
+- **Ennemis = esprits classiques** : capturables, même roster que gacha/codex (errants inclus).
 - **Vague 1 solo** (1 allié) : toujours **Ombre errante** (tuto capture).
 
 | Palier | Vagues | Type | Boss principal |
 |--------|--------|------|----------------|
 | Normal | autres | `normal` | — |
-| Boss | ×10 (10, 20, 30…) | `boss` | Gardien des brumes + sbires |
-| Méga boss | ×50 (50, 100, 150) | `mega_boss` | Colosse du néant + sbires |
-| Boss final | **200** | `final_boss` | Solmaar corrompu + sbires |
+| Boss | ×10 (10, 20, 30…) | `boss` | Esprit roster **B+** (stat ×1,25) + sbires |
+| Méga boss | ×50 (50, 100, 150) | `mega_boss` | Esprit roster **A/S** (stat ×1,35) + sbires |
+| Boss final | **200** | `final_boss` | **Solmaar corrompu** (`boss_solmaar`) + sbires |
 
 Priorité : vague 200 = final (pas méga boss). API : `getRunWaveKind`, `getRunWaveSetup`.
 
@@ -225,13 +226,15 @@ Priorité : vague 200 = final (pas méga boss). API : `getRunWaveKind`, `getRunW
 | `run-relics-tray.tsx` | Liste reliques persistantes + tooltips |
 | `run-starter-picker.tsx` | Choix du starter + bouton Continuer (save) |
 | `capture-sequence.tsx` | Animation lancer / shake / succès-échec |
-| `run.css` | Styles combat (bandeau HUD, cartes lanterne, grain, lucioires) |
+| `run-end-recap.tsx` | Fin de run : stats, reliques, tickets/gemmes hub, CTA gacha |
+| `run.css` | Styles combat (bandeau HUD, cartes lanterne, grain, lucioires, récap fin run) |
 
 #### Fin de run (défaite / victoire)
 
 - Phases `lost` / `won` → **auto-tick stoppé**, overlays combat fermés (inspect, capture, amultime).
-- Écran **fullscreen** (`battle__end--screen`, z-index 60) — bloque toute interaction arrière-plan (plus de capture possible).
-- Seul **Recommencer** / **Nouveau run** réactive l’UI.
+- **`RunEndRecap`** fullscreen (z-index 60) : vague atteinte, or run, reliques persistantes, crédit tickets/gemmes (RPC `claim_run_meta_reward`), erreur visible si échec.
+- CTA **Tirer au gacha** si ≥1 ticket crédité · **Recommencer** / **Nouveau run** réactive l’UI.
+- Formule hub : `computeRunMetaReward` (`run-meta-rewards.ts`) — objectif ~**1 tirage standard / 2–3 runs** (voir [`DATA.md`](DATA.md)).
 
 #### Identité visuelle run
 

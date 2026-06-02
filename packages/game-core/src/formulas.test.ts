@@ -526,17 +526,18 @@ describe("vagues run", () => {
     assert.equal(getRunWaveKind(200), "final_boss");
   });
 
-  it("vague 10 = Gardien + sbires", () => {
-    const setup = getRunWaveSetup(10, 1, () => 0);
+  it("vague 10 = esprit roster B+ + sbires", () => {
+    const setup = getRunWaveSetup(10, 1, () => 0.42);
     assert.equal(setup.kind, "boss");
-    assert.equal(setup.enemyKeys[0], "boss_gardien");
+    assert.ok(!setup.enemyKeys.includes("boss_gardien"));
     assert.ok(setup.enemyKeys.length >= 2);
   });
 
-  it("vague 50 = Colosse", () => {
-    const setup = getRunWaveSetup(50, 3, () => 0);
+  it("vague 50 = esprit roster A/S", () => {
+    const setup = getRunWaveSetup(50, 3, () => 0.42);
     assert.equal(setup.kind, "mega_boss");
-    assert.equal(setup.enemyKeys[0], "boss_colosse");
+    assert.ok(!setup.enemyKeys.includes("boss_colosse"));
+    assert.equal(setup.enemyKeys.length, 3);
   });
 
   it("vague 200 = Solmaar final", () => {

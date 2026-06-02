@@ -207,6 +207,32 @@ export const RUN_REWARD_POOL: RunRewardDef[] = [
     kind: "soul_fill",
     value: 0.8,
   },
+  {
+    id: "prisme_amultime",
+    name: "Prisme d'amultime",
+    emoji: "🔮",
+    description: "+28 % dégâts des amultimes (cumulable)",
+    kind: "special_mult",
+    value: 0.28,
+    stackable: true,
+  },
+  {
+    id: "resonance_ames",
+    name: "Résonance d'âmes",
+    emoji: "🌊",
+    description: "Jauges d'âmes +45 % de remplissage (cumulable)",
+    kind: "soul_mult",
+    value: 0.45,
+    stackable: true,
+  },
+  {
+    id: "forteresse_vivante",
+    name: "Forteresse vivante",
+    emoji: "🏰",
+    description: "+10 ATK et +10 DEF sur toute la roue",
+    kind: "combo_atk_def",
+    value: 10,
+  },
 ];
 
 const REWARD_BY_ID = Object.fromEntries(RUN_REWARD_POOL.map((r) => [r.id, r])) as Record<
@@ -226,6 +252,7 @@ export function isPersistentRunRelic(reward: RunRewardDef | string): boolean {
     def.kind === "stat_all" ||
     def.kind === "combo_atk_def" ||
     def.kind === "soul_mult" ||
+    def.kind === "special_mult" ||
     def.kind === "capture_bonus"
   );
 }
@@ -292,6 +319,7 @@ export function getShopPrice(reward: RunRewardDef, wave: number): number {
     stat_all: 28,
     combo_atk_def: 42,
     soul_mult: 34,
+    special_mult: 38,
     capture_bonus: 30,
     soul_fill: 16,
     ball_standard: 18,
@@ -368,6 +396,10 @@ export function applyRunReward(state: CombatState, reward: RunRewardDef, rng = M
     case "soul_mult":
       state.runModifiers.soulGainMult += reward.value;
       return `${reward.name} — âmes accélérées`;
+
+    case "special_mult":
+      state.runModifiers.specialPowerMult += reward.value;
+      return `${reward.name} — amultimes renforcées`;
 
     case "capture_bonus":
       state.runModifiers.captureBonus += reward.value;

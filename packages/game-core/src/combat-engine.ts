@@ -236,7 +236,7 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     captureTargetId: null,
     pendingRecruit: null,
     runRelics: [],
-    runModifiers: { soulGainMult: 1, captureBonus: 0 },
+    runModifiers: { soulGainMult: 1, specialPowerMult: 1, captureBonus: 0 },
     rewardChoices: null,
     freeRewardPicked: false,
     shopOffers: null,
@@ -599,7 +599,11 @@ export class CombatEngine {
     isSpecial: boolean,
   ) {
     const rawDmg = computeDamage(actor.atk, target.def, skill.power, tribe, target.tribe);
-    const dmg = Math.max(1, Math.floor(rawDmg * getPassiveDamageMult(actor.templateKey, actor.tribe)));
+    const specialMult = isSpecial ? this.state.runModifiers.specialPowerMult : 1;
+    const dmg = Math.max(
+      1,
+      Math.floor(rawDmg * getPassiveDamageMult(actor.templateKey, actor.tribe) * specialMult),
+    );
 
     target.hp = Math.max(0, target.hp - dmg);
 

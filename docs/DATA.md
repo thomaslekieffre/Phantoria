@@ -12,8 +12,8 @@ Compl?te [`GAME_DESIGN.md`](GAME_DESIGN.md). Source de v?rit? impl?ment?e dans `
 | `kiro_perfide` | Kiro | Perfides | D | Rapide |
 | `ombre_faible` | Ombre errante | Sombres | E | Ennemi tuto vague 1 |
 | `neant_scout` | ?claireur n?ant | N?ants | D | Ennemi mid |
-| `boss_gardien` | Gardien des brumes | Sombres | B | Boss ?10 |
-| `boss_colosse` | Colosse du n?ant | N?ants | A | M?ga boss ?50 |
+| `boss_gardien` | Gardien des brumes | Sombres | B | Legacy (plus utilisé en vagues) |
+| `boss_colosse` | Colosse du néant | Néants | A | Legacy (plus utilisé en vagues) |
 | `boss_solmaar` | Solmaar corrompu | N?ants | S | Boss final vague 200 |
 | `roche_costaud` | Roche errante | Costauds | E | Errant pool vague |
 | `halo_bienveillant` | Halo errant | Bienveillants | E | Errant pool vague |
@@ -132,11 +132,11 @@ Texte comp?tence : `description` sur chaque skill dans `characters.ts` ? fallbac
 | Type | Condition | Boss | Adds |
 |------|-----------|------|------|
 | `normal` | d?faut | ? | 1?3 esprits pool |
-| `boss` | vague % 10 === 0 | `boss_gardien` (Gardien des brumes) | 1?2 sbires |
-| `mega_boss` | vague % 50 === 0 (sauf 200) | `boss_colosse` (Colosse du n?ant) | 2 sbires |
+| `boss` | vague % 10 === 0 | Esprit roster B+ (capturable) | 1–2 sbires pool |
+| `mega_boss` | vague % 50 === 0 (sauf 200) | Esprit roster A/S (capturable) | 2 sbires |
 | `final_boss` | vague === 200 | `boss_solmaar` (Solmaar corrompu) | 2 sbires |
 
-Les cl?s boss sont **exclues** du pool des vagues normales.
+Les templates `boss_gardien` / `boss_colosse` restent dans le catalogue mais ne sont plus tirés en vagues. Tous les autres ennemis = esprits classiques du pool (`ALL_SPIRIT_KEYS` hors legacy bosses).
 
 ### Scaling
 
@@ -177,8 +177,22 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | `grande_eclat_xp` | Grande ?tincelle | `xp_all` | ? stackable | +75 XP roue |
 | `offrande_vit` | Offrande du vent | `stat_all` vit | ? | +3 VIT run |
 | `relique_ame` | Fragment d'?me | `soul_fill` | ? | +80 % jauge (1 terrain) |
+| `prisme_amultime` | Prisme d'amultime | `special_mult` | ? stackable | +28 % d?g?ts amultime |
+| `resonance_ames` | R?sonance d'?mes | `soul_mult` | ? stackable | +45 % remplissage ?mes |
+| `forteresse_vivante` | Forteresse vivante | `combo_atk_def` | ? | +10 ATK et +10 DEF run |
 
 **Barre reliques UI** : uniquement les persistants (`isPersistentRunRelic`).
+
+### Meta rewards run ? gacha (`run-meta-rewards.ts`)
+
+Objectif balance : **~1 tirage standard / 2?3 runs** (1 ticket = 1 pull).
+
+| Outcome | Tickets | Gemmes |
+|---------|---------|--------|
+| D?faite | `floor(wave/30)` | `floor(wave/40)` |
+| Victoire | idem + 1 (+1 si wave ? 50, +2 si clear 200) | idem + 5 (+20 si clear 200) |
+
+RPC Supabase `claim_run_meta_reward` align?e (migration `20260601140000_run_meta_reward_balance.sql`).
 
 ### R?gles de tirage
 
