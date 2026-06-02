@@ -63,7 +63,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 |-------|--------|
 | `/` | Sanctuaire (hub) |
 | `/spirits` | **Collection** — grille filtrée, fiche, ajouter/retirer de la roue |
-| `/quests` | Quêtes (stub) |
+| `/quests` | **Quêtes** — journal principal, quotidiennes, secondaires |
 | `/gacha` | **Invocations** — bannières packs, autel central, taux à droite, multi ×10 |
 | `/more` | Boutique, inventaire, événements… |
 | `/events` | **Événements** — bannière active (ex. Lune des captures) |
@@ -156,7 +156,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql`.
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql`.
 
 **Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
 
@@ -174,6 +174,30 @@ Accès : topbar (nom du joueur) · **Plus** → Profil · `/profile`.
 
 Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire → page détail + CTA run.
 
+### Quêtes (`/quests`)
+
+| Fichier | Rôle |
+|---------|------|
+| `quests-screen.tsx` | Journal : quête principale, quotidiennes, secondaires |
+| `quests.css` | Layout journal |
+| `lib/quests/quests.ts` | Définitions & récompenses (config v0) |
+| `lib/quests/quest-progress.ts` | Claims + flags quotidiens (local + sync API) |
+| `lib/quests/quest-client.ts` | `fetch` → `/api/quests/*`, `/api/story/victory` |
+| `lib/player/quest-service.ts` | Évaluation serveur + RPC Supabase |
+| `lib/quests/use-quests.ts` | Hook client + claim (crédite monnaies en DB) |
+
+**Quête principale** « Premiers pas dans le néant » (5 objectifs) : gacha → roue terrain → 1-1 → 2★ sur 1-1 → 1 run.
+
+**Quotidiennes** : connexion (visite camp/quêtes), victoire histoire, run terminée — reset à minuit UTC en DB.
+
+**Hub** : panneau droit affiche progression réelle · badge sidebar si récompense à réclamer.
+
+**Persistance** : tables `player_story_levels`, `player_quest_claims`, `player_quest_daily` · RPC `record_story_victory`, `record_quest_daily_flag`, `claim_quest_reward` · sync local→cloud au login.
+
+**API** : `POST /api/quests/claim` · `POST /api/quests/daily` · `POST /api/story/victory` (session Supabase + validation serveur avant crédit monnaies).
+
+**Hydratation** : `useQuests` (`hydrated`) et `player-provider` (`clientMounted`) — pas de lecture `localStorage` avant mount (badge sidebar / progression quêtes).
+
 ### Sanctuaire — roue & roster (`apps/web/components/hub/`)
 
 | Fichier | Rôle |
@@ -182,7 +206,7 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 | `hub-screen.tsx` | Orchestration clic 2 slots, bench, fiche |
 | `hub-panel.tsx` | Fiche esprit sélectionné + actions |
 | `hub-bench-picker.tsx` | Liste **hors roue** → placer sur un emplacement libre |
-| `roster.ts` | `FIELD_SLOT_INDICES` [0, 1, 5], swap / place / remove local |
+| `roster.ts` | `FIELD_SLOT_INDICES` [0, 1, 5], `rosterFieldReady`, swap / place / remove local |
 | `roster-service.ts` | Persistance Supabase : swap, place, remove |
 
 **Règles UX**
@@ -202,7 +226,7 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 | `story.css` | Carte monde, nœuds, brief avec roue, résultat |
 | `lib/story/story-map-layout.ts` | Positions % des 15 nœuds + courbe SVG du sentier |
 | `lib/story/use-story-progress.ts` | Hook client : save vide au SSR, sync `localStorage` au mount (évite mismatch hydration étoiles) |
-| `lib/story/story-progress.ts` | Étoiles / déblocage (`localStorage`) |
+| `lib/story/story-progress.ts` | Étoiles / déblocage — **localStorage** hors ligne · **Supabase** (`record_story_victory`) si connecté |
 | `lib/story/story-roster.ts` | Équipe depuis roue sanctuaire + niveaux `player_spirits` |
 | `lib/story/story-result-service.ts` | Persist XP/PV histoire après victoire |
 
@@ -218,9 +242,9 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 
 | Fichier | Rôle |
 |---------|------|
-| `spirits-screen.tsx` | Filtres rareté/tribu/possédé, grille, fiche |
+| `spirits-screen.tsx` | Filtres tribu / statut / rareté (grille 2 cols), grille, fiche |
 | `spirit-owned-stats.tsx` | Niveau / XP / PV **histoire** (`spiritsByHubId` ← `player_spirits`) |
-| `spirits.css` | Layout 3 colonnes |
+| `spirits.css` | Sidebar filtres compacte, layout 3 colonnes |
 
 ### Tables
 
@@ -228,6 +252,9 @@ Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire �
 |-------|------|
 | `profiles` | Nom affiché, **`level` = niveau histoire**, **`runs_completed`** (runs roguelite terminées) |
 | `player_currencies` | Or, gemmes, tickets |
+| `player_story_levels` | Progression histoire (étoiles, clear par niveau) |
+| `player_quest_claims` | Quêtes réclamées |
+| `player_quest_daily` | Flags quotidiens (date UTC) |
 | `player_spirits` | Collection ; **`level` / `xp` / `hp_pct` = histoire** (codex), pas le run |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |

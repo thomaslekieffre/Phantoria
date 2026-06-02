@@ -48,6 +48,7 @@ import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/compone
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
 import { claimRunMetaReward } from "@/lib/player/run-meta-client";
+import { recordDailyRun } from "@/lib/quests/quest-progress";
 import { incrementLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
 
@@ -372,6 +373,7 @@ export function RunScreen() {
   useEffect(() => {
     if (!isOver || !engine || metaGrantRef.current) return;
     metaGrantRef.current = true;
+    recordDailyRun();
 
     const state = engine.getState();
     const outcome = state.phase === "won" ? "won" : "lost";

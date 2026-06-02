@@ -1,21 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePlayer } from "@/components/providers/player-provider";
 import { loadStorySave, type StorySave } from "@/lib/story/story-progress";
 
 const EMPTY: StorySave = { levels: {} };
 
-/** Progression locale — état initial vide pour matcher le SSR, puis sync au mount. */
+/** Progression histoire — DB si connecté, sinon localStorage. */
 export function useStoryProgress() {
-  const [save, setSave] = useState<StorySave>(EMPTY);
+  const { storySave, supabaseEnabled, user } = usePlayer();
+  const useRemote = supabaseEnabled && Boolean(user);
+  const [localSave, setLocalSave] = useState<StorySave>(EMPTY);
 
   useEffect(() => {
-    setSave(loadStorySave());
-  }, []);
+    if (!useRemote) {
+      setLocalSave(loadStorySave());
+    }
+  }, [useRemote]);
+
+  const save = useRemote ? storySave : localSave;
 
   const refresh = useCallback(() => {
-    setSave(loadStorySave());
-  }, []);
+    if (!useRemote) setLocalSave(loadStorySave());
+  }, [useRemote]);
 
   const getProgress = useCallback(
     (levelId: string) => save.levels[levelId] ?? null,
@@ -36,5 +43,5 @@ export function useStoryProgress() {
     [save],
   );
 
-  return { refresh, getProgress, isUnlocked, starsTotal };
+  return { refresh, getProgress, isUnlocked, starsTotal, save };
 }

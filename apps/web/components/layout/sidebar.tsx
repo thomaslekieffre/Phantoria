@@ -26,7 +26,7 @@ const LINKS: {
   { id: "more", href: "/more", label: "Plus", Icon: IconMore },
 ];
 
-export function Sidebar({ active }: { active: NavId }) {
+export function Sidebar({ active, questBadge = false }: { active: NavId; questBadge?: boolean }) {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -44,7 +44,7 @@ export function Sidebar({ active }: { active: NavId }) {
           >
             <span className="sidebar__icon-wrap">
               <Icon className="sidebar__icon" />
-              {badge ? <span className="sidebar__badge" /> : null}
+              {badge && questBadge ? <span className="sidebar__badge" /> : null}
             </span>
             {label}
           </Link>

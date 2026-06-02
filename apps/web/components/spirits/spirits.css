@@ -59,6 +59,7 @@
   max-width: 72rem;
   width: 100%;
   margin: 0 auto;
+  align-items: start;
 }
 
 .spirits-filters {
@@ -70,8 +71,7 @@
   background: var(--surface-2);
   border: 2px solid var(--border);
   box-shadow: var(--hard-shadow);
-  overflow-y: auto;
-  min-height: 0;
+  height: fit-content;
 }
 
 .spirits-filter-group {
@@ -100,6 +100,36 @@
 
 .spirits-filter-pills--stack {
   flex-direction: column;
+}
+
+.spirits-filter-pills--stack .spirits-pill {
+  width: 100%;
+  text-align: center;
+  padding-block: 0.45rem;
+}
+
+.spirits-filter-rarity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.spirits-filter-rarity > .spirits-pill {
+  width: 100%;
+  text-align: center;
+  padding-block: 0.45rem;
+}
+
+.spirits-filter-pills--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.spirits-filter-pills--grid .spirits-pill {
+  width: 100%;
+  text-align: center;
+  padding-block: 0.45rem;
 }
 
 .spirits-pill {

@@ -9,6 +9,12 @@ import {
   type SpiritSlot,
 } from "@/components/hub/roster";
 import {
+  fetchQuestProgressFromDb,
+  fetchStorySaveFromDb,
+  type QuestProgressSnapshot,
+} from "@/lib/player/quest-service";
+import type { StorySave } from "@/lib/story/story-progress";
+import {
   SPIRIT_CATALOG,
   type DbCurrencies,
   type DbPlayerSpirit,
@@ -24,6 +30,8 @@ export type PlayerSnapshot = {
   unlockedHubIds: SpiritId[];
   spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
   spiritCount: number;
+  storySave: StorySave;
+  questProgress: QuestProgressSnapshot;
 };
 
 export function buildSpiritsByHubId(spirits: DbPlayerSpirit[]): Partial<Record<SpiritId, OwnedSpiritStats>> {
@@ -66,7 +74,8 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }] = await Promise.all([
+  const [{ data: profile }, { data: currencies }, { data: spirits }, { data: slots }, storySave, questProgress] =
+    await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -81,6 +90,8 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
       .select("slot_index, spirit_id, on_field")
       .eq("user_id", user.id)
       .order("slot_index"),
+    fetchStorySaveFromDb(supabase, user.id),
+    fetchQuestProgressFromDb(supabase, user.id),
   ]);
 
   if (!profile || !currencies) return null;
@@ -106,6 +117,8 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     unlockedHubIds,
     spiritsByHubId: buildSpiritsByHubId((spirits ?? []) as DbPlayerSpirit[]),
     spiritCount: spirits?.length ?? 0,
+    storySave,
+    questProgress,
   };
 }
 

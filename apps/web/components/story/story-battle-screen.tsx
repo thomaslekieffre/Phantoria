@@ -271,7 +271,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
     void (async () => {
       if (stars >= 1) {
-        recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
+        await recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
         try {
           await persistStorySpiritStats(s.combatants.filter((c) => c.side === "ally"));
           await refreshPlayer();

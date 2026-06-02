@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import type { HubEvent } from "@/lib/hub/hub-events";
+import { useQuests } from "@/lib/quests/use-quests";
 import { hpTone, isFieldSlotIndex, isSpiritId, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
@@ -28,6 +29,7 @@ export function HubPanel({
   runsCompleted = 0,
   hubEvent = null,
 }: HubPanelProps) {
+  const { mainSummary } = useQuests({ trackLogin: true });
   const onField =
     selectedSlotIndex != null && isFieldSlotIndex(selectedSlotIndex) && selected && !selected.empty;
 
@@ -106,11 +108,13 @@ export function HubPanel({
       <div className="hub-panel__section">
         <Link href="/quests" className="hub-panel__quest">
           <span className="hub-panel__quest-kicker">Quête active</span>
-          <span className="hub-panel__quest-title">Premiers pas dans le néant</span>
+          <span className="hub-panel__quest-title">{mainSummary.title}</span>
           <span className="hub-panel__quest-bar">
-            <span style={{ width: "40%" }} />
+            <span style={{ width: `${mainSummary.pct}%` }} />
           </span>
-          <span className="hub-panel__quest-meta">2 / 5 objectifs</span>
+          <span className="hub-panel__quest-meta">
+            {mainSummary.done} / {mainSummary.total} objectifs
+          </span>
         </Link>
       </div>
 

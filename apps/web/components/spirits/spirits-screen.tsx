@@ -109,29 +109,6 @@ export function SpiritsScreen() {
 
         <div className="spirits-body">
           <aside className="spirits-filters" aria-label="Filtres">
-            <fieldset className="spirits-filter-group">
-              <legend>Rareté</legend>
-              <div className="spirits-filter-pills">
-                <button
-                  type="button"
-                  className={`spirits-pill ${rarityFilter === "all" ? "spirits-pill--on" : ""}`}
-                  onClick={() => setRarityFilter("all")}
-                >
-                  Toutes
-                </button>
-                {RARITIES.map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    className={`spirits-pill spirits-pill--${r.toLowerCase()} ${rarityFilter === r ? "spirits-pill--on" : ""}`}
-                    onClick={() => setRarityFilter(r)}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
             <label className="spirits-filter-group">
               <span className="spirits-filter-group__label">Tribu</span>
               <select
@@ -167,6 +144,31 @@ export function SpiritsScreen() {
                     {label}
                   </button>
                 ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="spirits-filter-group">
+              <legend>Rareté</legend>
+              <div className="spirits-filter-rarity">
+                <button
+                  type="button"
+                  className={`spirits-pill ${rarityFilter === "all" ? "spirits-pill--on" : ""}`}
+                  onClick={() => setRarityFilter("all")}
+                >
+                  Toutes
+                </button>
+                <div className="spirits-filter-pills spirits-filter-pills--grid">
+                  {RARITIES.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`spirits-pill spirits-pill--${r.toLowerCase()} ${rarityFilter === r ? "spirits-pill--on" : ""}`}
+                      onClick={() => setRarityFilter(r)}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
               </div>
             </fieldset>
           </aside>

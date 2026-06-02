@@ -1,6 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Sidebar, type NavId } from "./sidebar";
 import { Topbar } from "./topbar";
+import { useQuests } from "@/lib/quests/use-quests";
 
 type GameShellProps = {
   children: ReactNode;
@@ -8,10 +11,15 @@ type GameShellProps = {
 };
 
 export function GameShell({ children, active }: GameShellProps) {
+  const { pendingRewards, hydrated } = useQuests({
+    trackLogin: active === "camp" || active === "quests",
+  });
+  const showQuestBadge = hydrated && pendingRewards > 0;
+
   return (
     <div className="shell">
       <div className="shell__sidebar">
-        <Sidebar active={active} />
+        <Sidebar active={active} questBadge={showQuestBadge} />
       </div>
       <div className="shell__topbar">
         <Topbar />

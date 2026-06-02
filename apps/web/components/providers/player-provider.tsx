@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -22,6 +23,9 @@ import {
 } from "@/components/hub/roster";
 import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { loadLocalSpiritStats } from "@/lib/story/story-result-service";
+import { loadStorySave } from "@/lib/story/story-progress";
+import { loadQuestSave } from "@/lib/quests/quest-progress";
+import { syncLocalStoryToRemote } from "@/lib/story/story-progress";
 import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
@@ -34,6 +38,8 @@ import {
   persistRosterSwap,
   type PlayerSnapshot,
 } from "@/lib/player/roster-service";
+import type { QuestProgressSnapshot } from "@/lib/player/quest-service";
+import type { StorySave } from "@/lib/story/story-progress";
 
 type PlayerContextValue = {
   ready: boolean;
@@ -46,6 +52,8 @@ type PlayerContextValue = {
   spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>;
   spiritCount: number;
   runsCompleted: number;
+  storySave: StorySave;
+  questProgress: QuestProgressSnapshot;
   welcomePullsRemaining: number;
   gachaPityStandard: number;
   hasSpirits: boolean;
@@ -71,6 +79,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<PlayerSnapshot | null>(null);
   const [statsTick, setStatsTick] = useState(0);
+  const [clientMounted, setClientMounted] = useState(false);
+  const storySyncedRef = useRef(false);
+
+  useEffect(() => {
+    setClientMounted(true);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!isSupabaseEnabled()) {
@@ -94,6 +108,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     const next = await fetchPlayerSnapshot(supabase);
     setSnapshot(next);
+    if (nextUser && !storySyncedRef.current) {
+      storySyncedRef.current = true;
+      void syncLocalStoryToRemote().then(async () => {
+        const merged = await fetchPlayerSnapshot(supabase);
+        setSnapshot(merged);
+        setStatsTick((n) => n + 1);
+      });
+    }
     setStatsTick((n) => n + 1);
     setReady(true);
   }, []);
@@ -225,10 +247,34 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         ? (["bram", "nyx", "luma", "kiro"] as SpiritId[])
         : (snapshot?.unlockedHubIds ?? []),
       spiritsByHubId: mockRoster
-        ? { ...MOCK_SPIRITS_BY_HUB, ...loadLocalSpiritStats() }
+        ? { ...MOCK_SPIRITS_BY_HUB, ...(clientMounted ? loadLocalSpiritStats() : {}) }
         : (snapshot?.spiritsByHubId ?? {}),
       spiritCount: snapshot?.spiritCount ?? (mockRoster ? 4 : 0),
-      runsCompleted: mockRoster ? getLocalRunsCompleted() : (snapshot?.profile?.runs_completed ?? 0),
+      runsCompleted: mockRoster
+        ? clientMounted
+          ? getLocalRunsCompleted()
+          : 0
+        : (snapshot?.profile?.runs_completed ?? 0),
+      storySave: mockRoster
+        ? clientMounted
+          ? loadStorySave()
+          : { levels: {} }
+        : (snapshot?.storySave ?? { levels: {} }),
+      questProgress: mockRoster
+        ? clientMounted
+          ? {
+              claimed: loadQuestSave().claimed,
+              daily: {
+                login: loadQuestSave().daily.login,
+                storyWin: loadQuestSave().daily.storyWin,
+                runDone: loadQuestSave().daily.runDone,
+              },
+            }
+          : { claimed: [], daily: { login: false, storyWin: false, runDone: false } }
+        : (snapshot?.questProgress ?? {
+            claimed: [],
+            daily: { login: false, storyWin: false, runDone: false },
+          }),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
@@ -250,6 +296,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     removeSpiritFromWheel,
     signOut,
     statsTick,
+    clientMounted,
   ]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

@@ -46,6 +46,16 @@ export function isFieldSlotIndex(slotIndex: number): boolean {
   return FIELD_SLOT_SET.has(slotIndex);
 }
 
+/** Les 3 emplacements terrain (devant) sont occupés. */
+export function rosterFieldReady(roster: SpiritSlot[]): boolean {
+  let filled = 0;
+  for (const i of FIELD_SLOT_INDICES) {
+    const slot = roster[i];
+    if (slot && !slot.empty && isSpiritId(slot.id)) filled++;
+  }
+  return filled >= MAX_FIELD;
+}
+
 export function emptyWheelSlot(slotIndex: number): SpiritSlot {
   return {
     id: `empty-${slotIndex + 1}` as SpiritSlot["id"],
