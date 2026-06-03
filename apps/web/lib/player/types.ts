@@ -34,6 +34,7 @@ export type DbProfile = {
   runs_completed: number;
   welcome_pulls_remaining: number;
   gacha_pity_standard: number;
+  is_admin?: boolean;
   created_at?: string;
 };
 

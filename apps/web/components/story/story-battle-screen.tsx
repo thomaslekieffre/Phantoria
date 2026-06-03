@@ -40,7 +40,8 @@ import { TribeChart } from "@/components/run/tribe-chart";
 import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/components/run/battle-speed-controls";
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { buildStoryAllySetup, rosterHasFieldSpirit } from "@/lib/story/story-roster";
-import { recordStoryVictory } from "@/lib/story/story-progress";
+import { recordStoryVictory, loadStorySave } from "@/lib/story/story-progress";
+import { trackStoryLevelCompleted, trackStoryLevelStarted } from "@/lib/analytics/events";
 import { persistStorySpiritStats } from "@/lib/story/story-result-service";
 import {
   mergeStoryInventoryEnd,
@@ -298,6 +299,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
     setCaptureTarget(null);
     setHealPick(null);
     setEngine(createStoryBattle(level, allySetup, { runBalls: inventoryToRunBalls(inventory) }));
+    trackStoryLevelStarted({ levelId: level.id, zoneId: level.zoneId, index: level.index });
     setUiPhase("fight");
     setSpecialActor(null);
     setSpecialTarget(null);
@@ -355,8 +357,17 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
 
     void (async () => {
       if (isVictory && (stars as number) >= 1) {
+        const firstClear = !loadStorySave().levels[level.id]?.cleared;
         const { goldEarned } = await recordStoryVictory(level.id, stars as 1 | 2 | 3, s.round);
         setResultGold(goldEarned);
+        trackStoryLevelCompleted({
+          levelId: level.id,
+          zoneId: level.zoneId,
+          index: level.index,
+          stars: stars as number,
+          firstClear,
+          goldEarned,
+        });
       }
       try {
         await persistStorySpiritStats(allies);

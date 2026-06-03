@@ -82,7 +82,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     supabase
       .from("profiles")
       .select(
-        "id, display_name, level, runs_completed, welcome_pulls_remaining, gacha_pity_standard, created_at",
+        "id, display_name, level, runs_completed, welcome_pulls_remaining, gacha_pity_standard, is_admin, created_at",
       )
       .eq("id", user.id)
       .single(),

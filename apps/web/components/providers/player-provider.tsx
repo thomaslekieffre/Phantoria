@@ -30,7 +30,7 @@ import { loadLocalSpiritStats } from "@/lib/story/story-result-service";
 import { loadStorySave } from "@/lib/story/story-progress";
 import { loadQuestSave } from "@/lib/quests/quest-progress";
 import { syncLocalStoryToRemote } from "@/lib/story/story-progress";
-import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
+import { identifyPlayer, resetAnalytics } from "@/lib/analytics/posthog-client";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import type { HubEvent } from "@/lib/hub/hub-events";
@@ -46,6 +46,8 @@ import {
   type PlayerSnapshot,
 } from "@/lib/player/roster-service";
 import type { QuestProgressSnapshot } from "@/lib/player/quest-service";
+import type { OwnedSpiritStats } from "@/lib/player/types";
+import { SPIRIT_CATALOG } from "@/lib/player/types";
 import type { StorySave } from "@/lib/story/story-progress";
 
 type PlayerContextValue = {
@@ -64,6 +66,7 @@ type PlayerContextValue = {
   questProgress: QuestProgressSnapshot;
   welcomePullsRemaining: number;
   gachaPityStandard: number;
+  isStudioAdmin: boolean;
   hubEvent: HubEvent | null;
   hasSpirits: boolean;
   refresh: () => Promise<void>;
@@ -91,6 +94,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [statsTick, setStatsTick] = useState(0);
   const [clientMounted, setClientMounted] = useState(false);
   const storySyncedRef = useRef(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      identifyPlayer(user.id, {
+        email: user.email ?? null,
+        display_name: snapshot?.profile?.display_name ?? null,
+      });
+    } else if (!isSupabaseEnabled() || ready) {
+      resetAnalytics();
+    }
+  }, [user, snapshot?.profile?.display_name, ready]);
 
   useEffect(() => {
     setClientMounted(true);
@@ -301,6 +315,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           }),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
+      isStudioAdmin: Boolean(snapshot?.profile?.is_admin),
       hubEvent,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
       refresh,

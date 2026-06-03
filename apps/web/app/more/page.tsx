@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
+import { StudioMoreLink } from "@/components/studio/studio-more-link";
 import {
   IconBag,
   IconCamp,
@@ -41,6 +42,7 @@ export default function MorePage() {
               </Link>
             </li>
           ))}
+          <StudioMoreLink />
         </ul>
       </div>
     </GameShell>

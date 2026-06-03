@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Outfit } from "next/font/google";
+import { Suspense } from "react";
+import { AppErrorBoundary } from "@/components/error-boundary";
 import { PlayerProvider } from "@/components/providers/player-provider";
+import { PostHogProvider } from "@/components/providers/posthog-provider";
 import "./globals.css";
 import "./responsive.css";
 
@@ -37,7 +40,13 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${nunito.variable} ${outfit.variable} h-full`}>
       <body className="min-h-full antialiased">
-        <PlayerProvider>{children}</PlayerProvider>
+        <AppErrorBoundary>
+          <PostHogProvider>
+            <Suspense fallback={null}>
+              <PlayerProvider>{children}</PlayerProvider>
+            </Suspense>
+          </PostHogProvider>
+        </AppErrorBoundary>
       </body>
     </html>
   );

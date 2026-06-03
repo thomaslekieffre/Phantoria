@@ -9,6 +9,7 @@ import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { IconCube, IconGem } from "@/components/ui/icons";
 import { usePlayer } from "@/components/providers/player-provider";
 import { pullStandardGacha, pullWelcomeGacha } from "@/lib/player/gacha-client";
+import { trackGachaPull } from "@/lib/analytics/events";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import {
   STANDARD_GACHA_POOL,
@@ -16,6 +17,7 @@ import {
   STANDARD_PULL_GEM_COST,
   STANDARD_PULL_TICKET_COST,
   WELCOME_GACHA_POOL,
+  entryByHubId,
 } from "@/lib/player/gacha-pool";
 import {
   WELCOME_PULLS_START,
@@ -280,7 +282,19 @@ export function GachaScreen() {
     await new Promise((r) => setTimeout(r, multi ? 1400 : 900));
     setPulling(false);
     if (pullError) setError(pullError);
-    else if (results.length > 0) setLastResults(results);
+    else if (results.length > 0) {
+      setLastResults(results);
+      trackGachaPull({
+        pool: "welcome",
+        payment: "free",
+        count: results.length,
+        results: results.map((r) => ({
+          hubId: r.hubId,
+          rarity: r.rarity,
+          templateKey: entryByHubId(r.hubId)?.templateKey ?? r.hubId,
+        })),
+      });
+    }
     await refresh();
   }
 
@@ -296,7 +310,19 @@ export function GachaScreen() {
     await new Promise((r) => setTimeout(r, multi ? 1400 : 900));
     setPulling(false);
     if (pullError) setError(pullError);
-    else if (results.length > 0) setLastResults(results);
+    else if (results.length > 0) {
+      setLastResults(results);
+      trackGachaPull({
+        pool: "standard",
+        payment,
+        count: results.length,
+        results: results.map((r) => ({
+          hubId: r.hubId,
+          rarity: r.rarity,
+          templateKey: entryByHubId(r.hubId)?.templateKey ?? r.hubId,
+        })),
+      });
+    }
     await refresh();
   }
 

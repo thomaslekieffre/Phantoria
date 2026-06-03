@@ -156,7 +156,15 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql`.
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql`.
+
+### Analytics PostHog
+
+SDK `posthog-js` · provider `PostHogProvider` · events dans `lib/analytics/events.ts`. Voir `apps/web/.env.example`.
+
+### Studio dev (`/studio`)
+
+Admin `profiles.is_admin` · CRUD `hub_events` live · sections esprits/gacha/histoire à venir.
 
 **Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
 

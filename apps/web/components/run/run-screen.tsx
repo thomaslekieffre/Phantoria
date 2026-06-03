@@ -51,6 +51,12 @@ import { AllyInspect } from "@/components/run/ally-inspect";
 import { RunDevPanel } from "@/components/run/run-dev-panel";
 import "./run.css";
 import { claimRunMetaReward } from "@/lib/player/run-meta-client";
+import {
+  trackCaptureAttempt,
+  trackRunEnded,
+  trackRunStarted,
+  trackWaveCleared,
+} from "@/lib/analytics/events";
 import { recordDailyRun } from "@/lib/quests/quest-progress";
 import { incrementLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
@@ -309,6 +315,7 @@ export function RunScreen() {
   const beginRun = (starterId: SpiritId) => {
     void clearSavedRun();
     setSavedSummary(null);
+    trackRunStarted(starterCoreKey(starterId));
     setEngine(
       createRunBattle({
         allySetup: [{ key: starterCoreKey(starterId), wheelIndex: RUN_STARTER_WHEEL_INDEX }],
@@ -413,12 +420,33 @@ export function RunScreen() {
           setMetaReward(reward);
         }
         await refreshPlayer();
+
+        trackRunEnded({
+          wave: state.wave,
+          outcome,
+          relicsCount: state.runRelics.length,
+          runGold: state.runGold,
+          ticketsEarned: reward?.tickets,
+          gemsEarned: reward?.gems,
+        });
       } else if (supabaseEnabled && !user) {
         setMetaGrantError("Connecte-toi pour récupérer tickets et gemmes sur ton compte.");
         incrementLocalRunsCompleted();
+        trackRunEnded({
+          wave: state.wave,
+          outcome,
+          relicsCount: state.runRelics.length,
+          runGold: state.runGold,
+        });
       } else {
         incrementLocalRunsCompleted();
         await refreshPlayer();
+        trackRunEnded({
+          wave: state.wave,
+          outcome,
+          relicsCount: state.runRelics.length,
+          runGold: state.runGold,
+        });
       }
 
       setMetaPending(false);
@@ -656,6 +684,13 @@ export function RunScreen() {
     const targetName = target.name;
 
     const success = engine.tryCapture(targetId, ball);
+    trackCaptureAttempt({
+      enemyKey: target.templateKey,
+      ball,
+      success,
+      wave: engine.getState().wave,
+      hpRatio,
+    });
     if (!success) return;
 
     setCaptureTarget(null);
@@ -705,7 +740,14 @@ export function RunScreen() {
 
   const handleContinueAfterReward = () => {
     if (!engine) return;
+    const waveBefore = engine.getState().wave;
+    const kindBefore = getRunWaveKind(waveBefore);
     engine.continueAfterReward();
+    trackWaveCleared({
+      wave: waveBefore,
+      waveKind: kindBefore,
+      runGold: engine.getState().runGold,
+    });
     setSpecialActor(null);
     setSpecialTarget(null);
     setCaptureTarget(null);
