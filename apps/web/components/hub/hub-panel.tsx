@@ -7,6 +7,7 @@ import { useQuests } from "@/lib/quests/use-quests";
 import { hpTone, isFieldSlotIndex, isSpiritId, type SpiritSlot } from "./roster";
 import { SpiritPortrait } from "./spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
+import { storyCampaignLabel } from "@/lib/story/story-display";
 
 type HubPanelProps = {
   selected: SpiritSlot | null;
@@ -188,7 +189,7 @@ export function HubPanel({
           <Link href="/story" className="play play--story">
             <span className="play__label">Campagne</span>
             <span className="play__title">Mode Histoire</span>
-            <span className="play__desc">11 zones · 165 niveaux</span>
+            <span className="play__desc">{storyCampaignLabel()}</span>
           </Link>
         ) : (
           <Link href="/gacha" className="play play--story">

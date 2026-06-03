@@ -48,11 +48,8 @@ async function flushCloudSave(): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("active_runs").upsert({
-    user_id: user.id,
-    state_json: state,
-    updated_at: new Date().toISOString(),
-  });
+  const { error } = await supabase.rpc("upsert_active_run", { p_state: state });
+  if (error) console.warn("[run] upsert_active_run", error.message);
 }
 
 function scheduleCloudSave(state: CombatState): Promise<void> {
@@ -115,13 +112,10 @@ export async function saveRun(state: CombatState): Promise<void> {
     clearLocal();
     if (user) {
       if (state.phase === "won" || state.phase === "lost") {
-        await supabase.from("active_runs").upsert({
-          user_id: user.id,
-          state_json: state,
-          updated_at: new Date().toISOString(),
-        });
+        const { error } = await supabase.rpc("upsert_active_run", { p_state: state });
+        if (error) console.warn("[run] upsert_active_run", error.message);
       } else {
-        await supabase.from("active_runs").delete().eq("user_id", user.id);
+        await supabase.rpc("clear_active_run");
       }
     }
     return;
@@ -149,7 +143,7 @@ export async function clearSavedRun(): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("active_runs").delete().eq("user_id", user.id);
+  await supabase.rpc("clear_active_run");
 }
 
 export async function getSavedRunSummary(): Promise<{

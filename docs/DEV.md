@@ -157,7 +157,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql` · **`20260603100000_studio_content.sql`** · **`20260603110000_hub_events_mechanics.sql`** · **`20260603120000_hub_events_seed_inactive.sql`** (désactive le seed `lune-captures`).
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql` · **`20260603100000_studio_content.sql`** · **`20260603110000_hub_events_mechanics.sql`** · **`20260603120000_hub_events_seed_inactive.sql`** · **`20260603130000_security_hardening.sql`** (admin, quêtes, runs, histoire).
 
 ### Analytics PostHog
 
@@ -371,6 +371,11 @@ Skills : `characters.json` / `spirit_templates.payload` — basic + special1/2, 
 3. `GET /api/content/game` → `source: "db"`.
 4. Hub, gacha welcome, story 1-1, run starter (vérifier esprit choisi = esprit en combat), reliques, `/events`, re-login.
 5. Si `gacha_pool_entries` vide : re-seed Studio Gacha.
+
+## Sécurité & QA
+
+- Pentest (non corrigés) : [SECURITY-PENTEST.md](SECURITY-PENTEST.md).
+- Bugs fonctionnels (session QA) : [QA-BUGS.md](QA-BUGS.md).
 
 ## Ordre d’implémentation
 

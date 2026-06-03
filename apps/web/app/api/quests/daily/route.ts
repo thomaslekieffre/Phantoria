@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { syncQuestDailyFlagRemote } from "@/lib/player/quest-service";
 import { createClient } from "@/lib/supabase/server";
 
-const FLAGS = ["login", "storyWin", "runDone"] as const;
+const FLAGS = ["login"] as const;
 
 export async function POST(request: Request) {
   const supabase = await createClient();

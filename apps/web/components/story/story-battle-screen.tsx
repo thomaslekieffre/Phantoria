@@ -41,6 +41,7 @@ import { BattleSpeedControls, getTickDelayMs, type BattleSpeed } from "@/compone
 import { AllyInspect } from "@/components/run/ally-inspect";
 import { buildStoryAllySetup, rosterHasFieldSpirit } from "@/lib/story/story-roster";
 import { recordStoryVictory, loadStorySave } from "@/lib/story/story-progress";
+import { useStoryProgress } from "@/lib/story/use-story-progress";
 import { trackStoryLevelCompleted, trackStoryLevelStarted } from "@/lib/analytics/events";
 import { persistStorySpiritStats } from "@/lib/story/story-result-service";
 import {
@@ -248,8 +249,11 @@ type StoryPhase = "intro" | "fight" | "result";
 
 export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; levelIndex: number }) {
   const { roster, spiritsByHubId, inventory, refresh: refreshPlayer, hasSpirits } = usePlayer();
+  const { isUnlocked } = useStoryProgress();
   const level = getStoryLevelByCoords(zoneId, levelIndex);
   const zone = getStoryZone(zoneId);
+  const levelId = level?.id ?? `${zoneId}-${levelIndex}`;
+  const unlocked = level ? isUnlocked(levelId, zoneId, levelIndex) : false;
 
   const allySetup = useMemo(
     () => buildStoryAllySetup(roster, spiritsByHubId),
@@ -465,6 +469,21 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
       <div className="page-stub">
         <h1>Niveau introuvable</h1>
         <Link href="/story">Retour à la carte</Link>
+      </div>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <div className="page-stub">
+        <h1>Niveau verrouillé</h1>
+        <p>
+          Termine les étapes précédentes sur la carte avant d&apos;affronter{" "}
+          <strong>{level.title}</strong>.
+        </p>
+        <Link href="/story" className="play play--story" style={{ marginTop: "1rem" }}>
+          Retour à la carte
+        </Link>
       </div>
     );
   }

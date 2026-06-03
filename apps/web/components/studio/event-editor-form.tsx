@@ -73,6 +73,12 @@ export function EventEditorForm({ form, editId, saving, onChange, onSubmit, onCa
             <input type="datetime-local" value={form.ends_at} onChange={(e) => patch({ ends_at: e.target.value })} />
           </label>
         </div>
+        {form.kind === "banner" && (
+          <p className="studio-field__hint studio-field__hint--block">
+            Bannière affichage seul : bandeau hub et page /events, sans boost capture ni pool gacha. Utilise{" "}
+            <strong>boost capture</strong> ou <strong>bannière gacha</strong> pour un effet gameplay.
+          </p>
+        )}
       </fieldset>
 
       {form.kind === "capture_boost" && (

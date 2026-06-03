@@ -110,15 +110,8 @@ export async function claimQuestRewardServer(
     return { reward: null, error: "Objectif non terminé" };
   }
 
-  const gold = quest.reward.gold ?? 0;
-  const gems = quest.reward.gems ?? 0;
-  const tickets = quest.reward.tickets ?? 0;
-
   const { data, error } = await supabase.rpc("claim_quest_reward", {
     p_quest_id: questId,
-    p_gold: gold,
-    p_gems: gems,
-    p_tickets: tickets,
   });
 
   if (error) {
@@ -128,9 +121,9 @@ export async function claimQuestRewardServer(
   const row = data as { gold?: number; gems?: number; tickets?: number } | null;
   return {
     reward: {
-      gold: row?.gold ?? gold,
-      gems: row?.gems ?? gems,
-      tickets: row?.tickets ?? tickets,
+      gold: row?.gold ?? quest.reward.gold ?? 0,
+      gems: row?.gems ?? quest.reward.gems ?? 0,
+      tickets: row?.tickets ?? quest.reward.tickets ?? 0,
     },
   };
 }
@@ -155,6 +148,6 @@ export async function syncQuestDailyFlagRemote(
   supabase: SupabaseClient,
   flag: "login" | "storyWin" | "runDone",
 ): Promise<void> {
-  const map = { login: "login", storyWin: "story_win", runDone: "run_done" } as const;
-  await supabase.rpc("record_quest_daily_flag", { p_flag: map[flag] });
+  if (flag !== "login") return;
+  await supabase.rpc("record_quest_daily_flag", { p_flag: "login" });
 }

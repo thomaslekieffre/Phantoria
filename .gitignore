@@ -7,6 +7,10 @@
 *.sln
 *.sw?
 
+# Artefacts locaux (wizard / analytics)
+.claude/
+.posthog-events.json
+
 # Cursor — versionner uniquement les rules projet
 .cursor/*
 !.cursor/rules/

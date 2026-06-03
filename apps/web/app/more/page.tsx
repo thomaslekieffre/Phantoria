@@ -8,16 +8,17 @@ import {
   IconShop,
   IconStory,
 } from "@/components/ui/icons";
+import { storyCampaignLabel } from "@/lib/story/story-display";
 
 const LINKS = [
   { href: "/profile", label: "Profil", sub: "Compte & statistiques", Icon: IconCamp },
-  { href: "/story", label: "Histoire", sub: "165 niveaux", Icon: IconStory },
+  { href: "/story", label: "Histoire", sub: storyCampaignLabel(), Icon: IconStory },
   { href: "/shop", label: "Boutique", sub: "Offres & packs", Icon: IconShop },
   { href: "/inventory", label: "Inventaire", sub: "Objets & Phantoballs", Icon: IconBag },
   {
     href: "/events",
     label: "Événements",
-    sub: "Lune des captures",
+    sub: "Calendrier live",
     Icon: IconEvent,
     notify: true,
   },

@@ -90,12 +90,12 @@ export function recordDailyStoryWin(): void {
   const save = loadQuestSave();
   save.daily.storyWin = true;
   persist(save);
-  void pushDailyFlagRemote("storyWin");
+  // En ligne : flag posé par RPC record_story_victory (pas record_quest_daily_flag).
 }
 
 export function recordDailyRun(): void {
   const save = loadQuestSave();
   save.daily.runDone = true;
   persist(save);
-  void pushDailyFlagRemote("runDone");
+  // En ligne : flag posé par RPC claim_run_meta_reward.
 }
