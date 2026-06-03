@@ -219,6 +219,191 @@ export const STORY_LEVELS: StoryLevelDef[] = [
     enemies: [{ key: "boss_colosse", level: 5, statMult: 0.85 }],
     starsRound3: 20,
   },
+  {
+    id: "2-1",
+    zoneId: 2,
+    index: 1,
+    title: "Entrée du labyrinthe",
+    intro: "Les couloirs de brume t'engloutissent. Une silhouette mystérieuse te défie du fond du couloir.",
+    outro: "Le premier gardien du labyrinthe recule. Les échos te guident plus profondément.",
+    enemies: [{ key: "nyx_mysterieux", level: 4, statMult: 0.88 }],
+    starsRound3: 9,
+  },
+  {
+    id: "2-2",
+    zoneId: 2,
+    index: 2,
+    title: "Miroirs brumeux",
+    intro: "Des reflets d'ombres dansent sur les murs. Deux présences se confondent.",
+    outro: "Les miroirs se brisent. Le chemin se dévoile un peu plus.",
+    enemies: [
+      { key: "ombre_faible", level: 5, statMult: 0.9 },
+      { key: "ombre_faible", level: 5, statMult: 0.9 },
+    ],
+    starsRound3: 10,
+  },
+  {
+    id: "2-3",
+    zoneId: 2,
+    index: 3,
+    title: "Mur murmure",
+    intro: "Un murmure sinistre résonne dans la pierre. Il cherche à te déstabiliser.",
+    outro: "Le murmure se fait silence. Tu avances malgré l'inconfort.",
+    enemies: [{ key: "murmure_sinistre", level: 5, statMult: 0.9 }],
+    starsRound3: 10,
+  },
+  {
+    id: "2-4",
+    zoneId: 2,
+    index: 4,
+    title: "Double énigme",
+    intro: "Nyx et un murmure bloquent le passage en tandem — piège ou coïncidence ?",
+    outro: "L'énigme est résolue par la force. Le labyrinthe gronde.",
+    enemies: [
+      { key: "nyx_mysterieux", level: 5, statMult: 0.88 },
+      { key: "murmure_sinistre", level: 5, statMult: 0.88 },
+    ],
+    starsRound3: 11,
+  },
+  {
+    id: "2-5",
+    zoneId: 2,
+    index: 5,
+    title: "Sigille enma",
+    intro: "Un sceau royal flotte au centre de la salle. Sigille enma veille — premier boss du labyrinthe.",
+    outro: "Le sceau se fissure. Les Mystérieux reconnaissent ta détermination.",
+    enemies: [{ key: "sigille_enma", level: 6, statMult: 0.9 }],
+    starsRound3: 14,
+  },
+  {
+    id: "2-6",
+    zoneId: 2,
+    index: 6,
+    title: "Courants d'air",
+    intro: "Une brise fugace fend l'air avant que tu ne la voies. Vitesse et mystère.",
+    outro: "Tu rattrapes la brise. Le labyrinthe s'élargit.",
+    enemies: [{ key: "brise_insaisissable", level: 6, statMult: 0.9 }],
+    starsRound3: 11,
+  },
+  {
+    id: "2-7",
+    zoneId: 2,
+    index: 7,
+    title: "Patrouille brumeuse",
+    intro: "Deux éclaireurs néant patrouillent dans la brume — reliquat de la zone précédente.",
+    outro: "Patrouille éliminée. Les couloirs mystérieux reprennent le dessus.",
+    enemies: [
+      { key: "neant_scout", level: 6, statMult: 0.92 },
+      { key: "neant_scout", level: 6, statMult: 0.92 },
+    ],
+    starsRound3: 12,
+  },
+  {
+    id: "2-8",
+    zoneId: 2,
+    index: 8,
+    title: "Triangle obscur",
+    intro: "Ombre, murmure et brise convergent — trois angles, une seule sortie.",
+    outro: "Le triangle se brise. Tu gagnes du terrain dans le labyrinthe.",
+    enemies: [
+      { key: "ombre_faible", level: 6, statMult: 0.9 },
+      { key: "murmure_sinistre", level: 6, statMult: 0.9 },
+      { key: "brise_insaisissable", level: 6, statMult: 0.88 },
+    ],
+    starsRound3: 13,
+  },
+  {
+    id: "2-9",
+    zoneId: 2,
+    index: 9,
+    title: "Convergence mystique",
+    intro: "Trois esprits du labyrinthe encerclent ton équipe. Pas de retraite.",
+    outro: "Encerclement brisé. Le cœur du labyrinthe approche.",
+    enemies: [
+      { key: "nyx_mysterieux", level: 7, statMult: 0.88 },
+      { key: "murmure_sinistre", level: 7, statMult: 0.88 },
+      { key: "brise_insaisissable", level: 7, statMult: 0.86 },
+    ],
+    starsRound3: 14,
+  },
+  {
+    id: "2-10",
+    zoneId: 2,
+    index: 10,
+    title: "Mirage royal",
+    intro: "Sigille enma revient, flanqué de deux murmures. La brume est impénétrable.",
+    outro: "Le mirage se dissipe. La moitié du labyrinthe est derrière toi.",
+    enemies: [
+      { key: "sigille_enma", level: 7, statMult: 0.92 },
+      { key: "murmure_sinistre", level: 5, statMult: 0.85 },
+      { key: "murmure_sinistre", level: 5, statMult: 0.85 },
+    ],
+    starsRound3: 16,
+  },
+  {
+    id: "2-11",
+    zoneId: 2,
+    index: 11,
+    title: "Rafale et ombre",
+    intro: "Brise et ombre frappent en alternance — difficile de prévoir la prochaine attaque.",
+    outro: "Le rythme est cassé. Les couloirs s'illuminent brièvement.",
+    enemies: [
+      { key: "brise_insaisissable", level: 7, statMult: 0.9 },
+      { key: "ombre_faible", level: 7, statMult: 0.92 },
+    ],
+    starsRound3: 13,
+  },
+  {
+    id: "2-12",
+    zoneId: 2,
+    index: 12,
+    title: "Chambre des échos",
+    intro: "Deux Nyx résonnent dans la chambre — leurs attaques se doublent.",
+    outro: "Les échos s'éteignent. Il ne reste qu'un dernier défi.",
+    enemies: [
+      { key: "nyx_mysterieux", level: 7, statMult: 0.9 },
+      { key: "nyx_mysterieux", level: 7, statMult: 0.9 },
+    ],
+    starsRound3: 14,
+  },
+  {
+    id: "2-13",
+    zoneId: 2,
+    index: 13,
+    title: "Triple brume",
+    intro: "Sigille, brise et murmure — la triade du labyrinthe te barre la route.",
+    outro: "La triade cède. Le trône du labyrinthe est proche.",
+    enemies: [
+      { key: "sigille_enma", level: 8, statMult: 0.88 },
+      { key: "brise_insaisissable", level: 7, statMult: 0.88 },
+      { key: "murmure_sinistre", level: 7, statMult: 0.88 },
+    ],
+    starsRound3: 15,
+  },
+  {
+    id: "2-14",
+    zoneId: 2,
+    index: 14,
+    title: "Avant le cœur",
+    intro: "Un avant-poste mystique : trois esprits rapides gardent la porte finale.",
+    outro: "La porte est ouverte. Seule la brise suprême te sépare de la victoire.",
+    enemies: [
+      { key: "brise_insaisissable", level: 8, statMult: 0.9 },
+      { key: "nyx_mysterieux", level: 8, statMult: 0.88 },
+      { key: "murmure_sinistre", level: 8, statMult: 0.88 },
+    ],
+    starsRound3: 15,
+  },
+  {
+    id: "2-15",
+    zoneId: 2,
+    index: 15,
+    title: "Brise suprême",
+    intro: "Au centre du labyrinthe, la brise fugace règne en maîtresse. Vaincre sa vitesse, c'est prouver que les Mystérieux te respectent.",
+    outro: "La brise s'immobilise enfin. Le Labyrinthe des Mystérieux est ton — d'autres zones t'attendent.",
+    enemies: [{ key: "brise_insaisissable", level: 8, statMult: 0.88 }],
+    starsRound3: 20,
+  },
 ];
 
 export function getStoryZone(zoneId: number): StoryZoneDef | undefined {
@@ -235,6 +420,29 @@ export function getStoryLevelByCoords(zoneId: number, index: number): StoryLevel
 
 export function levelsForZone(zoneId: number): StoryLevelDef[] {
   return STORY_LEVELS.filter((l) => l.zoneId === zoneId).sort((a, b) => a.index - b.index);
+}
+
+export type StoryProgressLike = {
+  levels: Record<string, { cleared?: boolean } | undefined>;
+};
+
+/** Zone N accessible après clear du boss final de la zone N-1 (15). */
+export function isStoryZoneUnlocked(zoneId: number, save: StoryProgressLike): boolean {
+  if (zoneId <= 1) return true;
+  const prevFinal = `${zoneId - 1}-15`;
+  return Boolean(save.levels[prevFinal]?.cleared);
+}
+
+export function isStoryLevelUnlocked(
+  _levelId: string,
+  zoneId: number,
+  index: number,
+  save: StoryProgressLike,
+): boolean {
+  if (!isStoryZoneUnlocked(zoneId, save)) return false;
+  if (index <= 1) return true;
+  const prevId = `${zoneId}-${index - 1}`;
+  return Boolean(save.levels[prevId]?.cleared);
 }
 
 /** Étoiles obtenues après victoire (0 si pas gagné) */

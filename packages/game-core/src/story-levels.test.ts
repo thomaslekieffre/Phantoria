@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createRunBattle, createStoryBattle } from "./combat-engine";
-import { computeStoryStars, getStoryLevel, getStoryLevelByCoords, levelsForZone, computeStoryGoldReward } from "./story-levels";
+import { computeStoryStars, getStoryLevel, getStoryLevelByCoords, isStoryZoneUnlocked, levelsForZone, computeStoryGoldReward } from "./story-levels";
 
 describe("story mode", () => {
   it("zone 1 contient 15 niveaux", () => {
@@ -17,6 +17,31 @@ describe("story mode", () => {
       assert.ok(level, `niveau 1-${i} manquant`);
       assert.equal(level.index, i);
     }
+  });
+
+  it("zone 2 contient 15 niveaux", () => {
+    const levels = levelsForZone(2);
+    assert.equal(levels.length, 15);
+    assert.equal(levels[0]?.id, "2-1");
+    assert.equal(levels[14]?.id, "2-15");
+  });
+
+  it("zone 2 verrouillée sans clear 1-15", () => {
+    assert.equal(isStoryZoneUnlocked(2, { levels: {} }), false);
+    assert.equal(
+      isStoryZoneUnlocked(2, { levels: { "1-15": { cleared: true } } }),
+      true,
+    );
+  });
+
+  it("boss 2-5 démarre avec sigille enma", () => {
+    const boss = getStoryLevelByCoords(2, 5);
+    assert.ok(boss);
+    const engine = createStoryBattle(boss, [
+      { key: "bram_vaillant", wheelIndex: 5, level: 5, hpPct: 100 },
+    ]);
+    const enemies = engine.getState().combatants.filter((c) => c.side === "enemy");
+    assert.equal(enemies[0]?.templateKey, "sigille_enma");
   });
 
   const level = getStoryLevel("1-1");

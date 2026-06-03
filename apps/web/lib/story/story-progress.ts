@@ -1,4 +1,4 @@
-import { computeStoryGoldReward, getStoryLevel } from "@phantoria/game-core";
+import { computeStoryGoldReward, getStoryLevel, isStoryLevelUnlocked as isStoryLevelUnlockedCore } from "@phantoria/game-core";
 import { recordDailyStoryWin } from "@/lib/quests/quest-progress";
 import { recordStoryVictoryRemote } from "@/lib/quests/quest-client";
 import { addLocalGold } from "@/lib/player/local-currencies";
@@ -49,10 +49,7 @@ export function isStoryLevelUnlocked(
   index: number,
   save: StorySave = loadStorySave(),
 ): boolean {
-  void levelId;
-  if (index <= 1) return true;
-  const prevId = `${zoneId}-${index - 1}`;
-  return Boolean(save.levels[prevId]?.cleared);
+  return isStoryLevelUnlockedCore(levelId, zoneId, index, save);
 }
 
 export function totalStoryStars(save: StorySave = loadStorySave()): number {

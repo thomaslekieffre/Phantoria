@@ -310,11 +310,15 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 4. ✅ **Supabase** — auth, profil, roster, gacha (welcome + standard, pity), meta-récompenses fin de run
 5. ✅ **Collection `/spirits`** — codex, filtres, niveau/XP/PV histoire
 6. ✅ **Profil `/profile`** — identité, stats hub, monnaies, compte
-7. ✅ **Histoire `/story`** — zone 1 complète (15 niveaux, bosses 5/10/15), étoiles, persist XP collection
+7. ✅ **Histoire `/story`** — zones 1–2 (15 niveaux chacune), étoiles, persist XP collection
 8. ✅ **Inventaire & boutique hub** — `/inventory`, `/shop`, Phantoballs + soins en combat histoire
 9. ✅ **Or victoire histoire** — `computeStoryGoldReward` · RPC `record_story_victory` crédite `player_currencies.gold`
 10. ✅ **Layout mobile** — `responsive.css`, bottom nav, combat touch-friendly
-11. **À faire** — zone 2+, événements
+11. **À faire** — zone 3+, effets gameplay événements hub
+
+## Catalogue esprits (`data/characters.json`)
+
+Source de vérité JSON à la racine — chargée par `packages/game-core/src/characters.ts`. Valider après édition : `pnpm sync:characters`.
 
 ## Hors scope infra v0
 

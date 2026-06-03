@@ -33,6 +33,9 @@ import { syncLocalStoryToRemote } from "@/lib/story/story-progress";
 import { SPIRIT_CATALOG, type OwnedSpiritStats } from "@/lib/player/types";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
+import type { HubEvent } from "@/lib/hub/hub-events";
+import { FALLBACK_HUB_EVENT } from "@/lib/hub/hub-events";
+import { fetchActiveHubEvent } from "@/lib/hub/hub-events-service";
 import {
   buildEmptyRoster,
   fetchPlayerSnapshot,
@@ -61,6 +64,7 @@ type PlayerContextValue = {
   questProgress: QuestProgressSnapshot;
   welcomePullsRemaining: number;
   gachaPityStandard: number;
+  hubEvent: HubEvent | null;
   hasSpirits: boolean;
   refresh: () => Promise<void>;
   swapRosterSlots: (fromIndex: number, toIndex: number) => Promise<void>;
@@ -83,6 +87,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isSupabaseEnabled());
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<PlayerSnapshot | null>(null);
+  const [hubEvent, setHubEvent] = useState<HubEvent | null>(FALLBACK_HUB_EVENT);
   const [statsTick, setStatsTick] = useState(0);
   const [clientMounted, setClientMounted] = useState(false);
   const storySyncedRef = useRef(false);
@@ -93,6 +98,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!isSupabaseEnabled()) {
+      setHubEvent(FALLBACK_HUB_EVENT);
       setStatsTick((n) => n + 1);
       setReady(true);
       return;
@@ -104,15 +110,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } = await supabase.auth.getUser();
     setUser(nextUser);
 
+    const eventPromise = fetchActiveHubEvent(supabase);
+
     if (!nextUser) {
       setSnapshot(null);
+      setHubEvent(await eventPromise);
       setStatsTick((n) => n + 1);
       setReady(true);
       return;
     }
 
-    const next = await fetchPlayerSnapshot(supabase);
+    const [next, event] = await Promise.all([fetchPlayerSnapshot(supabase), eventPromise]);
     setSnapshot(next);
+    setHubEvent(event);
     if (nextUser && !storySyncedRef.current) {
       storySyncedRef.current = true;
       void syncLocalStoryToRemote().then(async () => {
@@ -291,6 +301,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           }),
       welcomePullsRemaining: snapshot?.profile?.welcome_pulls_remaining ?? 0,
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
+      hubEvent,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
       refresh,
       swapRosterSlots,
@@ -311,6 +322,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     signOut,
     statsTick,
     clientMounted,
+    hubEvent,
   ]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

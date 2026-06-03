@@ -1,4 +1,4 @@
-/** Événements hub affichés au sanctuaire (config v0 — pas encore en DB). */
+/** Événements hub — fallback hors ligne si table Supabase absente. */
 
 export type HubEvent = {
   id: string;
@@ -9,16 +9,15 @@ export type HubEvent = {
   active: boolean;
 };
 
-const EVENTS: HubEvent[] = [
-  {
-    id: "lune-captures",
-    title: "Lune des captures",
-    subtitle: "Bonus capture en run — lance une partie",
-    href: "/events",
-    active: true,
-  },
-];
+export const FALLBACK_HUB_EVENT: HubEvent = {
+  id: "lune-captures",
+  title: "Lune des captures",
+  subtitle: "Bonus capture en run — lance une partie",
+  href: "/events",
+  active: true,
+};
 
+/** @deprecated Préférer hubEvent depuis PlayerProvider ou fetchActiveHubEvent */
 export function getActiveHubEvent(): HubEvent | null {
-  return EVENTS.find((e) => e.active) ?? null;
+  return FALLBACK_HUB_EVENT;
 }

@@ -102,7 +102,7 @@ function MapNode({
 
 export function StoryMapScreen() {
   const { hasSpirits, roster, profile } = usePlayer();
-  const { getProgress, isUnlocked, starsTotal } = useStoryProgress();
+  const { getProgress, isUnlocked, isZoneUnlocked, starsTotal } = useStoryProgress();
   const [zoneId, setZoneId] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentNodeRef = useRef<HTMLAnchorElement>(null);
@@ -183,8 +183,8 @@ export function StoryMapScreen() {
             <button
               type="button"
               className="story-world__zone-arrow"
-              disabled={nextZone.id > 1}
-              onClick={() => nextZone.id === 1 && setZoneId(nextZone.id)}
+              disabled={!isZoneUnlocked(nextZone.id)}
+              onClick={() => isZoneUnlocked(nextZone.id) && setZoneId(nextZone.id)}
               aria-label="Zone suivante"
             >
               ›

@@ -179,7 +179,15 @@ Apr?s chaque vague cleared : **3 choix uniques** (`rollRewardChoices`).
 | `relique_ame` | Fragment d'?me | `soul_fill` | ? | +80 % jauge (1 terrain) |
 | `prisme_amultime` | Prisme d'amultime | `special_mult` | ? stackable | +28 % d?g?ts amultime |
 | `resonance_ames` | R?sonance d'?mes | `soul_mult` | ? stackable | +45 % remplissage ?mes |
-| `forteresse_vivante` | Forteresse vivante | `combo_atk_def` | ? | +10 ATK et +10 DEF run |
+| `forteresse_vivante` | Forteresse vivante | `combo_atk_def` | ✗ | +10 ATK et +10 DEF run |
+| `marque_traqueur` | Marque du traqueur | `capture_bonus` | ✓ stack | +15 % capture |
+| `focus_mystique` | Focus mystique | `special_mult` | ✓ stack | +22 % dégâts amultime |
+| `tourbillon_ames` | Tourbillon d'âmes | `soul_mult` | ✓ stack | +35 % remplissage âmes |
+| `rempart_fer` | Rempart de fer | `stat_all` def | ✗ | +9 DEF run |
+| `griffe_titan` | Griffe du titan | `stat_all` atk | ✗ | +12 ATK run |
+| `pulse_vit` | Pulse vitale | `stat_all` vit | ✗ | +4 VIT run |
+| `alliance_tribale` | Alliance tribale | `combo_atk_def` | ✓ stack | +6 ATK/DEF |
+| `filet_spectral` | Filet spectral | `capture_bonus` | ✓ stack | +18 % capture |
 
 **Barre reliques UI** : uniquement les persistants (`isPersistentRunRelic`).
 
@@ -228,9 +236,9 @@ RPC Supabase `claim_run_meta_reward` align?e (migration `20260601140000_run_meta
 | Reliques affich?es | Persistantes uniquement |
 | Stack UI | Next.js + React (voir [`TECH.md`](TECH.md)) |
 
-## Prochaines ?tapes data
+## Prochaines étapes data
 
-- [ ] `data/characters.json` g?n?r? depuis Excalidraw / sheet
+- [x] `data/characters.json` — source catalogue (skills inclus) · `pnpm sync:characters` valide
 - [ ] Formule pity gacha (state par pack)
 - [ ] Phantoballs restantes GDD (Verdeball, Spectraball?)
 - [ ] Crit?res 3? mode histoire

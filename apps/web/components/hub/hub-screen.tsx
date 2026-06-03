@@ -5,11 +5,10 @@ import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
 import { usePlayer } from "@/components/providers/player-provider";
 import { HubPanel } from "./hub-panel";
+import { HubBenchPicker } from "./hub-bench-picker";
 import { isSpiritId, rosterIndexForHubId, type SpiritId, type SpiritSlot } from "./roster";
 import { SceneBackdrop } from "./scene-backdrop";
 import { SpiritWheel } from "./spirit-wheel";
-import { HubBenchPicker } from "./hub-bench-picker";
-import { getActiveHubEvent } from "@/lib/hub/hub-events";
 import { SPIRIT_CATALOG } from "@/lib/player/types";
 import "./hub.css";
 
@@ -24,9 +23,9 @@ export function HubScreen() {
     hasSpirits,
     spiritCount,
     runsCompleted,
+    hubEvent,
   } = usePlayer();
 
-  const hubEvent = useMemo(() => getActiveHubEvent(), []);
   const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>(null);
   const [pickSlotIndex, setPickSlotIndex] = useState<number | null>(null);
 

@@ -156,7 +156,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql`.
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql`.
 
 **Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
 
@@ -172,7 +172,9 @@ Accès : topbar (nom du joueur) · **Plus** → Profil · `/profile`.
 
 ### Événements (`/events`)
 
-Config v0 dans `lib/hub/hub-events.ts` (pas encore en DB). Bandeau sanctuaire → page détail + CTA run.
+Table Supabase `hub_events` (migration `20260602170000_hub_events.sql`) · fetch `fetchActiveHubEvent` · fallback `FALLBACK_HUB_EVENT` hors ligne · exposé via `PlayerProvider.hubEvent`.
+
+Config v0 seed : **Lune des captures**. Bandeau sanctuaire → page détail + CTA run.
 
 ### Quêtes (`/quests`)
 

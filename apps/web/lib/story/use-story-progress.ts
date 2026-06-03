@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isStoryLevelUnlocked as isStoryLevelUnlockedCore, isStoryZoneUnlocked } from "@phantoria/game-core";
 import { usePlayer } from "@/components/providers/player-provider";
 import { loadStorySave, type StorySave } from "@/lib/story/story-progress";
 
@@ -30,11 +31,13 @@ export function useStoryProgress() {
   );
 
   const isUnlocked = useCallback(
-    (_levelId: string, zoneId: number, index: number) => {
-      if (index <= 1) return true;
-      const prevId = `${zoneId}-${index - 1}`;
-      return Boolean(save.levels[prevId]?.cleared);
-    },
+    (levelId: string, zoneId: number, index: number) =>
+      isStoryLevelUnlockedCore(levelId, zoneId, index, save),
+    [save],
+  );
+
+  const isZoneUnlocked = useCallback(
+    (zoneId: number) => isStoryZoneUnlocked(zoneId, save),
     [save],
   );
 
@@ -43,5 +46,5 @@ export function useStoryProgress() {
     [save],
   );
 
-  return { refresh, getProgress, isUnlocked, starsTotal, save };
+  return { refresh, getProgress, isUnlocked, isZoneUnlocked, starsTotal, save };
 }
