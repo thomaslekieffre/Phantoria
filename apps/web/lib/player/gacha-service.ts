@@ -9,6 +9,7 @@ import {
 } from "@phantoria/game-core";
 import { isFieldSlotIndex, type SpiritId } from "@/components/hub/roster";
 import {
+  getGachaPool,
   pickFromPool,
   pickWelcomeEntry,
   STANDARD_GACHA_POOL,
@@ -227,6 +228,72 @@ export async function performStandardPull(
 
   await supabase.from("profiles").update({ gacha_pity_standard: pity }).eq("id", userId);
 
+  return { results, gachaPityStandard: pity };
+}
+
+export async function performEventGachaPull(
+  supabase: SupabaseClient,
+  userId: string,
+  poolId: string,
+  payment: StandardPullPayment,
+  count = 1,
+  costs?: { ticketCost?: number; gemCost?: number; multiCount?: number },
+  random = Math.random,
+): Promise<{
+  results: GachaPullResult[];
+  gachaPityStandard: number;
+  error?: string;
+}> {
+  const pool = getGachaPool(poolId);
+  if (!pool?.length) {
+    return { results: [], gachaPityStandard: 0, error: `Pool gacha inconnu : ${poolId}` };
+  }
+
+  const multiCount = costs?.multiCount ?? STANDARD_MULTI_PULL_COUNT;
+  const pullCount = count === multiCount ? multiCount : count === 1 ? 1 : 0;
+  if (pullCount === 0) {
+    return { results: [], gachaPityStandard: 0, error: "Nombre d'invocations invalide" };
+  }
+
+  const ticketUnit = costs?.ticketCost ?? STANDARD_PULL_TICKET_COST;
+  const gemUnit = costs?.gemCost ?? STANDARD_PULL_GEM_COST;
+
+  const [{ data: profile }, { data: currencies }] = await Promise.all([
+    supabase.from("profiles").select("gacha_pity_standard").eq("id", userId).single(),
+    supabase.from("player_currencies").select("gems, tickets").eq("user_id", userId).single(),
+  ]);
+
+  if (!profile || !currencies) {
+    return { results: [], gachaPityStandard: 0, error: "Profil introuvable" };
+  }
+
+  const ticketCost = ticketUnit * pullCount;
+  const gemCost = gemUnit * pullCount;
+
+  if (payment === "ticket") {
+    if (currencies.tickets < ticketCost) {
+      return { results: [], gachaPityStandard: profile.gacha_pity_standard ?? 0, error: "Pas assez de tickets" };
+    }
+    await supabase.from("player_currencies").update({ tickets: currencies.tickets - ticketCost }).eq("user_id", userId);
+  } else {
+    if (currencies.gems < gemCost) {
+      return { results: [], gachaPityStandard: profile.gacha_pity_standard ?? 0, error: "Pas assez de gemmes" };
+    }
+    await supabase.from("player_currencies").update({ gems: currencies.gems - gemCost }).eq("user_id", userId);
+  }
+
+  let pity = profile.gacha_pity_standard ?? 0;
+  const results: GachaPullResult[] = [];
+
+  for (let i = 0; i < pullCount; i++) {
+    const rarity = rollGachaRarity(pity, random);
+    const entry = pickFromPool(pool, rarity, random);
+    const result = await grantSpirit(supabase, userId, entry);
+    results.push(result);
+    pity = nextPityCounter(pity, rarity);
+  }
+
+  await supabase.from("profiles").update({ gacha_pity_standard: pity }).eq("id", userId);
   return { results, gachaPityStandard: pity };
 }
 

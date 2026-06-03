@@ -21,6 +21,16 @@ export async function PATCH(request: Request, { params }: Params) {
   if (typeof body.active === "boolean") patch.active = body.active;
   if (body.starts_at === null || typeof body.starts_at === "string") patch.starts_at = body.starts_at;
   if (body.ends_at === null || typeof body.ends_at === "string") patch.ends_at = body.ends_at;
+  if (typeof body.kind === "string") patch.kind = body.kind;
+  if (typeof body.priority === "number") patch.priority = body.priority;
+  if (body.config && typeof body.config === "object") patch.config = body.config;
+  if (typeof body.configJson === "string") {
+    try {
+      patch.config = JSON.parse(body.configJson);
+    } catch {
+      return NextResponse.json({ error: "config JSON invalide" }, { status: 400 });
+    }
+  }
 
   const { data, error } = await supabase.from("hub_events").update(patch).eq("id", id).select().single();
 

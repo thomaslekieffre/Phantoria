@@ -32,7 +32,7 @@ import { SpiritWheel } from "@/components/hub/spirit-wheel";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
 import { BattleWheel } from "@/components/run/battle-wheel";
 import { usePlayer } from "@/components/providers/player-provider";
-import { CORE_TO_HUB } from "@/components/run/wheel-map";
+import { hubIdForTemplateKey } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
 import { RarityBadge } from "@/components/ui/rarity-badge";
@@ -55,7 +55,7 @@ type HitFlashKind = "hit" | "super" | "ko";
 type Floater = { id: number; targetId: string; amount: number };
 
 function hubIdOf(c: Combatant): SpiritId | null {
-  const id = CORE_TO_HUB[c.templateKey];
+  const id = hubIdForTemplateKey(c.templateKey);
   return id && isSpiritId(id) ? id : null;
 }
 
@@ -370,7 +370,10 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
         });
       }
       try {
-        await persistStorySpiritStats(allies);
+        await persistStorySpiritStats(allies, {
+          fullHeal: true,
+          storyAllies: allySetup,
+        });
         await persistPlayerInventory(
           mergeStoryInventoryEnd(
             battleStartInvRef.current,
@@ -384,7 +387,7 @@ export function StoryBattleScreen({ zoneId, levelIndex }: { zoneId: number; leve
       }
       setUiPhase("result");
     })();
-  }, [isVictory, isDefeat, engine, level, refreshPlayer]);
+  }, [isVictory, isDefeat, engine, level, refreshPlayer, allySetup]);
 
   useEffect(() => {
     if (!engineRef.current) return;

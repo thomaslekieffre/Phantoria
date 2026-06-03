@@ -11,7 +11,8 @@ import {
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import type { SpiritId } from "@/components/hub/roster";
 import type { GachaPoolEntry } from "@/lib/player/gacha-pool";
-import { STANDARD_GACHA_POOL, WELCOME_GACHA_POOL } from "@/lib/player/gacha-pool";
+import { useGameContent } from "@/components/providers/game-content-provider";
+import { STANDARD_GACHA_POOL, WELCOME_GACHA_POOL, getGachaPool } from "@/lib/player/gacha-pool";
 
 const RARITY_CLASS: Record<Rarity, string> = {
   S: "gacha-rarity--s",
@@ -151,19 +152,30 @@ export function GachaRatesPanel({
   pack,
   gachaPityStandard,
   ownedIds,
+  eventPoolId,
 }: {
-  pack: "welcome" | "standard";
+  pack: "welcome" | "standard" | "event";
   gachaPityStandard: number;
   ownedIds: Set<SpiritId>;
+  eventPoolId?: string;
 }) {
+  const { version: contentVersion } = useGameContent();
   const [modalRarity, setModalRarity] = useState<Rarity | null>(null);
-  const pool = pack === "welcome" ? WELCOME_GACHA_POOL : STANDARD_GACHA_POOL;
+  void contentVersion;
+  const eventPool = eventPoolId ? getGachaPool(eventPoolId) : undefined;
+  const pool =
+    pack === "welcome"
+      ? WELCOME_GACHA_POOL
+      : pack === "event" && eventPool?.length
+        ? eventPool
+        : STANDARD_GACHA_POOL;
 
   const sRatePct = Math.round(getSRateAtPity(gachaPityStandard) * 1000) / 10;
   const atHardPity = gachaPityStandard >= GACHA_HARD_PITY;
 
   function rateLabelFor(r: Rarity): string {
     if (pack === "welcome") return "Pool fixe";
+    if (pack === "event") return "Pool event limité";
     if (r === "S") return atHardPity ? "100%" : `${sRatePct}%`;
     const pct = Math.round(GACHA_BASE_WEIGHTS[r] * 100);
     return `${pct}% · doublon +${GACHA_DUPLICATE_GEMS[r]}💎`;

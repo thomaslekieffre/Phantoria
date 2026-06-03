@@ -40,7 +40,7 @@ import {
 } from "@/components/run/capture-sequence";
 import { RunStarterPicker, starterCoreKey } from "@/components/run/run-starter-picker";
 import { ownedSpiritStarters, usePlayer } from "@/components/providers/player-provider";
-import { CORE_TO_HUB } from "@/components/run/wheel-map";
+import { hubIdForTemplateKey } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
 import { RarityBadge } from "@/components/ui/rarity-badge";
@@ -61,13 +61,11 @@ import { recordDailyRun } from "@/lib/quests/quest-progress";
 import { incrementLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import { clearSavedRun, getSavedRunSummary, loadSavedRun, saveRun } from "@/lib/run-persistence";
 
-const CORE_TO_HUB_MAP = CORE_TO_HUB;
-
 type Floater = { id: number; targetId: string; amount: number };
 type HitFlashKind = "hit" | "super" | "ko";
 
 function hubIdOf(c: Combatant): SpiritId | null {
-  const id = CORE_TO_HUB_MAP[c.templateKey];
+  const id = hubIdForTemplateKey(c.templateKey);
   return id && isSpiritId(id) ? id : null;
 }
 
@@ -305,6 +303,7 @@ export function RunScreen() {
   const speedRef = useRef<BattleSpeed>(1);
   const searchParams = useSearchParams();
   const showDevTools = process.env.NODE_ENV === "development" || searchParams.get("dev") === "1";
+  const { gameEventEffects } = usePlayer();
 
   engineRef.current = engine;
 
@@ -319,6 +318,7 @@ export function RunScreen() {
     setEngine(
       createRunBattle({
         allySetup: [{ key: starterCoreKey(starterId), wheelIndex: RUN_STARTER_WHEEL_INDEX }],
+        captureBonus: gameEventEffects.captureBonus,
       }),
     );
     setSpecialActor(null);

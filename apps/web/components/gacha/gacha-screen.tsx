@@ -7,8 +7,9 @@ import { GACHA_HARD_PITY, type Rarity } from "@phantoria/game-core";
 import { GameShell } from "@/components/layout/game-shell";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { IconCube, IconGem } from "@/components/ui/icons";
+import { useGameContent } from "@/components/providers/game-content-provider";
 import { usePlayer } from "@/components/providers/player-provider";
-import { pullStandardGacha, pullWelcomeGacha } from "@/lib/player/gacha-client";
+import { pullStandardGacha, pullWelcomeGacha, pullEventGacha } from "@/lib/player/gacha-client";
 import { trackGachaPull } from "@/lib/analytics/events";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import {
@@ -17,6 +18,7 @@ import {
   STANDARD_PULL_GEM_COST,
   STANDARD_PULL_TICKET_COST,
   WELCOME_GACHA_POOL,
+  getGachaPool,
   entryByHubId,
 } from "@/lib/player/gacha-pool";
 import {
@@ -37,9 +39,16 @@ const RARITY_CLASS: Record<Rarity, string> = {
   E: "gacha-rarity--e",
 };
 
-const FEATURED_STANDARD: SpiritId[] = ["aurore", "luma", "nyx", "bram"];
+const RARITY_RANK: Record<Rarity, number> = { S: 0, A: 1, B: 2, C: 3, D: 4, E: 5 };
 
-type PackTab = "welcome" | "standard";
+function featuredFromPool(pool: typeof STANDARD_GACHA_POOL, staggerMs: number) {
+  return [...pool]
+    .sort((a, b) => RARITY_RANK[a.rarity] - RARITY_RANK[b.rarity])
+    .slice(0, 4)
+    .map((e, i) => ({ id: e.hubId as SpiritId, rarity: e.rarity, delay: i * staggerMs }));
+}
+
+type PackTab = "welcome" | "standard" | "event";
 
 function FeaturedSpirit({
   id,
@@ -227,7 +236,16 @@ export function GachaScreen() {
     refresh,
     supabaseEnabled,
     user,
+    gameEventEffects,
   } = usePlayer();
+  const { version: contentVersion } = useGameContent();
+
+  const eventBanner = gameEventEffects.gachaBanner;
+  const eventPoolId = eventBanner?.config.poolId;
+  const eventPool = eventPoolId ? getGachaPool(eventPoolId) : undefined;
+  const eventTicketCost = eventBanner?.config.ticketCost ?? STANDARD_PULL_TICKET_COST;
+  const eventGemCost = eventBanner?.config.gemCost ?? STANDARD_PULL_GEM_COST;
+  const eventMultiCount = eventBanner?.config.multiCount ?? STANDARD_MULTI_PULL_COUNT;
 
   const [pack, setPack] = useState<PackTab>("standard");
   const [packTouched, setPackTouched] = useState(false);
@@ -245,31 +263,39 @@ export function GachaScreen() {
   const canGems = gems >= STANDARD_PULL_GEM_COST;
   const canTicketMulti = tickets >= STANDARD_PULL_TICKET_COST * STANDARD_MULTI_PULL_COUNT;
   const canGemsMulti = gems >= STANDARD_PULL_GEM_COST * STANDARD_MULTI_PULL_COUNT;
+  const canEventTicket = tickets >= eventTicketCost;
+  const canEventGems = gems >= eventGemCost;
+  const canEventTicketMulti = tickets >= eventTicketCost * eventMultiCount;
+  const canEventGemsMulti = gems >= eventGemCost * eventMultiCount;
   const ownedIds = useMemo(() => new Set(unlockedHubIds), [unlockedHubIds]);
   const onboardingDone = hasSpirits && !hasWelcome;
 
   useEffect(() => {
     if (!ready || packTouched) return;
     if (hasWelcome) setPack("welcome");
+    else if (eventBanner && eventPool?.length) setPack("event");
     else setPack("standard");
-  }, [ready, hasWelcome, packTouched]);
+  }, [ready, hasWelcome, packTouched, eventBanner, eventPool?.length]);
 
   useEffect(() => {
-    if (!hasWelcome && pack === "welcome") setPack("standard");
-  }, [hasWelcome, pack]);
+    if (!hasWelcome && pack === "welcome") setPack(eventBanner && eventPool?.length ? "event" : "standard");
+    if (pack === "event" && (!eventBanner || !eventPool?.length)) setPack("standard");
+  }, [hasWelcome, pack, eventBanner, eventPool?.length]);
 
   function selectPack(next: PackTab) {
     setPackTouched(true);
     setPack(next);
   }
 
-  const featured =
-    pack === "welcome"
-      ? WELCOME_GACHA_POOL.map((e, i) => ({ id: e.hubId as SpiritId, rarity: e.rarity, delay: i * 80 }))
-      : FEATURED_STANDARD.map((id, i) => {
-          const e = STANDARD_GACHA_POOL.find((p) => p.hubId === id)!;
-          return { id, rarity: e.rarity, delay: i * 100 };
-        });
+  const featured = useMemo(
+    () =>
+      pack === "welcome"
+        ? WELCOME_GACHA_POOL.map((e, i) => ({ id: e.hubId as SpiritId, rarity: e.rarity, delay: i * 80 }))
+        : pack === "event" && eventPool?.length
+          ? eventPool.slice(0, 4).map((e, i) => ({ id: e.hubId as SpiritId, rarity: e.rarity, delay: i * 90 }))
+          : featuredFromPool(STANDARD_GACHA_POOL, 100),
+    [contentVersion, pack, eventPool],
+  );
 
   async function invokeWelcome(all = false) {
     if (!canWelcome || pulling) return;
@@ -314,6 +340,34 @@ export function GachaScreen() {
       setLastResults(results);
       trackGachaPull({
         pool: "standard",
+        payment,
+        count: results.length,
+        results: results.map((r) => ({
+          hubId: r.hubId,
+          rarity: r.rarity,
+          templateKey: entryByHubId(r.hubId)?.templateKey ?? r.hubId,
+        })),
+      });
+    }
+    await refresh();
+  }
+
+  async function invokeEvent(payment: StandardPullPayment, count: 1 | typeof STANDARD_MULTI_PULL_COUNT) {
+    if (!eventBanner || pulling) return;
+    const multi = count === eventMultiCount;
+    if (payment === "ticket" && !(multi ? canEventTicketMulti : canEventTicket)) return;
+    if (payment === "gems" && !(multi ? canEventGemsMulti : canEventGems)) return;
+
+    setPulling(true);
+    setError(null);
+    const { results, error: pullError } = await pullEventGacha(eventBanner.id, payment, count);
+    await new Promise((r) => setTimeout(r, multi ? 1400 : 900));
+    setPulling(false);
+    if (pullError) setError(pullError);
+    else if (results.length > 0) {
+      setLastResults(results);
+      trackGachaPull({
+        pool: eventBanner.config.poolId,
         payment,
         count: results.length,
         results: results.map((r) => ({
@@ -404,6 +458,17 @@ export function GachaScreen() {
               <span className="gacha-banner-btn__tag">Général</span>
               <span className="gacha-banner-btn__title">Pack standard</span>
             </button>
+            {eventBanner && eventPool?.length ? (
+              <button
+                type="button"
+                className={`gacha-banner-btn ${pack === "event" ? "gacha-banner-btn--on" : ""}`}
+                onClick={() => selectPack("event")}
+              >
+                <div className="gacha-banner-btn__bg gacha-banner-btn__bg--welcome" />
+                <span className="gacha-banner-btn__tag">Event</span>
+                <span className="gacha-banner-btn__title">{eventBanner.title}</span>
+              </button>
+            ) : null}
           </aside>
 
           <div className="gacha-altar-wrap">
@@ -419,6 +484,12 @@ export function GachaScreen() {
                     <p className="gacha-hero__pitch">
                       {WELCOME_PULLS_START} invocations pour remplir ta roue
                     </p>
+                  </>
+                ) : pack === "event" && eventBanner ? (
+                  <>
+                    <span className="gacha-hero__stamp">EVENT</span>
+                    <h2 className="gacha-hero__headline">{eventBanner.title}</h2>
+                    <p className="gacha-hero__pitch">{eventBanner.subtitle}</p>
                   </>
                 ) : (
                   <>
@@ -502,13 +573,20 @@ export function GachaScreen() {
                   </div>
                 ) : null}
 
-                {pack === "standard" ? (
+                {pack === "standard" || pack === "event" ? (
                   <div className="gacha-altar__actions-grid">
                     <button
                       type="button"
                       className={`gacha-pull gacha-pull--ticket ${pulling ? "gacha-pull--loading" : ""}`}
-                      disabled={pulling || !canTicket}
-                      onClick={() => void invokeStandard("ticket", 1)}
+                      disabled={
+                        pulling ||
+                        (pack === "event" ? !canEventTicket : !canTicket)
+                      }
+                      onClick={() =>
+                        void (pack === "event"
+                          ? invokeEvent("ticket", 1)
+                          : invokeStandard("ticket", 1))
+                      }
                     >
                       <span className="gacha-pull__tag">Ticket commun</span>
                       <span className="gacha-pull__main">
@@ -517,30 +595,43 @@ export function GachaScreen() {
                       </span>
                       <span className="gacha-pull__cost">
                         <IconCube className="gacha-pull__ico" />
-                        {STANDARD_PULL_TICKET_COST}
+                        {pack === "event" ? eventTicketCost : STANDARD_PULL_TICKET_COST}
                       </span>
                     </button>
                     <button
                       type="button"
                       className={`gacha-pull gacha-pull--ticket ${pulling ? "gacha-pull--loading" : ""}`}
-                      disabled={pulling || !canTicketMulti}
-                      onClick={() => void invokeStandard("ticket", STANDARD_MULTI_PULL_COUNT)}
+                      disabled={
+                        pulling ||
+                        (pack === "event" ? !canEventTicketMulti : !canTicketMulti)
+                      }
+                      onClick={() =>
+                        void (pack === "event"
+                          ? invokeEvent("ticket", eventMultiCount as typeof STANDARD_MULTI_PULL_COUNT)
+                          : invokeStandard("ticket", STANDARD_MULTI_PULL_COUNT))
+                      }
                     >
                       <span className="gacha-pull__tag">Ticket commun</span>
                       <span className="gacha-pull__main">
-                        <span className="gacha-pull__times">×{STANDARD_MULTI_PULL_COUNT}</span>
+                        <span className="gacha-pull__times">
+                          ×{pack === "event" ? eventMultiCount : STANDARD_MULTI_PULL_COUNT}
+                        </span>
                         <span className="gacha-pull__label">Multi</span>
                       </span>
                       <span className="gacha-pull__cost">
                         <IconCube className="gacha-pull__ico" />
-                        {STANDARD_PULL_TICKET_COST * STANDARD_MULTI_PULL_COUNT}
+                        {pack === "event"
+                          ? eventTicketCost * eventMultiCount
+                          : STANDARD_PULL_TICKET_COST * STANDARD_MULTI_PULL_COUNT}
                       </span>
                     </button>
                     <button
                       type="button"
                       className={`gacha-pull gacha-pull--gem ${pulling ? "gacha-pull--loading" : ""}`}
-                      disabled={pulling || !canGems}
-                      onClick={() => void invokeStandard("gems", 1)}
+                      disabled={pulling || (pack === "event" ? !canEventGems : !canGems)}
+                      onClick={() =>
+                        void (pack === "event" ? invokeEvent("gems", 1) : invokeStandard("gems", 1))
+                      }
                     >
                       <span className="gacha-pull__tag">Gemmes premium</span>
                       <span className="gacha-pull__main">
@@ -549,23 +640,31 @@ export function GachaScreen() {
                       </span>
                       <span className="gacha-pull__cost">
                         <IconGem className="gacha-pull__ico" />
-                        {STANDARD_PULL_GEM_COST}
+                        {pack === "event" ? eventGemCost : STANDARD_PULL_GEM_COST}
                       </span>
                     </button>
                     <button
                       type="button"
                       className={`gacha-pull gacha-pull--gem ${pulling ? "gacha-pull--loading" : ""}`}
-                      disabled={pulling || !canGemsMulti}
-                      onClick={() => void invokeStandard("gems", STANDARD_MULTI_PULL_COUNT)}
+                      disabled={pulling || (pack === "event" ? !canEventGemsMulti : !canGemsMulti)}
+                      onClick={() =>
+                        void (pack === "event"
+                          ? invokeEvent("gems", eventMultiCount as typeof STANDARD_MULTI_PULL_COUNT)
+                          : invokeStandard("gems", STANDARD_MULTI_PULL_COUNT))
+                      }
                     >
                       <span className="gacha-pull__tag">Gemmes premium</span>
                       <span className="gacha-pull__main">
-                        <span className="gacha-pull__times">×{STANDARD_MULTI_PULL_COUNT}</span>
+                        <span className="gacha-pull__times">
+                          ×{pack === "event" ? eventMultiCount : STANDARD_MULTI_PULL_COUNT}
+                        </span>
                         <span className="gacha-pull__label">Multi</span>
                       </span>
                       <span className="gacha-pull__cost">
                         <IconGem className="gacha-pull__ico" />
-                        {STANDARD_PULL_GEM_COST * STANDARD_MULTI_PULL_COUNT}
+                        {pack === "event"
+                          ? eventGemCost * eventMultiCount
+                          : STANDARD_PULL_GEM_COST * STANDARD_MULTI_PULL_COUNT}
                       </span>
                     </button>
                   </div>
@@ -594,7 +693,12 @@ export function GachaScreen() {
             </article>
           </div>
 
-          <GachaRatesPanel pack={pack} gachaPityStandard={gachaPityStandard} ownedIds={ownedIds} />
+          <GachaRatesPanel
+            pack={pack}
+            gachaPityStandard={gachaPityStandard}
+            ownedIds={ownedIds}
+            eventPoolId={pack === "event" ? eventPoolId : undefined}
+          />
         </div>
 
         {lastResults?.length === 1 ? (

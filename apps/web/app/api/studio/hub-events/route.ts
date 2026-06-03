@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireStudioAdmin } from "@/lib/studio/admin";
 
+import type { HubEventKind } from "@/lib/hub/event-mechanics";
+
 export type HubEventRow = {
   id: string;
   title: string;
@@ -10,6 +12,9 @@ export type HubEventRow = {
   active: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  kind: HubEventKind;
+  config: Record<string, unknown>;
+  priority: number;
   created_at: string;
 };
 
@@ -39,9 +44,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const body = (await request.json()) as Partial<HubEventRow>;
+  const body = (await request.json()) as Partial<HubEventRow> & { configJson?: string };
   if (!body.id?.trim() || !body.title?.trim() || !body.subtitle?.trim()) {
     return NextResponse.json({ error: "id, title et subtitle requis" }, { status: 400 });
+  }
+
+  let config: Record<string, unknown> = body.config ?? {};
+  if (typeof body.configJson === "string") {
+    try {
+      config = JSON.parse(body.configJson) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: "config JSON invalide" }, { status: 400 });
+    }
   }
 
   const row = {
@@ -52,6 +66,9 @@ export async function POST(request: Request) {
     active: Boolean(body.active),
     starts_at: body.starts_at || null,
     ends_at: body.ends_at || null,
+    kind: body.kind ?? "banner",
+    config,
+    priority: body.priority ?? 0,
   };
 
   const { data, error } = await supabase.from("hub_events").insert(row).select().single();

@@ -34,7 +34,7 @@ export function trackCaptureAttempt(props: {
 }
 
 export function trackGachaPull(props: {
-  pool: "welcome" | "standard";
+  pool: "welcome" | "standard" | string;
   payment?: "ticket" | "gems" | "free";
   count: number;
   results: { hubId: string; rarity: string; templateKey: string }[];

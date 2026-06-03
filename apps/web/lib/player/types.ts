@@ -1,31 +1,6 @@
-import type { Rarity } from "@phantoria/game-core";
-import type { SpiritId } from "@/components/hub/roster";
-import { entryByHubId, STANDARD_GACHA_POOL, WELCOME_GACHA_POOL } from "./gacha-pool";
-
-export type SpiritMeta = {
-  hubId: SpiritId;
-  templateKey: string;
-  name: string;
-  tribe: string;
-  hue: string;
-  rarity: Rarity;
-};
-
-export const SPIRIT_CATALOG: Record<SpiritId, SpiritMeta> = Object.fromEntries(
-  STANDARD_GACHA_POOL.map((e) => [
-    e.hubId,
-    {
-      hubId: e.hubId,
-      templateKey: e.templateKey,
-      name: e.name,
-      tribe: e.tribe,
-      hue: e.hue,
-      rarity: e.rarity,
-    },
-  ]),
-) as Record<SpiritId, SpiritMeta>;
-
-export { WELCOME_GACHA_POOL, STANDARD_GACHA_POOL, entryByHubId };
+export type { SpiritMeta } from "./spirit-catalog";
+export { getSpiritMeta, getSpiritCatalog, getDisplayPoolEntries } from "./spirit-catalog";
+export { WELCOME_GACHA_POOL, STANDARD_GACHA_POOL, entryByHubId } from "./gacha-pool";
 
 export type DbProfile = {
   id: string;

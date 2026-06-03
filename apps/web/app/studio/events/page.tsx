@@ -1,24 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { HubEventRow } from "@/app/api/studio/hub-events/route";
-
-const EMPTY_FORM = {
-  id: "",
-  title: "",
-  subtitle: "",
-  href: "/events",
-  active: false,
-  starts_at: "",
-  ends_at: "",
-};
+import { EventEditorForm } from "@/components/studio/event-editor-form";
+import {
+  StudioMasterDetail,
+  StudioMdFilters,
+  StudioMdItemButton,
+  StudioMdListWrap,
+  StudioMdPlaceholder,
+  StudioMdSearch,
+  StudioMdToolbar,
+} from "@/components/studio/studio-master-detail";
+import {
+  emptyEventForm,
+  EVENT_KIND_OPTIONS,
+  eventFormFromRow,
+  eventPayloadFromForm,
+  validateEventForm,
+  type EventFormState,
+} from "@/lib/studio/event-form";
 
 export default function StudioEventsPage() {
   const [events, setEvents] = useState<HubEventRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<EventFormState>(emptyEventForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -26,7 +37,7 @@ export default function StudioEventsPage() {
     const res = await fetch("/api/studio/hub-events");
     const json = (await res.json()) as { events?: HubEventRow[]; error?: string };
     if (!res.ok) {
-      setError(json.error ?? "Erreur chargement");
+      setError(json.error ?? "Erreur");
       setLoading(false);
       return;
     }
@@ -38,34 +49,43 @@ export default function StudioEventsPage() {
     void load();
   }, [load]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return events;
+    return events.filter(
+      (e) => e.title.toLowerCase().includes(q) || e.id.toLowerCase().includes(q) || (e.kind ?? "").includes(q),
+    );
+  }, [events, search]);
+
+  function startNew() {
+    setEditId(null);
+    setEditorOpen(true);
+    setForm(emptyEventForm());
+    setError(null);
+  }
+
   function startEdit(ev: HubEventRow) {
     setEditId(ev.id);
-    setForm({
-      id: ev.id,
-      title: ev.title,
-      subtitle: ev.subtitle,
-      href: ev.href,
-      active: ev.active,
-      starts_at: ev.starts_at ? ev.starts_at.slice(0, 16) : "",
-      ends_at: ev.ends_at ? ev.ends_at.slice(0, 16) : "",
-    });
-  }
-
-  function resetForm() {
-    setEditId(null);
-    setForm(EMPTY_FORM);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+    setEditorOpen(true);
+    setForm(eventFormFromRow(ev));
     setError(null);
+  }
 
-    const payload = {
-      ...form,
-      starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-      ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-    };
+  function closeEditor() {
+    setEditId(null);
+    setEditorOpen(false);
+    setForm(emptyEventForm());
+  }
 
+  async function handleSubmit() {
+    const err = validateEventForm(form);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const payload = eventPayloadFromForm(form);
     const res = editId
       ? await fetch(`/api/studio/hub-events/${encodeURIComponent(editId)}`, {
           method: "PATCH",
@@ -77,151 +97,111 @@ export default function StudioEventsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
     const json = (await res.json()) as { error?: string };
+    setSaving(false);
     if (!res.ok) {
-      setError(json.error ?? "Échec sauvegarde");
+      setError(json.error ?? "Erreur");
       return;
     }
-
-    resetForm();
     await load();
-  }
-
-  async function handleDelete(id: string) {
-    if (!window.confirm(`Supprimer l'event « ${id} » ?`)) return;
-    const res = await fetch(`/api/studio/hub-events/${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!res.ok) {
-      const json = (await res.json()) as { error?: string };
-      setError(json.error ?? "Suppression impossible");
-      return;
-    }
-    if (editId === id) resetForm();
-    await load();
+    if (!editId) setEditId(form.id.trim());
   }
 
   async function toggleActive(ev: HubEventRow) {
-    const res = await fetch(`/api/studio/hub-events/${encodeURIComponent(ev.id)}`, {
+    await fetch(`/api/studio/hub-events/${encodeURIComponent(ev.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ active: !ev.active }),
     });
-    if (!res.ok) return;
     await load();
   }
 
+  async function remove(id: string) {
+    if (!confirm(`Supprimer ${id} ?`)) return;
+    await fetch(`/api/studio/hub-events/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (editId === id) closeEditor();
+    await load();
+  }
+
+  const kindLabel = (k: string) => EVENT_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
+
   return (
-    <div className="studio-events">
-      <h2 className="studio-section__title">Events hub</h2>
-      {error ? <p className="studio-events__error">{error}</p> : null}
-
-      <form className="studio-form" onSubmit={handleSubmit}>
-        <h3>{editId ? `Modifier ${editId}` : "Nouvel event"}</h3>
-        <label className="studio-field">
-          <span>ID (slug)</span>
-          <input
-            value={form.id}
-            onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
-            disabled={Boolean(editId)}
-            required
-            placeholder="lune-captures"
-          />
-        </label>
-        <label className="studio-field">
-          <span>Titre</span>
-          <input
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            required
-          />
-        </label>
-        <label className="studio-field">
-          <span>Sous-titre</span>
-          <input
-            value={form.subtitle}
-            onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
-            required
-          />
-        </label>
-        <label className="studio-field">
-          <span>Lien CTA</span>
-          <input value={form.href} onChange={(e) => setForm((f) => ({ ...f, href: e.target.value }))} />
-        </label>
-        <label className="studio-field studio-field--row">
-          <input
-            type="checkbox"
-            checked={form.active}
-            onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-          />
-          <span>Actif sur le hub</span>
-        </label>
-        <div className="studio-form__row">
-          <label className="studio-field">
-            <span>Début (optionnel)</span>
-            <input
-              type="datetime-local"
-              value={form.starts_at}
-              onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
-            />
-          </label>
-          <label className="studio-field">
-            <span>Fin (optionnel)</span>
-            <input
-              type="datetime-local"
-              value={form.ends_at}
-              onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
-            />
-          </label>
-        </div>
-        <div className="studio-form__actions">
-          <button type="submit" className="studio-btn studio-btn--primary">
-            {editId ? "Enregistrer" : "Créer"}
-          </button>
-          {editId ? (
-            <button type="button" className="studio-btn" onClick={resetForm}>
-              Annuler
+    <StudioMasterDetail
+      title="Events hub"
+      description="Live-ops : bandeaux, boost capture en run, bannières gacha temporaires."
+      error={error}
+      sidebar={
+        <>
+          <StudioMdToolbar>
+            <StudioMdSearch placeholder="Rechercher…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <button type="button" className="studio-btn studio-btn--primary studio-btn--sm" onClick={startNew}>
+              + Nouveau
             </button>
-          ) : null}
-        </div>
-      </form>
-
-      <section className="studio-list">
-        <h3>Events ({loading ? "…" : events.length})</h3>
-        {loading ? (
-          <p>Chargement…</p>
-        ) : events.length === 0 ? (
-          <p>Aucun event.</p>
+          </StudioMdToolbar>
+          <StudioMdFilters>
+            <span className="studio-md__count">{loading ? "…" : filtered.length} events</span>
+          </StudioMdFilters>
+          <StudioMdListWrap>
+            {loading ? (
+              <p className="studio-empty__hint">Chargement…</p>
+            ) : filtered.length === 0 ? (
+              <div className="studio-empty">
+                <p className="studio-empty__title">Aucun event</p>
+                <p className="studio-empty__hint">Crée un event pour animer le sanctuaire.</p>
+              </div>
+            ) : (
+              <ul className="studio-md__list">
+                {filtered.map((ev) => (
+                  <li key={ev.id}>
+                    <StudioMdItemButton
+                      active={editId === ev.id}
+                      onClick={() => startEdit(ev)}
+                      title={ev.title}
+                      meta={`${ev.active ? "actif" : "off"} · ${kindLabel(ev.kind ?? "banner")}`}
+                      sub={ev.id}
+                    />
+                    <div style={{ display: "flex", gap: "0.3rem", marginTop: "0.25rem", paddingLeft: "0.25rem" }}>
+                      <button
+                        type="button"
+                        className="studio-btn studio-btn--sm"
+                        title={ev.active ? "Désactiver l’event" : "Activer l’event"}
+                        onClick={() => void toggleActive(ev)}
+                      >
+                        {ev.active ? "Désactiver" : "Activer"}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </StudioMdListWrap>
+        </>
+      }
+      editor={
+        editorOpen ? (
+          <EventEditorForm
+            form={form}
+            editId={editId}
+            saving={saving}
+            onChange={setForm}
+            onSubmit={() => void handleSubmit()}
+            onCancel={closeEditor}
+          />
         ) : (
-          <ul>
-            {events.map((ev) => (
-              <li key={ev.id} className="studio-list__item">
-                <div className="studio-list__head">
-                  <strong>{ev.title}</strong>
-                  <span className={ev.active ? "studio-pill studio-pill--on" : "studio-pill"}>
-                    {ev.active ? "actif" : "inactif"}
-                  </span>
-                </div>
-                <p className="studio-list__meta">{ev.id} · {ev.subtitle}</p>
-                <div className="studio-list__actions">
-                  <button type="button" className="studio-btn studio-btn--sm" onClick={() => startEdit(ev)}>
-                    Éditer
-                  </button>
-                  <button type="button" className="studio-btn studio-btn--sm" onClick={() => toggleActive(ev)}>
-                    {ev.active ? "Désactiver" : "Activer"}
-                  </button>
-                  <button
-                    type="button"
-                    className="studio-btn studio-btn--sm studio-btn--danger"
-                    onClick={() => handleDelete(ev.id)}
-                  >
-                    Suppr.
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+          <StudioMdPlaceholder>
+            <p>Sélectionne un event ou <strong>+ Nouveau</strong>.</p>
+          </StudioMdPlaceholder>
+        )
+      }
+      footer={
+        editId ? (
+          <div className="studio-md__danger">
+            <button type="button" className="studio-btn studio-btn--danger" onClick={() => void remove(editId)}>
+              Supprimer {editId}
+            </button>
+          </div>
+        ) : null
+      }
+    />
   );
 }

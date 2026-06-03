@@ -314,11 +314,16 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 8. ✅ **Inventaire & boutique hub** — `/inventory`, `/shop`, Phantoballs + soins en combat histoire
 9. ✅ **Or victoire histoire** — `computeStoryGoldReward` · RPC `record_story_victory` crédite `player_currencies.gold`
 10. ✅ **Layout mobile** — `responsive.css`, bottom nav, combat touch-friendly
-11. **À faire** — zone 3+, effets gameplay événements hub
+11. ✅ **Studio + contenu live** — tables `spirit_templates`, gacha, story, `run_rewards`, `hub_events` · `GET /api/content/game` · seed `/api/studio/seed`
+12. **À faire** — zone 3+, UI création pool gacha en Studio
+
+### Contenu live (runtime)
+
+Au boot client : `GameContentProvider` → `applyGameContent()` écrase les catalogues `game-core` (personnages, histoire, reliques run, pools gacha, `hubToCore`). Le JSON `data/characters.json` reste la source du **seed** Studio, pas forcément la vérité en prod après édition DB.
 
 ## Catalogue esprits (`data/characters.json`)
 
-Source de vérité JSON à la racine — chargée par `packages/game-core/src/characters.ts`. Valider après édition : `pnpm sync:characters`.
+Source de vérité pour le **seed** initial — en prod préférer `spirit_templates` (Studio). Valider après édition : `pnpm sync:characters`.
 
 ## Hors scope infra v0
 

@@ -16,8 +16,8 @@ import {
 import type { PlayerInventory } from "@phantoria/game-core";
 import { fetchPlayerInventoryFromDb } from "@/lib/player/inventory-service";
 import type { StorySave } from "@/lib/story/story-progress";
+import { getSpiritMeta } from "@/lib/player/spirit-catalog";
 import {
-  SPIRIT_CATALOG,
   type DbCurrencies,
   type DbPlayerSpirit,
   type DbProfile,
@@ -40,7 +40,7 @@ export type PlayerSnapshot = {
 export function buildSpiritsByHubId(spirits: DbPlayerSpirit[]): Partial<Record<SpiritId, OwnedSpiritStats>> {
   const out: Partial<Record<SpiritId, OwnedSpiritStats>> = {};
   for (const s of spirits) {
-    if (!isSpiritId(s.hub_id)) continue;
+    if (!s.hub_id) continue;
     out[s.hub_id] = { level: s.level, xp: s.xp, hpPct: s.hp_pct };
   }
   return out;
@@ -56,18 +56,31 @@ export function buildRosterFromDb(slots: DbRosterSlot[]): SpiritSlot[] {
   return Array.from({ length: MAX_WHEEL }, (_, slotIndex) => {
     const slot = byIndex.get(slotIndex);
     const spirit = slot?.spirit;
-    if (!spirit || !isSpiritId(spirit.hub_id)) return emptyWheelSlot(slotIndex);
+    if (!spirit || !spirit.hub_id) return emptyWheelSlot(slotIndex);
 
-    const meta = SPIRIT_CATALOG[spirit.hub_id];
+    const meta = getSpiritMeta(spirit.hub_id);
     return {
       id: spirit.hub_id,
-      name: meta.name,
-      tribe: meta.tribe,
+      name: meta?.name ?? spirit.hub_id,
+      tribe: meta?.tribe ?? "—",
       hp: spirit.hp_pct,
       onField: isFieldSlotIndex(slotIndex),
-      hue: meta.hue,
-      rarity: meta.rarity,
+      hue: meta?.hue ?? "#64748b",
+      rarity: meta?.rarity,
     };
+  });
+}
+
+/** La roue affiche `hp` sur le slot — on le recale sur la collection (`hp_pct`). */
+export function syncRosterHpFromSpiritStats(
+  roster: SpiritSlot[],
+  spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>,
+): SpiritSlot[] {
+  return roster.map((slot) => {
+    if (slot.empty || typeof slot.id !== "string" || slot.id.startsWith("empty-")) return slot;
+    const hpPct = spiritsByHubId[slot.id]?.hpPct;
+    if (hpPct == null) return slot;
+    return { ...slot, hp: hpPct };
   });
 }
 
@@ -106,11 +119,12 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     spirit: s.spirit_id ? (spiritById.get(s.spirit_id) ?? null) : null,
   }));
 
-  const roster =
-    enriched.length > 0 ? buildRosterFromDb(enriched) : buildEmptyRoster();
-  const unlockedHubIds = (spirits ?? [])
-    .map((s) => s.hub_id)
-    .filter((id): id is SpiritId => isSpiritId(id));
+  const spiritsByHubId = buildSpiritsByHubId((spirits ?? []) as DbPlayerSpirit[]);
+  const roster = syncRosterHpFromSpiritStats(
+    enriched.length > 0 ? buildRosterFromDb(enriched) : buildEmptyRoster(),
+    spiritsByHubId,
+  );
+  const unlockedHubIds = (spirits ?? []).map((s) => s.hub_id).filter(Boolean) as SpiritId[];
 
   const prof = profile as DbProfile & { runs_completed?: number };
 
@@ -119,7 +133,7 @@ export async function fetchPlayerSnapshot(supabase: SupabaseClient): Promise<Pla
     currencies: currencies as DbCurrencies,
     roster,
     unlockedHubIds,
-    spiritsByHubId: buildSpiritsByHubId((spirits ?? []) as DbPlayerSpirit[]),
+    spiritsByHubId,
     spiritCount: spirits?.length ?? 0,
     storySave,
     questProgress,

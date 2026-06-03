@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito, Outfit } from "next/font/google";
 import { Suspense } from "react";
 import { AppErrorBoundary } from "@/components/error-boundary";
+import { GameContentProvider } from "@/components/providers/game-content-provider";
 import { PlayerProvider } from "@/components/providers/player-provider";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import "./globals.css";
@@ -42,9 +43,11 @@ export default function RootLayout({
       <body className="min-h-full antialiased">
         <AppErrorBoundary>
           <PostHogProvider>
-            <Suspense fallback={null}>
-              <PlayerProvider>{children}</PlayerProvider>
-            </Suspense>
+            <GameContentProvider>
+              <Suspense fallback={null}>
+                <PlayerProvider>{children}</PlayerProvider>
+              </Suspense>
+            </GameContentProvider>
           </PostHogProvider>
         </AppErrorBoundary>
       </body>

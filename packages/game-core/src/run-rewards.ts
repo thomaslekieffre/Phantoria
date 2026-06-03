@@ -307,13 +307,26 @@ export const RUN_REWARD_POOL: RunRewardDef[] = [
   },
 ];
 
-const REWARD_BY_ID = Object.fromEntries(RUN_REWARD_POOL.map((r) => [r.id, r])) as Record<
-  string,
-  RunRewardDef
->;
+let rewardPoolOverride: RunRewardDef[] | null = null;
+
+export function setRunRewardPool(pool: RunRewardDef[]): void {
+  rewardPoolOverride = pool;
+}
+
+export function resetRunRewardPool(): void {
+  rewardPoolOverride = null;
+}
+
+export function getRunRewardPool(): RunRewardDef[] {
+  return rewardPoolOverride ?? RUN_REWARD_POOL;
+}
+
+function rewardByIdMap(): Record<string, RunRewardDef> {
+  return Object.fromEntries(getRunRewardPool().map((r) => [r.id, r])) as Record<string, RunRewardDef>;
+}
 
 export function getRunReward(id: string): RunRewardDef | undefined {
-  return REWARD_BY_ID[id];
+  return rewardByIdMap()[id];
 }
 
 /** Relique affichée dans la barre — effet actif pendant tout le run */
@@ -363,7 +376,7 @@ export function rollRewardChoices(
   rng: () => number = Math.random,
 ): RunRewardDef[] {
   const owned = new Set(ownedIds);
-  let pool = RUN_REWARD_POOL.filter((r) => r.stackable || !owned.has(r.id));
+  let pool = getRunRewardPool().filter((r) => r.stackable || !owned.has(r.id));
 
   if (wave <= 2) {
     pool = [
@@ -420,7 +433,7 @@ export function rollShopOffers(
   count = 5,
   rng: () => number = Math.random,
 ): RunShopOffer[] {
-  const pool = RUN_REWARD_POOL.filter((r) => canOfferInShop(r, ownedIds));
+  const pool = getRunRewardPool().filter((r) => canOfferInShop(r, ownedIds));
   const bag = pool.slice();
   const offers: RunShopOffer[] = [];
 

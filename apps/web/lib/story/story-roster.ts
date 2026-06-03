@@ -1,6 +1,6 @@
 import type { SpiritId } from "@/components/hub/roster";
 import { isSpiritId, type SpiritSlot } from "@/components/hub/roster";
-import { HUB_TO_CORE } from "@phantoria/game-core";
+import { hubIdToTemplateKey } from "@/components/run/wheel-map";
 import type { OwnedSpiritStats } from "@/lib/player/types";
 
 export type StoryAllySetup = {
@@ -23,7 +23,7 @@ export function buildStoryAllySetup(
     const slot = roster[i];
     if (!slot || slot.empty || !isSpiritId(slot.id)) continue;
 
-    const core = HUB_TO_CORE[slot.id];
+    const core = hubIdToTemplateKey(slot.id);
     if (!core) continue;
 
     const stats = spiritsByHubId[slot.id] ?? { level: 1, xp: 0, hpPct: 100 };

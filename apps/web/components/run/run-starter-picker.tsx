@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { HUB_TO_CORE } from "@phantoria/game-core";
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
-import { INITIAL_ROSTER, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
+import { hubIdToTemplateKey } from "@/components/run/wheel-map";
+import { buildMockInitialRoster, isSpiritId, type SpiritId, type SpiritSlot } from "@/components/hub/roster";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 import { rarityForHubId } from "@/lib/spirit-rarity";
 import "./run.css";
 
-const DEFAULT_STARTERS = INITIAL_ROSTER.filter(
-  (s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id),
-);
+function defaultStarters() {
+  return buildMockInitialRoster().filter((s): s is SpiritSlot & { id: SpiritId } => isSpiritId(s.id));
+}
 
 type RunStarterPickerProps = {
   onPick: (id: SpiritId) => void;
@@ -24,7 +24,7 @@ export function RunStarterPicker({
   onPick,
   onContinue,
   savedSummary,
-  starters = DEFAULT_STARTERS,
+  starters = defaultStarters(),
 }: RunStarterPickerProps) {
   const hasStarters = starters.length > 0;
 
@@ -88,5 +88,7 @@ export function RunStarterPicker({
 }
 
 export function starterCoreKey(id: SpiritId): string {
-  return HUB_TO_CORE[id] ?? HUB_TO_CORE.bram;
+  const key = hubIdToTemplateKey(id);
+  if (!key) throw new Error(`Template introuvable pour l'esprit : ${id}`);
+  return key;
 }

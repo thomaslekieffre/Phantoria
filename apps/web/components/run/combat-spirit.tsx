@@ -1,6 +1,6 @@
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { isSpiritId, type SpiritId } from "@/components/hub/roster";
-import { CORE_HUE, CORE_TO_HUB } from "@/components/run/wheel-map";
+import { hueForTemplateKey, hubIdForTemplateKey } from "@/components/run/wheel-map";
 
 type CombatSpiritProps = {
   templateKey: string;
@@ -9,7 +9,7 @@ type CombatSpiritProps = {
 };
 
 function EnemySpiritSvg({ templateKey, className }: { templateKey: string; className?: string }) {
-  const hue = CORE_HUE[templateKey] ?? "#6366f1";
+  const hue = hueForTemplateKey(templateKey);
 
   if (templateKey === "ombre_faible") {
     return (
@@ -54,13 +54,13 @@ function EnemySpiritSvg({ templateKey, className }: { templateKey: string; class
 }
 
 export function CombatSpirit({ templateKey, name, className }: CombatSpiritProps) {
-  const hubId = CORE_TO_HUB[templateKey];
+  const hubId = hubIdForTemplateKey(templateKey);
   if (hubId && isSpiritId(hubId)) {
-    return <SpiritPortrait id={hubId as SpiritId} className={className} />;
+    return <SpiritPortrait id={hubId} className={className} />;
   }
   return <EnemySpiritSvg templateKey={templateKey} className={className} />;
 }
 
 export function combatSpiritHue(templateKey: string): string {
-  return CORE_HUE[templateKey] ?? "#6366f1";
+  return hueForTemplateKey(templateKey);
 }

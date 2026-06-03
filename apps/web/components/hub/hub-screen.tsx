@@ -9,7 +9,8 @@ import { HubBenchPicker } from "./hub-bench-picker";
 import { isSpiritId, rosterIndexForHubId, type SpiritId, type SpiritSlot } from "./roster";
 import { SceneBackdrop } from "./scene-backdrop";
 import { SpiritWheel } from "./spirit-wheel";
-import { SPIRIT_CATALOG } from "@/lib/player/types";
+import { getSpiritMeta } from "@/lib/player/spirit-catalog";
+import { useGameContent } from "@/components/providers/game-content-provider";
 import "./hub.css";
 
 export function HubScreen() {
@@ -25,6 +26,7 @@ export function HubScreen() {
     runsCompleted,
     hubEvent,
   } = usePlayer();
+  const { version: contentVersion } = useGameContent();
 
   const [selectedId, setSelectedId] = useState<SpiritSlot["id"] | null>(null);
   const [pickSlotIndex, setPickSlotIndex] = useState<number | null>(null);
@@ -52,8 +54,12 @@ export function HubScreen() {
   }, [roster]);
 
   const benchSpirits = useMemo(
-    () => unlockedHubIds.filter((id) => !onWheelIds.has(id)).map((id) => SPIRIT_CATALOG[id]),
-    [unlockedHubIds, onWheelIds],
+    () =>
+      unlockedHubIds
+        .filter((id) => !onWheelIds.has(id))
+        .map((id) => getSpiritMeta(id))
+        .filter((m): m is NonNullable<typeof m> => Boolean(m)),
+    [unlockedHubIds, onWheelIds, contentVersion],
   );
 
   const wheelFull = roster.every((s) => !s.empty);

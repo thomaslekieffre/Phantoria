@@ -137,6 +137,8 @@ export interface CreateBattleOptions {
   storyLevelId?: string;
   runGold?: number;
   runBalls?: import("./phantoballs").RunBallStock;
+  /** Bonus capture initial (events hub, etc.) */
+  captureBonus?: number;
 }
 
 /** Setup démo / tests — 4 esprits */
@@ -236,7 +238,11 @@ export function createBattle(opts: CreateBattleOptions = {}): CombatEngine {
     captureTargetId: null,
     pendingRecruit: null,
     runRelics: [],
-    runModifiers: { soulGainMult: 1, specialPowerMult: 1, captureBonus: 0 },
+    runModifiers: {
+      soulGainMult: 1,
+      specialPowerMult: 1,
+      captureBonus: opts.captureBonus ?? 0,
+    },
     rewardChoices: null,
     freeRewardPicked: false,
     shopOffers: null,

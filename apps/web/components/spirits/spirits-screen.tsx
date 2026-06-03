@@ -8,7 +8,9 @@ import { isFieldSlotIndex, isSpiritId, rosterIndexForHubId, type SpiritId } from
 import { SpiritPortrait } from "@/components/hub/spirit-portrait";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 import { usePlayer } from "@/components/providers/player-provider";
-import { STANDARD_GACHA_POOL, type GachaPoolEntry } from "@/lib/player/gacha-pool";
+import { useGameContent } from "@/components/providers/game-content-provider";
+import type { GachaPoolEntry } from "@/lib/player/gacha-pool";
+import { getDisplayPoolEntries } from "@/lib/player/spirit-catalog";
 import { SpiritOwnedStats } from "./spirit-owned-stats";
 import "../hub/hub.css";
 import "./spirits.css";
@@ -37,6 +39,8 @@ export function SpiritsScreen() {
     spiritsByHubId,
     profile,
   } = usePlayer();
+  const { version: contentVersion } = useGameContent();
+  const catalogPool = useMemo(() => getDisplayPoolEntries(), [contentVersion]);
   const ownedSet = useMemo(() => new Set(unlockedHubIds), [unlockedHubIds]);
   const rosterById = useMemo(
     () => new Map(roster.filter((s) => !s.empty && isSpiritId(s.id)).map((s) => [s.id, s])),
@@ -44,8 +48,8 @@ export function SpiritsScreen() {
   );
 
   const tribes = useMemo(
-    () => [...new Set(STANDARD_GACHA_POOL.map((e) => e.tribe))].sort((a, b) => a.localeCompare(b, "fr")),
-    [],
+    () => [...new Set(catalogPool.map((e) => e.tribe))].sort((a, b) => a.localeCompare(b, "fr")),
+    [catalogPool],
   );
 
   const [rarityFilter, setRarityFilter] = useState<Rarity | "all">("all");
@@ -55,13 +59,13 @@ export function SpiritsScreen() {
   const [detailOpen, setDetailOpen] = useState(true);
 
   const filtered = useMemo(() => {
-    let list = STANDARD_GACHA_POOL;
+    let list = catalogPool;
     if (rarityFilter !== "all") list = list.filter((e) => e.rarity === rarityFilter);
     if (tribeFilter !== "all") list = list.filter((e) => e.tribe === tribeFilter);
     if (ownedFilter === "owned") list = list.filter((e) => ownedSet.has(e.hubId));
     if (ownedFilter === "missing") list = list.filter((e) => !ownedSet.has(e.hubId));
     return sortPool(list);
-  }, [rarityFilter, tribeFilter, ownedFilter, ownedSet]);
+  }, [rarityFilter, tribeFilter, ownedFilter, ownedSet, catalogPool]);
 
   const activeId = useMemo(() => {
     if (selectedId && filtered.some((e) => e.hubId === selectedId)) return selectedId;
@@ -69,7 +73,7 @@ export function SpiritsScreen() {
   }, [selectedId, filtered]);
 
   const activeSpirit = activeId
-    ? (STANDARD_GACHA_POOL.find((e) => e.hubId === activeId) ?? null)
+    ? (catalogPool.find((e) => e.hubId === activeId) ?? null)
     : null;
   const activeOwned = activeId ? ownedSet.has(activeId) : false;
   const activeStats = activeId ? spiritsByHubId[activeId] : undefined;
@@ -97,7 +101,7 @@ export function SpiritsScreen() {
     await removeSpiritFromWheel(activeId);
   }
 
-  const total = STANDARD_GACHA_POOL.length;
+  const total = catalogPool.length;
   const displayName = profile?.display_name ?? "Tomy";
 
   return (

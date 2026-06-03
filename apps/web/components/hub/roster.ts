@@ -1,27 +1,9 @@
-import type { Rarity } from "@phantoria/game-core";
+import { getHubToCore, type Rarity } from "@phantoria/game-core";
+import { WELCOME_GACHA_POOL } from "@/lib/player/gacha-pool";
+import { getSpiritMeta } from "@/lib/player/spirit-catalog";
 
-export type SpiritId =
-  | "bram"
-  | "nyx"
-  | "luma"
-  | "kiro"
-  | "roche"
-  | "halo"
-  | "murmure"
-  | "brise"
-  | "aurore";
-
-const SPIRIT_IDS: SpiritId[] = [
-  "bram",
-  "nyx",
-  "luma",
-  "kiro",
-  "roche",
-  "halo",
-  "murmure",
-  "brise",
-  "aurore",
-];
+/** Identifiant hub (clé dynamique depuis la DB / game-core). */
+export type SpiritId = string;
 
 export type SpiritSlot = {
   id: SpiritId | `empty-${number}`;
@@ -110,14 +92,38 @@ export function rosterIndexForHubId(roster: SpiritSlot[], hubId: SpiritId): numb
   return roster.findIndex((s) => s.id === hubId);
 }
 
-export const INITIAL_ROSTER: SpiritSlot[] = applyFieldFlags([
-  { id: "bram", name: "Bram", tribe: "Vaillants", hp: 100, onField: false, hue: "#f97316", rarity: "E" },
-  { id: "nyx", name: "Nyx", tribe: "Mystérieux", hp: 72, onField: false, hue: "#a855f7", rarity: "C" },
-  { id: "empty-3", name: "Libre", tribe: "—", hp: 0, onField: false, hue: "#475569", empty: true },
-  { id: "kiro", name: "Kiro", tribe: "Malins", hp: 88, onField: false, hue: "#22d3ee", rarity: "D" },
-  { id: "empty-5", name: "Libre", tribe: "—", hp: 0, onField: false, hue: "#475569", empty: true },
-  { id: "luma", name: "Luma", tribe: "Mignons", hp: 100, onField: false, hue: "#ec4899", rarity: "B" },
-]);
+function slotFromMeta(hubId: SpiritId, hp: number): SpiritSlot | null {
+  const meta = getSpiritMeta(hubId);
+  if (!meta) return null;
+  return {
+    id: hubId,
+    name: meta.name,
+    tribe: meta.tribe,
+    hp,
+    onField: false,
+    hue: meta.hue,
+    rarity: meta.rarity,
+  };
+}
+
+/** Roue mock locale (hors Supabase) — dérivée des pools chargés. */
+export function buildMockInitialRoster(): SpiritSlot[] {
+  const pick = (hubId: string, hp: number) => slotFromMeta(hubId, hp) ?? emptyWheelSlot(0);
+  const byHub = (id: string) => WELCOME_GACHA_POOL.find((e) => e.hubId === id);
+  const bram = byHub("bram")?.hubId ?? WELCOME_GACHA_POOL[0]?.hubId;
+  const nyx = byHub("nyx")?.hubId ?? WELCOME_GACHA_POOL[1]?.hubId;
+  const kiro = byHub("kiro")?.hubId ?? WELCOME_GACHA_POOL[3]?.hubId;
+  const luma = byHub("luma")?.hubId ?? WELCOME_GACHA_POOL[2]?.hubId;
+
+  return applyFieldFlags([
+    bram ? pick(bram, 100) : emptyWheelSlot(0),
+    nyx ? pick(nyx, 72) : emptyWheelSlot(1),
+    emptyWheelSlot(2),
+    kiro ? pick(kiro, 88) : emptyWheelSlot(3),
+    emptyWheelSlot(4),
+    luma ? pick(luma, 100) : emptyWheelSlot(5),
+  ]);
+}
 
 export function hpTone(hp: number) {
   if (hp >= 80) return "ok";
@@ -126,5 +132,6 @@ export function hpTone(hp: number) {
 }
 
 export function isSpiritId(id: SpiritSlot["id"] | string): id is SpiritId {
-  return SPIRIT_IDS.includes(id as SpiritId);
+  if (typeof id !== "string" || id.startsWith("empty-")) return false;
+  return id in getHubToCore() || getSpiritMeta(id) != null;
 }

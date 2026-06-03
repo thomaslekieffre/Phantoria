@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { HubEvent } from "@/lib/hub/hub-events";
-import { FALLBACK_HUB_EVENT } from "@/lib/hub/hub-events";
+import {
+  pickHubEventForDisplay,
+  resolveGameEventEffects,
+  rowToHubEventDef,
+  toHubEventBanner,
+  type GameEventEffects,
+  type HubEvent,
+  type HubEventDef,
+} from "@/lib/hub/event-mechanics";
 
 type HubEventRow = {
   id: string;
@@ -10,38 +17,50 @@ type HubEventRow = {
   active: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  kind?: string;
+  config?: unknown;
+  priority?: number;
 };
 
-function rowToEvent(row: HubEventRow): HubEvent {
-  return {
-    id: row.id,
-    title: row.title,
-    subtitle: row.subtitle,
-    href: row.href,
-    active: row.active,
-  };
-}
+const SELECT =
+  "id, title, subtitle, href, active, starts_at, ends_at, kind, config, priority";
 
-function isWithinWindow(row: HubEventRow, now = Date.now()): boolean {
-  if (row.starts_at && Date.parse(row.starts_at) > now) return false;
-  if (row.ends_at && Date.parse(row.ends_at) < now) return false;
-  return true;
-}
-
-/** Événement hub actif — DB Supabase ou fallback local. */
-export async function fetchActiveHubEvent(
+/** Events actifs en DB (flag `active`), sans fallback fictif. */
+export async function fetchHubEventsCatalog(
   supabase?: SupabaseClient | null,
-): Promise<HubEvent | null> {
-  if (!supabase) return FALLBACK_HUB_EVENT;
+): Promise<HubEventDef[]> {
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("hub_events")
-    .select("id, title, subtitle, href, active, starts_at, ends_at")
+    .select(SELECT)
     .eq("active", true)
+    .order("priority", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (error || !data?.length) return FALLBACK_HUB_EVENT;
+  if (error || !data?.length) return [];
 
-  const match = (data as HubEventRow[]).find((row) => row.active && isWithinWindow(row));
-  return match ? rowToEvent(match) : null;
+  return (data as HubEventRow[]).map(rowToHubEventDef);
+}
+
+/** @deprecated Utiliser fetchHubEventsCatalog */
+export async function fetchActiveHubEvents(
+  supabase?: SupabaseClient | null,
+): Promise<HubEventDef[]> {
+  return fetchHubEventsCatalog(supabase);
+}
+
+export async function fetchGameEventEffects(
+  supabase?: SupabaseClient | null,
+): Promise<GameEventEffects> {
+  const events = await fetchHubEventsCatalog(supabase);
+  return resolveGameEventEffects(events);
+}
+
+/** Bandeau principal — uniquement depuis la DB */
+export async function fetchActiveHubEvent(
+  supabase?: SupabaseClient | null,
+): Promise<HubEvent | null> {
+  const events = await fetchHubEventsCatalog(supabase);
+  return toHubEventBanner(pickHubEventForDisplay(events));
 }

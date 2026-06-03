@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type Ref } from "react";
-import { STORY_ZONES, getStoryZone, levelsForZone } from "@phantoria/game-core";
+import { getStoryZone, getStoryZones, levelsForZone } from "@phantoria/game-core";
 import { useStoryProgress } from "@/lib/story/use-story-progress";
 import {
   STORY_MAP_NODE_POSITIONS,
@@ -10,6 +10,7 @@ import {
   buildMapTrailPath,
   isBossLevel,
 } from "@/lib/story/story-map-layout";
+import { useGameContent } from "@/components/providers/game-content-provider";
 import { usePlayer } from "@/components/providers/player-provider";
 import { rosterHasFieldSpirit } from "@/lib/story/story-roster";
 import "./story.css";
@@ -102,13 +103,14 @@ function MapNode({
 
 export function StoryMapScreen() {
   const { hasSpirits, roster, profile } = usePlayer();
+  const { version: contentVersion } = useGameContent();
   const { getProgress, isUnlocked, isZoneUnlocked, starsTotal } = useStoryProgress();
   const [zoneId, setZoneId] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentNodeRef = useRef<HTMLAnchorElement>(null);
 
   const zone = getStoryZone(zoneId);
-  const levels = useMemo(() => levelsForZone(zoneId), [zoneId]);
+  const levels = useMemo(() => levelsForZone(zoneId), [zoneId, contentVersion]);
 
   const trailPath = useMemo(
     () => buildMapTrailPath(STORY_MAP_NODE_POSITIONS, 400, STORY_MAP_STAGE_HEIGHT),
@@ -149,8 +151,9 @@ export function StoryMapScreen() {
   }
 
   const wheelReady = rosterHasFieldSpirit(roster);
-  const prevZone = STORY_ZONES.find((z) => z.id === zoneId - 1);
-  const nextZone = STORY_ZONES.find((z) => z.id === zoneId + 1);
+  const zones = getStoryZones();
+  const prevZone = zones.find((z) => z.id === zoneId - 1);
+  const nextZone = zones.find((z) => z.id === zoneId + 1);
 
   return (
     <div className="story-world">

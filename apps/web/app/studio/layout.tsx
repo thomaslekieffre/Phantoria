@@ -18,18 +18,30 @@ export default async function StudioLayout({ children }: { children: React.React
       <header className="studio__header">
         <div>
           <p className="studio__kicker">Phantoria Studio</p>
-          <h1 className="studio__title">Dashboard dev</h1>
+          <h1 className="studio__title">Game Content Manager</h1>
         </div>
         <Link href="/" className="studio__back">
-          ← Jeu
+          ← Retour au jeu
         </Link>
       </header>
       <nav className="studio__nav" aria-label="Studio">
         <Link href="/studio" className="studio__nav-link">
-          Accueil
+          🏠 Accueil
         </Link>
         <Link href="/studio/events" className="studio__nav-link">
-          Events hub
+          🎉 Events
+        </Link>
+        <Link href="/studio/spirits" className="studio__nav-link">
+          👻 Esprits
+        </Link>
+        <Link href="/studio/story" className="studio__nav-link">
+          📖 Histoire
+        </Link>
+        <Link href="/studio/gacha" className="studio__nav-link">
+          🎰 Gacha
+        </Link>
+        <Link href="/studio/rewards" className="studio__nav-link">
+          ✨ Reliques
         </Link>
       </nav>
       <main className="studio__main">{children}</main>

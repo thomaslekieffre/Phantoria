@@ -443,6 +443,19 @@ body::after {
   color: var(--accent-soft);
 }
 
+.page-events-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page-events-list .page-event-card {
+  margin-top: 0;
+}
+
 .page-event-card {
   margin-top: 1rem;
   padding: 1.25rem;

@@ -66,7 +66,8 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 | `/quests` | **Quêtes** — journal principal, quotidiennes, secondaires |
 | `/gacha` | **Invocations** — bannières packs, autel central, taux à droite, multi ×10 |
 | `/more` | Boutique, inventaire, événements… |
-| `/events` | **Événements** — bannière active (ex. Lune des captures) |
+| `/events` | **Événements** — liste des events actifs en DB (Studio) |
+| `/studio` | **Studio** — contenu live (admin) : esprits, gacha, histoire, reliques, events |
 | `/profile` | **Profil** — nom, stats, monnaies, compte |
 | `/run` | **Run roguelite** — combat jouable (starter, vagues, capture, reliques) |
 | `/login` | Connexion Supabase (si env configuré) |
@@ -107,7 +108,7 @@ Ouvre le jeu en **plein écran navigateur** (F11 si besoin) pour juger le rendu 
 
 Mode **dual** :
 
-- **Sans** `NEXT_PUBLIC_SUPABASE_*` → hub mock (`INITIAL_ROSTER`), run en `localStorage` (comportement actuel).
+- **Sans** `NEXT_PUBLIC_SUPABASE_*` → hub mock (`buildMockInitialRoster()`), run en `localStorage`.
 - **Avec** env → auth email/mot de passe, profil + monnaies + roster en DB, run dans `active_runs`.
 
 ### Setup
@@ -156,7 +157,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql`.
+**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql` · **`20260603100000_studio_content.sql`** · **`20260603110000_hub_events_mechanics.sql`** · **`20260603120000_hub_events_seed_inactive.sql`** (désactive le seed `lune-captures`).
 
 ### Analytics PostHog
 
@@ -164,9 +165,38 @@ SDK `posthog-js` · provider `PostHogProvider` · events dans `lib/analytics/eve
 
 ### Studio dev (`/studio`)
 
-Admin `profiles.is_admin` · CRUD `hub_events` live · sections esprits/gacha/histoire à venir.
+Compte **`profiles.is_admin = true`** · sinon redirection depuis `/studio`.
 
-**Hub — stats panneau** : `runs_completed` (DB ou `localStorage` hors ligne) · `spiritCount` (collection) · événement actif → `lib/hub/hub-events.ts` · `/events`.
+| Page | Tables DB | API |
+|------|-----------|-----|
+| Esprits | `spirit_templates` | `/api/studio/spirits` |
+| Gacha | `gacha_pools`, `gacha_pool_entries` | `/api/studio/gacha` (+ pools `[id]`, entries `[id]`) |
+| Histoire | `story_zones`, `story_levels` | `/api/studio/story` |
+| Reliques run | `run_rewards` | `/api/studio/rewards` |
+| Events | `hub_events` (`kind`, `config`, `priority`) | `/api/studio/hub-events` |
+| Seed global | — | `POST /api/studio/seed` |
+
+**Workflow**
+
+1. Appliquer les migrations studio + hub events (voir liste ci-dessus).
+2. `/studio` → **Importer le contenu** (réécrit seed depuis `characters.json`, pools welcome/standard, story, reliques ; **vide puis remplit** `gacha_pool_entries`).
+3. Éditer en UI (formulaires structurés, plus de JSON brut).
+4. Le client recharge via `GameContentProvider` → `GET /api/content/game` → `applyGameContent()` (overrides `game-core` + pools gacha).
+
+**Pools gacha custom (event)** : créer la ligne dans `gacha_pools` (SQL ou futur UI), entrées dans Studio Gacha, puis event hub `kind = gacha_banner` avec `config.poolId` = même id.
+
+Hors studio (encore en code) : quêtes, boutique, algo vagues run, passifs tribus.
+
+### Contenu dynamique en jeu
+
+| Fichier | Rôle |
+|---------|------|
+| `components/providers/game-content-provider.tsx` | Bloque l’app jusqu’au fetch ; expose `source` (`db` \| `fallback`) et `version` |
+| `lib/content/game-content.ts` | `fetchGameContent`, `applyGameContent` : catalogues, `hubToCore`, story, `run_rewards`, pools |
+| `lib/player/spirit-catalog.ts` | Catalogue hub (métadonnées gacha) reconstruit après chaque apply |
+| `components/run/wheel-map.ts` | `hubIdToTemplateKey`, `hubIdForTemplateKey`, teintes dynamiques |
+
+**Hub — stats panneau** : `runs_completed` · `spiritCount` · events → `PlayerProvider.hubEvents` + `hubEvent` (bandeau principal).
 
 ### Profil (`/profile`)
 
@@ -180,9 +210,12 @@ Accès : topbar (nom du joueur) · **Plus** → Profil · `/profile`.
 
 ### Événements (`/events`)
 
-Table Supabase `hub_events` (migration `20260602170000_hub_events.sql`) · fetch `fetchActiveHubEvent` · fallback `FALLBACK_HUB_EVENT` hors ligne · exposé via `PlayerProvider.hubEvent`.
+Table `hub_events` · kinds : `banner` | `capture_boost` | `gacha_banner` (voir `lib/hub/event-mechanics.ts`).
 
-Config v0 seed : **Lune des captures**. Bandeau sanctuaire → page détail + CTA run.
+- **Supabase** : `fetchHubEventsCatalog` — pas de faux event « Lune » injecté si la table répond.
+- **Hors ligne** (pas d’env) : un event mock capture reste pour le dev local.
+- **UI** : `/events` liste les events `active` (badges En cours / Bientôt / Terminé) · `pickHubEventForDisplay` choisit le bandeau hub.
+- **Gameplay** : `capture_boost` → `gameEventEffects.captureBonus` en run ; `gacha_banner` → onglet Event sur `/gacha` + `POST /api/gacha/event`.
 
 ### Quêtes (`/quests`)
 
@@ -238,7 +271,7 @@ Config v0 seed : **Lune des captures**. Bandeau sanctuaire → page détail + CT
 | `lib/story/use-story-progress.ts` | Hook client : save vide au SSR, sync `localStorage` au mount (évite mismatch hydration étoiles) |
 | `lib/story/story-progress.ts` | Étoiles / déblocage — **localStorage** hors ligne · **Supabase** (`record_story_victory`) si connecté |
 | `lib/story/story-roster.ts` | Équipe depuis roue sanctuaire + niveaux `player_spirits` |
-| `lib/story/story-result-service.ts` | Persist XP/PV histoire après victoire |
+| `lib/story/story-result-service.ts` | Persist XP/PV après combat ; **fin victoire ou défaite → `hp_pct = 100`** pour la roue engagée |
 
 **Carte** : une zone à la fois (flèches), filaments de fond, nœuds numérotés le long d’un sentier en pointillés ; étoiles au-dessus des niveaux terminés ; niveau courant pulsé.
 
@@ -246,7 +279,9 @@ Config v0 seed : **Lune des captures**. Bandeau sanctuaire → page détail + CT
 
 **Combat** : même rendu terrain que la run (`AllyFieldSprite` dans `battle__allies`) — les 3 devant sur la roue apparaissent sur le fond vert.
 
-**Niveaux** : au combat, `buildStoryAllySetup` injecte `level` / `xp` / `hpPct` depuis `player_spirits` (ou `phantoria_spirits_local` hors ligne). Fin de combat (victoire **ou** défaite) → RPC `persist_story_spirit_stats` (RLS gacha = lecture seule sur `player_spirits`). **Run** : `createRunBattle` force `allyLevel: 1` — XP run reste dans `CombatState`, jamais écrit dans `player_spirits`.
+**Niveaux / PV** : `buildStoryAllySetup` lit `player_spirits` ; fin de combat → `persistStorySpiritStats` (RPC `persist_story_spirit_stats`) avec `storyAllies` + soin complet. La roue hub resync via `syncRosterHpFromSpiritStats` au refresh joueur. **Run** : niveaux run dans `CombatState` uniquement.
+
+**Starter run** : `hubIdToTemplateKey(hubId)` — ne plus retomber sur Bram si `hub_id` absent de `getHubToCore()` mais présent dans le pool gacha.
 
 **Règles v0** : équipe = esprits sur la roue · capture si balls en inventaire · 3★ (victoire / sans KO / ≤ N rounds) · défaite = retry sans perte collection.
 
@@ -277,6 +312,11 @@ Config v0 seed : **Lune des captures**. Bandeau sanctuaire → page détail + CT
 | `player_inventory` | **Objets hub** — Phantoballs, soins (consommables histoire) |
 | `roster_slots` | Roue ×6 (`slot_index` 0–5) + `spirit_id` + `on_field` (sync positions 0, 1, 5) |
 | `active_runs` | `state_json` = `CombatState` sérialisé |
+| `spirit_templates` | Templates combat (payload JSON) + `hub_id` pour mapping |
+| `gacha_pools` / `gacha_pool_entries` | Pools et cartes invoquables |
+| `story_zones` / `story_levels` | Carte histoire |
+| `run_rewards` | Reliques / objets entre vagues (payload `RunRewardDef`) |
+| `hub_events` | Live-ops (bandeau, boost capture, bannière gacha) |
 
 RPC : `purchase_shop_item`, `persist_player_inventory`, `persist_story_spirit_stats`.
 
@@ -310,6 +350,27 @@ Fin de run (`phase` `won` ou `lost`) : `computeRunMetaReward` (TS) + crédit DB 
 | Victoire | idem + 1 (+1 si vague ≥ 50, +2 si clear 200) | idem + 5 (+20 si clear 200) |
 
 1 ticket = 1 tirage standard (`STANDARD_PULL_TICKET_COST`).
+
+### Reliques run (impact gameplay)
+
+Au choix (gratuit ou boutique), `applyRunReward` dans `game-core` :
+
+| `kind` | Effet |
+|--------|--------|
+| `heal_all` | Soin immédiat % PV max (toute la roue) |
+| `stat_all` / `combo_atk_def` | +stats sur les alliés **pour la suite du run** |
+| `soul_mult` / `special_mult` / `capture_bonus` | Modificateurs run (âmes, amultimes, capture) |
+| `ball_*` / `xp_all` / `soul_fill` | One-shot (pas dans la barre reliques persistantes) |
+
+Skills : `characters.json` / `spirit_templates.payload` — basic + special1/2, `skill.power`, bonus tribu ; utilisés en run **et** histoire.
+
+### Checklist QA — compte neuf
+
+1. Migrations appliquées (dont `202606031*`).
+2. Compte créé → admin studio si besoin → **Importer le contenu**.
+3. `GET /api/content/game` → `source: "db"`.
+4. Hub, gacha welcome, story 1-1, run starter (vérifier esprit choisi = esprit en combat), reliques, `/events`, re-login.
+5. Si `gacha_pool_entries` vide : re-seed Studio Gacha.
 
 ## Ordre d’implémentation
 

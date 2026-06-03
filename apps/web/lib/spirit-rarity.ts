@@ -1,11 +1,14 @@
-import { getTemplate, HUB_TO_CORE, type Rarity } from "@phantoria/game-core";
+import { getHubToCore, getTemplate, type Rarity } from "@phantoria/game-core";
+import { entryByHubId } from "@/lib/player/gacha-pool";
 
 export function rarityForTemplateKey(templateKey: string): Rarity {
   return getTemplate(templateKey).rarity;
 }
 
 export function rarityForHubId(hubId: string): Rarity | null {
-  const key = HUB_TO_CORE[hubId];
+  const fromPool = entryByHubId(hubId);
+  if (fromPool) return fromPool.rarity;
+  const key = getHubToCore()[hubId];
   if (!key) return null;
   return getTemplate(key).rarity;
 }

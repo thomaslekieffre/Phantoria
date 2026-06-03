@@ -12,7 +12,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
-  INITIAL_ROSTER,
+  buildMockInitialRoster,
   isSpiritId,
   placeSpiritOnSlotLocal,
   removeFromRosterLocal,
@@ -21,6 +21,7 @@ import {
   type SpiritId,
   type SpiritSlot,
 } from "@/components/hub/roster";
+import { useGameContent } from "@/components/providers/game-content-provider";
 import { getLocalRunsCompleted } from "@/lib/player/run-stats-local";
 import type { PlayerInventory } from "@phantoria/game-core";
 import { STARTER_INVENTORY } from "@phantoria/game-core";
@@ -35,7 +36,15 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import type { HubEvent } from "@/lib/hub/hub-events";
 import { FALLBACK_HUB_EVENT } from "@/lib/hub/hub-events";
-import { fetchActiveHubEvent } from "@/lib/hub/hub-events-service";
+import {
+  pickHubEventForDisplay,
+  resolveGameEventEffects,
+  rowToHubEventDef,
+  toHubEventBanner,
+  type GameEventEffects,
+  type HubEventDef,
+} from "@/lib/hub/event-mechanics";
+import { fetchHubEventsCatalog } from "@/lib/hub/hub-events-service";
 import {
   buildEmptyRoster,
   fetchPlayerSnapshot,
@@ -43,11 +52,13 @@ import {
   persistPlaceSpiritOnSlot,
   persistRemoveSpiritFromWheel,
   persistRosterSwap,
+  syncRosterHpFromSpiritStats,
   type PlayerSnapshot,
 } from "@/lib/player/roster-service";
 import type { QuestProgressSnapshot } from "@/lib/player/quest-service";
+import { entryByHubId } from "@/lib/player/gacha-pool";
+import { getSpiritMeta } from "@/lib/player/spirit-catalog";
 import type { OwnedSpiritStats } from "@/lib/player/types";
-import { SPIRIT_CATALOG } from "@/lib/player/types";
 import type { StorySave } from "@/lib/story/story-progress";
 
 type PlayerContextValue = {
@@ -68,6 +79,8 @@ type PlayerContextValue = {
   gachaPityStandard: number;
   isStudioAdmin: boolean;
   hubEvent: HubEvent | null;
+  hubEvents: HubEventDef[];
+  gameEventEffects: GameEventEffects;
   hasSpirits: boolean;
   refresh: () => Promise<void>;
   swapRosterSlots: (fromIndex: number, toIndex: number) => Promise<void>;
@@ -78,6 +91,19 @@ type PlayerContextValue = {
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
+
+function offlineHubEventCatalog(): HubEventDef[] {
+  return [
+    rowToHubEventDef({
+      ...FALLBACK_HUB_EVENT,
+      starts_at: null,
+      ends_at: null,
+      kind: "capture_boost",
+      config: { captureBonus: 0.12, label: "Bonus capture +12 %" },
+      priority: 0,
+    }),
+  ];
+}
 
 const MOCK_SPIRITS_BY_HUB: Partial<Record<SpiritId, OwnedSpiritStats>> = {
   bram: { level: 1, xp: 0, hpPct: 100 },
@@ -90,7 +116,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isSupabaseEnabled());
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<PlayerSnapshot | null>(null);
-  const [hubEvent, setHubEvent] = useState<HubEvent | null>(FALLBACK_HUB_EVENT);
+  const [hubEvent, setHubEvent] = useState<HubEvent | null>(null);
+  const [hubEvents, setHubEvents] = useState<HubEventDef[]>([]);
+  const { version: contentVersion } = useGameContent();
+  const [gameEventEffects, setGameEventEffects] = useState<GameEventEffects>({
+    primary: null,
+    captureBonus: 0,
+    captureBoostEvents: [],
+    gachaBanner: null,
+  });
   const [statsTick, setStatsTick] = useState(0);
   const [clientMounted, setClientMounted] = useState(false);
   const storySyncedRef = useRef(false);
@@ -110,9 +144,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setClientMounted(true);
   }, []);
 
+  const applyHubEventsState = useCallback((catalog: HubEventDef[]) => {
+    setHubEvents(catalog);
+    setGameEventEffects(resolveGameEventEffects(catalog));
+    setHubEvent(toHubEventBanner(pickHubEventForDisplay(catalog)));
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!isSupabaseEnabled()) {
-      setHubEvent(FALLBACK_HUB_EVENT);
+      applyHubEventsState(offlineHubEventCatalog());
       setStatsTick((n) => n + 1);
       setReady(true);
       return;
@@ -124,19 +164,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } = await supabase.auth.getUser();
     setUser(nextUser);
 
-    const eventPromise = fetchActiveHubEvent(supabase);
+    const eventsPromise = fetchHubEventsCatalog(supabase);
 
     if (!nextUser) {
       setSnapshot(null);
-      setHubEvent(await eventPromise);
+      const catalog = await eventsPromise;
+      applyHubEventsState(catalog);
       setStatsTick((n) => n + 1);
       setReady(true);
       return;
     }
 
-    const [next, event] = await Promise.all([fetchPlayerSnapshot(supabase), eventPromise]);
+    const [next, catalog] = await Promise.all([fetchPlayerSnapshot(supabase), eventsPromise]);
     setSnapshot(next);
-    setHubEvent(event);
+    applyHubEventsState(catalog);
     if (nextUser && !storySyncedRef.current) {
       storySyncedRef.current = true;
       void syncLocalStoryToRemote().then(async () => {
@@ -147,7 +188,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
     setStatsTick((n) => n + 1);
     setReady(true);
-  }, []);
+  }, [applyHubEventsState]);
 
   useEffect(() => {
     if (!isSupabaseEnabled()) return;
@@ -164,11 +205,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!ready) return;
+    setStatsTick((n) => n + 1);
+  }, [contentVersion, ready]);
+
   const swapRosterSlots = useCallback(
     async (fromIndex: number, toIndex: number) => {
       if (!isSupabaseEnabled() || !user) {
         setSnapshot((prev) => {
-          const roster = prev?.roster ?? INITIAL_ROSTER;
+          const roster = prev?.roster ?? buildMockInitialRoster();
           return prev ? { ...prev, roster: swapRosterSlotsLocal(roster, fromIndex, toIndex) } : prev;
         });
         return;
@@ -184,10 +230,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const placeSpiritOnSlot = useCallback(
     async (hubId: SpiritId, slotIndex: number) => {
       if (!isSupabaseEnabled() || !user) {
-        const meta = SPIRIT_CATALOG[hubId];
+        const meta = getSpiritMeta(hubId);
         if (!meta) return;
         setSnapshot((prev) => {
-          const roster = prev?.roster ?? INITIAL_ROSTER;
+          const roster = prev?.roster ?? buildMockInitialRoster();
           const nextRoster = placeSpiritOnSlotLocal(roster, slotIndex, {
             id: hubId,
             name: meta.name,
@@ -210,7 +256,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const placeSpiritFirstFree = useCallback(
     async (hubId: SpiritId) => {
-      const roster = snapshot?.roster ?? INITIAL_ROSTER;
+      const roster = snapshot?.roster ?? buildMockInitialRoster();
       const freeIndex = roster.findIndex((s) => s.empty);
       if (freeIndex < 0) return false;
 
@@ -232,13 +278,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const removeSpiritFromWheel = useCallback(
     async (hubId: SpiritId) => {
-      const roster = snapshot?.roster ?? INITIAL_ROSTER;
+      const roster = snapshot?.roster ?? buildMockInitialRoster();
       const slotIndex = rosterIndexForHubId(roster, hubId);
       if (slotIndex < 0) return false;
 
       if (!isSupabaseEnabled() || !user) {
         setSnapshot((prev) => {
-          const base = prev?.roster ?? INITIAL_ROSTER;
+          const base = prev?.roster ?? buildMockInitialRoster();
           return prev ? { ...prev, roster: removeFromRosterLocal(base, slotIndex) } : prev;
         });
         return true;
@@ -265,6 +311,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const mockRoster = !supabaseOn || !loggedIn;
     void statsTick;
 
+    const spiritsByHubId = mockRoster
+      ? { ...MOCK_SPIRITS_BY_HUB, ...(clientMounted ? loadLocalSpiritStats() : {}) }
+      : (snapshot?.spiritsByHubId ?? {});
+    const roster = mockRoster
+      ? syncRosterHpFromSpiritStats(buildMockInitialRoster(), spiritsByHubId)
+      : (snapshot?.roster ?? buildEmptyRoster());
+
     return {
       ready,
       supabaseEnabled: supabaseOn,
@@ -275,13 +328,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           ? { gold: loadLocalGold(), gems: 35, tickets: 2 }
           : { gold: 1200, gems: 35, tickets: 2 }
         : (snapshot?.currencies ?? null),
-      roster: mockRoster ? INITIAL_ROSTER : (snapshot?.roster ?? buildEmptyRoster()),
+      roster,
       unlockedHubIds: mockRoster
-        ? (["bram", "nyx", "luma", "kiro"] as SpiritId[])
+        ? rosterStarters(roster).map((s) => s.id)
         : (snapshot?.unlockedHubIds ?? []),
-      spiritsByHubId: mockRoster
-        ? { ...MOCK_SPIRITS_BY_HUB, ...(clientMounted ? loadLocalSpiritStats() : {}) }
-        : (snapshot?.spiritsByHubId ?? {}),
+      spiritsByHubId,
       inventory: mockRoster
         ? clientMounted
           ? loadLocalInventory()
@@ -317,6 +368,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       gachaPityStandard: snapshot?.profile?.gacha_pity_standard ?? 0,
       isStudioAdmin: Boolean(snapshot?.profile?.is_admin),
       hubEvent,
+      hubEvents,
+      gameEventEffects,
       hasSpirits: mockRoster ? true : (snapshot?.spiritCount ?? 0) > 0,
       refresh,
       swapRosterSlots,
@@ -338,6 +391,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     statsTick,
     clientMounted,
     hubEvent,
+    hubEvents,
+    gameEventEffects,
+    contentVersion,
   ]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
@@ -362,8 +418,9 @@ export function ownedSpiritStarters(
   unlockedHubIds: SpiritId[],
   spiritsByHubId: Partial<Record<SpiritId, OwnedSpiritStats>>,
 ): (SpiritSlot & { id: SpiritId })[] {
-  return unlockedHubIds.map((id) => {
-    const meta = SPIRIT_CATALOG[id];
+  return unlockedHubIds.flatMap((id) => {
+    const meta = getSpiritMeta(id) ?? entryByHubId(id);
+    if (!meta) return [];
     const stats = spiritsByHubId[id];
     return {
       id,

@@ -63,14 +63,14 @@ export function SpiritWheel({
               <span className="wheel__bubble">
                 {slot.empty ? (
                   <span className="wheel__hole" aria-hidden />
-                ) : isSpiritId(slot.id) ? (
+                ) : (
                   <>
                     {slot.rarity ? (
                       <RarityBadge rarity={slot.rarity} size="xs" className="wheel__rarity" />
                     ) : null}
                     <SpiritPortrait id={slot.id} className="wheel__portrait" />
                   </>
-                ) : null}
+                )}
               </span>
               {!slot.empty && !compact ? (
                 <>

@@ -34,6 +34,27 @@ export async function pullWelcomeGacha(all = false): Promise<WelcomeResponse> {
   return parseJson<WelcomeResponse>(res);
 }
 
+export async function pullEventGacha(
+  eventId: string,
+  payment: StandardPullPayment,
+  count: 1 | typeof STANDARD_MULTI_PULL_COUNT,
+): Promise<StandardResponse> {
+  const res = await fetch("/api/gacha/event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eventId, payment, count }),
+  });
+  if (!res.ok) {
+    const body = await parseJson<StandardResponse>(res).catch(() => ({} as StandardResponse));
+    return {
+      results: [],
+      gachaPityStandard: 0,
+      error: body.error ?? "Invocation impossible",
+    };
+  }
+  return parseJson<StandardResponse>(res);
+}
+
 export async function pullStandardGacha(
   payment: StandardPullPayment,
   count: 1 | typeof STANDARD_MULTI_PULL_COUNT,

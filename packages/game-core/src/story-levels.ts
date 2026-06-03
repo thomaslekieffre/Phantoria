@@ -406,20 +406,49 @@ export const STORY_LEVELS: StoryLevelDef[] = [
   },
 ];
 
+let storyZonesOverride: StoryZoneDef[] | null = null;
+let storyLevelsOverride: StoryLevelDef[] | null = null;
+
+export function setStoryContent(zones: StoryZoneDef[], levels: StoryLevelDef[]): void {
+  storyZonesOverride = zones;
+  storyLevelsOverride = levels;
+}
+
+export function resetStoryContent(): void {
+  storyZonesOverride = null;
+  storyLevelsOverride = null;
+}
+
+function activeStoryZones(): StoryZoneDef[] {
+  return storyZonesOverride ?? STORY_ZONES;
+}
+
+function activeStoryLevels(): StoryLevelDef[] {
+  return storyLevelsOverride ?? STORY_LEVELS;
+}
+
 export function getStoryZone(zoneId: number): StoryZoneDef | undefined {
-  return STORY_ZONES.find((z) => z.id === zoneId);
+  return activeStoryZones().find((z) => z.id === zoneId);
 }
 
 export function getStoryLevel(levelId: string): StoryLevelDef | undefined {
-  return STORY_LEVELS.find((l) => l.id === levelId);
+  return activeStoryLevels().find((l) => l.id === levelId);
 }
 
 export function getStoryLevelByCoords(zoneId: number, index: number): StoryLevelDef | undefined {
-  return STORY_LEVELS.find((l) => l.zoneId === zoneId && l.index === index);
+  return activeStoryLevels().find((l) => l.zoneId === zoneId && l.index === index);
 }
 
 export function levelsForZone(zoneId: number): StoryLevelDef[] {
-  return STORY_LEVELS.filter((l) => l.zoneId === zoneId).sort((a, b) => a.index - b.index);
+  return activeStoryLevels().filter((l) => l.zoneId === zoneId).sort((a, b) => a.index - b.index);
+}
+
+export function getStoryZones(): StoryZoneDef[] {
+  return activeStoryZones();
+}
+
+export function getStoryLevels(): StoryLevelDef[] {
+  return activeStoryLevels();
 }
 
 export type StoryProgressLike = {

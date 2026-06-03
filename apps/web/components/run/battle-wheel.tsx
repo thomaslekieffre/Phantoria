@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { MAX_FIELD, type Combatant, type PendingRecruit, type WheelRotation, isFieldWheelIndex } from "@phantoria/game-core";
 import { CombatSpirit } from "@/components/run/combat-spirit";
 import { hpTone } from "@/components/hub/roster";
-import { CORE_HUE } from "./wheel-map";
+import { hueForTemplateKey } from "./wheel-map";
 import { RunRelicsTray } from "@/components/run/run-relics-tray";
 import { RarityBadge } from "@/components/ui/rarity-badge";
 
@@ -36,7 +36,7 @@ export function BattleWheel({
 }: BattleWheelProps) {
   const onField = slots.filter((s) => s?.active && !s.ko).length;
   const filled = slots.filter(Boolean).length;
-  const pendingHue = pendingRecruit ? (CORE_HUE[pendingRecruit.templateKey] ?? "#6366f1") : "#6366f1";
+  const pendingHue = pendingRecruit ? hueForTemplateKey(pendingRecruit.templateKey) : "#6366f1";
 
   return (
     <aside className={`bwheel ${placementMode ? "bwheel--placement" : ""}`} aria-label="Roue d'esprits">
@@ -72,7 +72,7 @@ export function BattleWheel({
 
         {slots.map((c, i) => {
           const empty = !c;
-          const hue = c ? (CORE_HUE[c.templateKey] ?? "#64748b") : "#475569";
+          const hue = c ? hueForTemplateKey(c.templateKey) : "#475569";
           const acting = c?.instanceId === currentId;
           const isTerrainSlot = isFieldWheelIndex(i);
 
