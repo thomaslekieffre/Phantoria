@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GACHA_BASE_WEIGHTS,
   GACHA_DUPLICATE_GEMS,
@@ -13,6 +13,7 @@ import type { SpiritId } from "@/components/hub/roster";
 import type { GachaPoolEntry } from "@/lib/player/gacha-pool";
 import { useGameContent } from "@/components/providers/game-content-provider";
 import { STANDARD_GACHA_POOL, WELCOME_GACHA_POOL, getGachaPool } from "@/lib/player/gacha-pool";
+import { formatRatePct, spiritPullProbability } from "@/lib/player/gacha-rates";
 
 const RARITY_CLASS: Record<Rarity, string> = {
   S: "gacha-rarity--s",
@@ -24,21 +25,38 @@ const RARITY_CLASS: Record<Rarity, string> = {
 };
 
 function SpiritList({
-  names,
+  spirits,
   owned,
+  pool,
+  mode,
+  pity,
 }: {
-  names: { hubId: SpiritId; name: string }[];
+  spirits: GachaPoolEntry[];
   owned: Set<SpiritId>;
+  pool: GachaPoolEntry[];
+  mode: "welcome" | "gacha";
+  pity: number;
 }) {
   return (
     <span className="gacha-rates__spirits">
-      {names.map((s, i) => (
-        <span key={s.hubId}>
-          {i > 0 ? ", " : ""}
-          <span className={owned.has(s.hubId) ? "gacha-rates__spirit--owned" : undefined}>{s.name}</span>
-          {owned.has(s.hubId) ? " ✓" : ""}
-        </span>
-      ))}
+      {spirits.map((s, i) => {
+        const pct = formatRatePct(
+          spiritPullProbability(s, pool, {
+            mode,
+            pity,
+            owned,
+          }),
+        );
+        return (
+          <span key={s.hubId}>
+            {i > 0 ? ", " : ""}
+            <span className={owned.has(s.hubId) ? "gacha-rates__spirit--owned" : undefined}>
+              {s.name} {mode === "gacha" ? `(${pct})` : ""}
+            </span>
+            {owned.has(s.hubId) ? " ✓" : ""}
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -46,14 +64,20 @@ function SpiritList({
 function RarityPoolModal({
   rarity,
   spirits,
+  pool,
   ownedIds,
   rateLabel,
+  mode,
+  pity,
   onClose,
 }: {
   rarity: Rarity;
   spirits: GachaPoolEntry[];
+  pool: GachaPoolEntry[];
   ownedIds: Set<SpiritId>;
   rateLabel: string;
+  mode: "welcome" | "gacha";
+  pity: number;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -87,6 +111,13 @@ function RarityPoolModal({
           <ul className="gacha-pool-modal__grid">
             {spirits.map((spirit) => {
               const owned = ownedIds.has(spirit.hubId);
+              const pct = formatRatePct(
+                spiritPullProbability(spirit, pool, {
+                  mode,
+                  pity,
+                  owned: ownedIds,
+                }),
+              );
               return (
                 <li
                   key={spirit.hubId}
@@ -98,6 +129,7 @@ function RarityPoolModal({
                   </div>
                   <span className="gacha-pool-modal__name">{spirit.name}</span>
                   <span className="gacha-pool-modal__tribe">{spirit.tribe}</span>
+                  <span className="gacha-pool-modal__spirit-rate">{pct}</span>
                 </li>
               );
             })}
@@ -111,14 +143,20 @@ function RarityPoolModal({
 function RatesRow({
   rarity,
   spirits,
+  pool,
   rateLabel,
   ownedIds,
+  mode,
+  pity,
   onOpen,
 }: {
   rarity: Rarity;
   spirits: GachaPoolEntry[];
+  pool: GachaPoolEntry[];
   rateLabel: string;
   ownedIds: Set<SpiritId>;
+  mode: "welcome" | "gacha";
+  pity: number;
   onOpen: (r: Rarity) => void;
 }) {
   const canOpen = spirits.length > 0;
@@ -135,10 +173,7 @@ function RatesRow({
       <div className="gacha-rates__info">
         <span className="gacha-rates__pct">{rateLabel}</span>
         {canOpen ? (
-          <SpiritList
-            names={spirits.map((s) => ({ hubId: s.hubId, name: s.name }))}
-            owned={ownedIds}
-          />
+          <SpiritList spirits={spirits} owned={ownedIds} pool={pool} mode={mode} pity={pity} />
         ) : (
           <span className="gacha-rates__spirits">—</span>
         )}
@@ -170,21 +205,41 @@ export function GachaRatesPanel({
         ? eventPool
         : STANDARD_GACHA_POOL;
 
+  const mode = pack === "welcome" ? "welcome" : "gacha";
+  const pity = pack === "standard" ? gachaPityStandard : 0;
+
   const sRatePct = Math.round(getSRateAtPity(gachaPityStandard) * 1000) / 10;
   const atHardPity = gachaPityStandard >= GACHA_HARD_PITY;
 
+  const hasVariableWeights = useMemo(() => {
+    for (const r of ["S", "A", "B", "C", "D", "E"] as Rarity[]) {
+      const group = pool.filter((e) => e.rarity === r);
+      if (group.length < 2) continue;
+      const weights = new Set(group.map((e) => e.weight ?? 100));
+      if (weights.size > 1) return true;
+    }
+    return false;
+  }, [pool]);
+
   function rateLabelFor(r: Rarity): string {
-    if (pack === "welcome") return "Pool fixe";
-    if (pack === "event") return "Pool event limité";
+    if (pack === "welcome") return "Pool fixe (poids)";
     if (r === "S") return atHardPity ? "100%" : `${sRatePct}%`;
     const pct = Math.round(GACHA_BASE_WEIGHTS[r] * 100);
-    return `${pct}% · doublon +${GACHA_DUPLICATE_GEMS[r]}💎`;
+    const intra = hasVariableWeights && pool.filter((e) => e.rarity === r).length > 1 ? " · taux/esprit variable" : "";
+    return `${pct}%${intra} · doublon +${GACHA_DUPLICATE_GEMS[r]}💎`;
   }
 
   function modalRateLabel(r: Rarity): string {
-    if (pack === "welcome") return "Garanti sans doublon tant qu'il reste des esprits uniques";
+    if (pack === "welcome") {
+      return "Chaque esprit : probabilité selon son poids (priorité aux non possédés).";
+    }
     if (r === "S") return atHardPity ? "100% — hard pity actif" : `${sRatePct}% (pity actuel)`;
-    return `${Math.round(GACHA_BASE_WEIGHTS[r] * 100)}% · doublon +${GACHA_DUPLICATE_GEMS[r]} gemmes`;
+    const base = `${Math.round(GACHA_BASE_WEIGHTS[r] * 100)}% pour la rareté`;
+    const group = pool.filter((e) => e.rarity === r);
+    if (group.length > 1) {
+      return `${base} — réparti entre ${group.length} esprits selon leurs poids`;
+    }
+    return `${base} · doublon +${GACHA_DUPLICATE_GEMS[r]} gemmes`;
   }
 
   const modalSpirits = modalRarity ? pool.filter((e) => e.rarity === modalRarity) : [];
@@ -194,7 +249,7 @@ export function GachaRatesPanel({
       <>
         <aside className="gacha-rates">
           <h3 className="gacha-rates__title">Contenu du pack</h3>
-          <p className="gacha-rates__lead">6 esprits distincts — clique une rareté pour voir le détail.</p>
+          <p className="gacha-rates__lead">6 esprits — poids configurables · clique une rareté.</p>
           <div className="gacha-rates__list">
             {(["B", "C", "D", "E"] as Rarity[]).map((r) => {
               const spirits = pool.filter((e) => e.rarity === r);
@@ -204,8 +259,11 @@ export function GachaRatesPanel({
                   key={r}
                   rarity={r}
                   spirits={spirits}
+                  pool={pool}
                   rateLabel={rateLabelFor(r)}
                   ownedIds={ownedIds}
+                  mode={mode}
+                  pity={pity}
                   onOpen={setModalRarity}
                 />
               );
@@ -216,8 +274,11 @@ export function GachaRatesPanel({
           <RarityPoolModal
             rarity={modalRarity}
             spirits={modalSpirits}
+            pool={pool}
             ownedIds={ownedIds}
             rateLabel={modalRateLabel(modalRarity)}
+            mode={mode}
+            pity={pity}
             onClose={() => setModalRarity(null)}
           />
         ) : null}
@@ -232,6 +293,7 @@ export function GachaRatesPanel({
         <p className="gacha-rates__lead">
           Pity {gachaPityStandard}/{GACHA_HARD_PITY}
           {atHardPity ? " — S garanti au prochain tirage" : ""}
+          {hasVariableWeights ? " · taux par esprit selon poids" : ""}
           {" · "}
           clique une rareté
         </p>
@@ -241,8 +303,11 @@ export function GachaRatesPanel({
               key={r}
               rarity={r}
               spirits={pool.filter((e) => e.rarity === r)}
+              pool={pool}
               rateLabel={rateLabelFor(r)}
               ownedIds={ownedIds}
+              mode={mode}
+              pity={pity}
               onOpen={setModalRarity}
             />
           ))}
@@ -260,8 +325,11 @@ export function GachaRatesPanel({
         <RarityPoolModal
           rarity={modalRarity}
           spirits={modalSpirits}
+          pool={pool}
           ownedIds={ownedIds}
           rateLabel={modalRateLabel(modalRarity)}
+          mode={mode}
+          pity={pity}
           onClose={() => setModalRarity(null)}
         />
       ) : null}

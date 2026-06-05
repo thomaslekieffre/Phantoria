@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const body = (await request.json()) as Record<string, unknown>;
   const patch: Record<string, unknown> = {};
-  for (const field of ["ticket_cost", "gem_cost", "multi_count", "active"] as const) {
+  for (const field of ["ticket_cost", "gem_cost", "multi_count", "active", "banner_url"] as const) {
     if (field in body) patch[field] = body[field];
   }
 

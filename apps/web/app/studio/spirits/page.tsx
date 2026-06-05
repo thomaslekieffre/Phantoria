@@ -97,6 +97,7 @@ export default function StudioSpiritsPage() {
       payload,
       active: form.active,
       sort_order: form.sort_order,
+      portrait_url: form.portrait_url.trim() || null,
     };
 
     const res = editKey

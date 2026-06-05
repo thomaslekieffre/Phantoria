@@ -623,6 +623,33 @@
   font-family: ui-monospace, monospace;
 }
 
+.studio-gacha-picker__list {
+  max-height: min(50vh, 22rem);
+  overflow-y: auto;
+  margin-top: 0.35rem;
+  padding-right: 0.15rem;
+}
+
+.studio-gacha-picker__item:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.studio-gacha-banner-preview {
+  margin: 0.5rem 0 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid #1a2e26;
+  overflow: hidden;
+  max-height: 10rem;
+}
+
+.studio-gacha-banner-preview img {
+  display: block;
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+}
+
 .studio-md__editor,
 .studio-spirits__editor {
   min-width: 0;
@@ -630,6 +657,22 @@
 
 .studio-spirits__form {
   margin-bottom: 0.75rem;
+}
+
+.studio-spirit-portrait-preview {
+  margin: 0.35rem 0 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid #1a2e26;
+  background: #0a1210;
+  display: flex;
+  justify-content: center;
+}
+
+.studio-spirit-portrait-preview img {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
 }
 
 .studio-md__placeholder,

@@ -508,6 +508,60 @@
   max-width: 16rem;
 }
 
+.gacha-hero__banner--image {
+  padding: 0;
+  min-height: 8.5rem;
+  background: #0c1613;
+}
+
+.gacha-hero__banner-img {
+  display: block;
+  width: 100%;
+  max-height: 12rem;
+  object-fit: cover;
+}
+
+.gacha-hero__banner-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.65rem 1rem 0.85rem;
+  background: linear-gradient(180deg, transparent, rgba(6, 12, 10, 0.92) 45%);
+}
+
+.gacha-hero__banner--image .gacha-hero__stamp {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.75rem;
+  z-index: 1;
+  margin: 0;
+}
+
+.gacha-hero__banner--image .gacha-hero__headline {
+  font-size: clamp(1rem, 3vw, 1.35rem);
+}
+
+.gacha-hero__banner--image .gacha-hero__pitch {
+  max-width: none;
+}
+
+.gacha-banner-btn__bg--image {
+  background-size: cover;
+  background-position: center;
+  filter: saturate(0.85) brightness(0.75);
+}
+
+.gacha-banner-btn--on .gacha-banner-btn__bg--image {
+  filter: saturate(1) brightness(0.95);
+}
+
+.gacha-pool-modal__spirit-rate {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--accent-soft);
+}
+
 /* Featured orbs */
 .gacha-featured {
   display: contents;

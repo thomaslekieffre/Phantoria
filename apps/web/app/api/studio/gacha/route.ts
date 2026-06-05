@@ -8,6 +8,7 @@ export type GachaPoolRow = {
   gem_cost: number;
   multi_count: number;
   active: boolean;
+  banner_url?: string | null;
 };
 
 export type GachaEntryRow = {
@@ -20,6 +21,7 @@ export type GachaEntryRow = {
   hue: string;
   rarity: string;
   sort_order: number;
+  weight: number;
 };
 
 export async function GET() {
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
     hue: body.hue ?? "#86efac",
     rarity: body.rarity ?? "E",
     sort_order: body.sort_order ?? 0,
+    weight: typeof body.weight === "number" && body.weight > 0 ? body.weight : 100,
   };
 
   const { data, error } = await supabase.from("gacha_pool_entries").insert(row).select().single();

@@ -12,8 +12,11 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const body = (await request.json()) as Record<string, unknown>;
   const patch: Record<string, unknown> = {};
-  for (const field of ["hub_id", "template_key", "name", "tribe", "hue", "rarity", "sort_order", "pool_id"] as const) {
+  for (const field of ["hub_id", "template_key", "name", "tribe", "hue", "rarity", "sort_order", "pool_id", "weight"] as const) {
     if (field in body) patch[field] = body[field];
+  }
+  if (typeof patch.weight === "number" && (patch.weight as number) <= 0) {
+    return NextResponse.json({ error: "weight doit être > 0" }, { status: 400 });
   }
 
   const { data, error } = await supabase

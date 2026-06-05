@@ -157,7 +157,7 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : … · **`20260603130000_security_hardening.sql`** · **`20260605120000_event_gacha_demo.sql`** (pool `event-demo` + event `gacha_banner` inactif).
+**Migrations récentes** : `20260603130000_security_hardening` · `20260605120000_event_gacha_demo` · `20260605140000_gacha_weights_banner` (poids + `banner_url` pool) · `20260605150000_spirit_portrait_url` · `20260605160000_playable_spirits_catalog` (9 jouables).
 
 **SFX** : `.\scripts\fetch-kenney-sfx.ps1` → `public/assets/audio/*.ogg` (Kenney CC0).
 
@@ -172,10 +172,17 @@ Compte **`profiles.is_admin = true`** · sinon redirection depuis `/studio`.
 | Page | Tables DB | API |
 |------|-----------|-----|
 | Esprits | `spirit_templates` | `/api/studio/spirits` |
-| Gacha | `gacha_pools`, `gacha_pool_entries` | `/api/studio/gacha` (+ pools `[id]`, entries `[id]`) |
+| Gacha | `gacha_pools`, `gacha_pool_entries` | `/api/studio/gacha` · `POST /api/studio/gacha/pools` · `PATCH …/pools/[id]` · entries `[id]` |
 | Histoire | `story_zones`, `story_levels` | `/api/studio/story` |
 | Reliques run | `run_rewards` | `/api/studio/rewards` |
 | Events | `hub_events` (`kind`, `config`, `priority`) | `/api/studio/hub-events` |
+
+**Gacha Studio** : `+ Pool` · `+ Esprit` (picker catalogue) · **poids drop** par entrée (100 = ref, intra-rareté) · **bannière** : PNG dans `public/assets/gacha/banners/` → URL `/assets/gacha/banners/xxx.png` sur le pool.
+
+**Portraits esprits** : Studio → Esprits → champ **Portrait** · PNG dans `public/assets/spirits/portraits/` → `/assets/spirits/portraits/roche.png` (hub_id). Remplace le SVG partout (`/spirits`, hub, gacha).
+
+**Esprits jouables** : 9 en `catalog` (`characters.json`) — Bram, Nyx, Luma, Kiro, Aurore, Roche, Halo, Murmure, Brise. Picker gacha = `spirit_templates` actifs avec `hub_id`.
+
 | Seed global | — | `POST /api/studio/seed` |
 
 **Workflow**
@@ -183,7 +190,9 @@ Compte **`profiles.is_admin = true`** · sinon redirection depuis `/studio`.
 1. Appliquer les migrations studio + hub events (voir liste ci-dessus).
 2. `/studio` → **Importer le contenu** (réécrit seed depuis `characters.json`, pools welcome/standard, story, reliques ; **vide puis remplit** `gacha_pool_entries`).
 3. Éditer en UI (formulaires structurés, plus de JSON brut).
-4. Le client recharge via `GameContentProvider` → `GET /api/content/game` → `applyGameContent()` (overrides `game-core` + pools gacha).
+4. Le client recharge via `GameContentProvider` → `GET /api/content/game` → `applyGameContent()` (DB seule, **pas de merge code**).
+
+**Runtime DB-only** : pools gacha, esprits, story, reliques viennent uniquement de Supabase. `characters.json` + `seed-baseline.ts` servent **uniquement** au bouton seed Studio. Sans DB → `source: empty` + bandeau « importe le seed ».
 
 **Pools gacha custom (event)** : créer la ligne dans `gacha_pools` (SQL ou futur UI), entrées dans Studio Gacha, puis event hub `kind = gacha_banner` avec `config.poolId` = même id.
 
@@ -193,9 +202,12 @@ Hors studio (encore en code) : quêtes, boutique, algo vagues run, passifs tribu
 
 | Fichier | Rôle |
 |---------|------|
-| `components/providers/game-content-provider.tsx` | Bloque l’app jusqu’au fetch ; expose `source` (`db` \| `fallback`) et `version` |
-| `lib/content/game-content.ts` | `fetchGameContent`, `applyGameContent` : catalogues, `hubToCore`, story, `run_rewards`, pools |
+| `components/providers/game-content-provider.tsx` | Fetch contenu ; expose `source` (`db` \| `empty`) et `version` |
+| `lib/content/game-content.ts` | `fetchGameContent` (DB pur), `emptyGameContent`, `applyGameContent` |
+| `lib/studio/seed-baseline.ts` | Pools gacha initiaux — seed uniquement, pas le runtime |
+| `lib/player/gacha-rates.ts` | Taux par esprit (poids intra-rareté) pour le panneau gacha |
 | `lib/player/spirit-catalog.ts` | Catalogue hub (métadonnées gacha) reconstruit après chaque apply |
+| `lib/studio/gacha-catalog.ts` | Picker Studio — catalogue DB uniquement |
 | `components/run/wheel-map.ts` | `hubIdToTemplateKey`, `hubIdForTemplateKey`, teintes dynamiques |
 
 **Hub — stats panneau** : `runs_completed` · `spiritCount` · events → `PlayerProvider.hubEvents` + `hubEvent` (bandeau principal).

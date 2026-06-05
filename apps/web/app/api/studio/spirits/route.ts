@@ -12,6 +12,7 @@ export type SpiritTemplateRow = {
   payload: Record<string, unknown>;
   active: boolean;
   sort_order: number;
+  portrait_url?: string | null;
   updated_at: string;
 };
 
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     payload: body.payload ?? {},
     active: body.active ?? true,
     sort_order: body.sort_order ?? 0,
+    portrait_url: body.portrait_url?.trim() || null,
   };
 
   const { data, error } = await supabase.from("spirit_templates").insert(row).select().single();

@@ -9,12 +9,12 @@ import {
   type CharacterTemplate,
 } from "@phantoria/game-core";
 import {
-  STANDARD_GACHA_POOL,
-  STANDARD_MULTI_PULL_COUNT,
-  STANDARD_PULL_GEM_COST,
-  STANDARD_PULL_TICKET_COST,
-  WELCOME_GACHA_POOL,
-} from "@/lib/player/gacha-pool";
+  SEED_STANDARD_GACHA_POOL,
+  SEED_STANDARD_MULTI_PULL_COUNT,
+  SEED_STANDARD_PULL_GEM_COST,
+  SEED_STANDARD_PULL_TICKET_COST,
+  SEED_WELCOME_GACHA_POOL,
+} from "@/lib/studio/seed-baseline";
 
 export type SeedReport = {
   spirits: number;
@@ -24,12 +24,20 @@ export type SeedReport = {
   runRewards: number;
 };
 
+const PLAYABLE_TEMPLATE_KEYS = new Set(Object.values(HUB_TO_CORE));
+
+function hubIdForTemplateKey(key: string): string | null {
+  return Object.entries(HUB_TO_CORE).find(([, v]) => v === key)?.[0] ?? null;
+}
+
 export async function seedStudioContentFromCodebase(supabase: SupabaseClient): Promise<SeedReport> {
+  const catalogKeys = new Set(Object.keys(CHARACTER_CATALOG));
+
   const spiritRows = [
     ...Object.entries(CHARACTER_CATALOG).map(([key, t], i) => ({
       template_key: key,
       kind: "catalog" as const,
-      hub_id: Object.entries(HUB_TO_CORE).find(([, v]) => v === key)?.[0] ?? null,
+      hub_id: hubIdForTemplateKey(key),
       name: t.name,
       tribe: t.tribe,
       rarity: t.rarity,
@@ -37,17 +45,19 @@ export async function seedStudioContentFromCodebase(supabase: SupabaseClient): P
       active: true,
       sort_order: i,
     })),
-    ...Object.entries(ENEMY_TEMPLATES).map(([key, t], i) => ({
-      template_key: key,
-      kind: "enemy" as const,
-      hub_id: null,
-      name: t.name,
-      tribe: t.tribe,
-      rarity: t.rarity,
-      payload: t as CharacterTemplate,
-      active: true,
-      sort_order: 1000 + i,
-    })),
+    ...Object.entries(ENEMY_TEMPLATES)
+      .filter(([key]) => !catalogKeys.has(key))
+      .map(([key, t], i) => ({
+        template_key: key,
+        kind: (PLAYABLE_TEMPLATE_KEYS.has(key) ? "catalog" : "enemy") as "catalog" | "enemy",
+        hub_id: hubIdForTemplateKey(key),
+        name: t.name,
+        tribe: t.tribe,
+        rarity: t.rarity,
+        payload: t as CharacterTemplate,
+        active: true,
+        sort_order: 1000 + i,
+      })),
   ];
 
   await supabase.from("spirit_templates").upsert(spiritRows, { onConflict: "template_key" });
@@ -57,9 +67,9 @@ export async function seedStudioContentFromCodebase(supabase: SupabaseClient): P
       { id: "welcome", ticket_cost: 0, gem_cost: 0, multi_count: 1, active: true },
       {
         id: "standard",
-        ticket_cost: STANDARD_PULL_TICKET_COST,
-        gem_cost: STANDARD_PULL_GEM_COST,
-        multi_count: STANDARD_MULTI_PULL_COUNT,
+        ticket_cost: SEED_STANDARD_PULL_TICKET_COST,
+        gem_cost: SEED_STANDARD_PULL_GEM_COST,
+        multi_count: SEED_STANDARD_MULTI_PULL_COUNT,
         active: true,
       },
     ],
@@ -67,7 +77,7 @@ export async function seedStudioContentFromCodebase(supabase: SupabaseClient): P
   );
 
   const gachaEntries = [
-    ...WELCOME_GACHA_POOL.map((e, i) => ({
+    ...SEED_WELCOME_GACHA_POOL.map((e, i) => ({
       pool_id: "welcome",
       hub_id: e.hubId,
       template_key: e.templateKey,
@@ -76,8 +86,9 @@ export async function seedStudioContentFromCodebase(supabase: SupabaseClient): P
       hue: e.hue,
       rarity: e.rarity,
       sort_order: i,
+      weight: e.weight ?? 100,
     })),
-    ...STANDARD_GACHA_POOL.map((e, i) => ({
+    ...SEED_STANDARD_GACHA_POOL.map((e, i) => ({
       pool_id: "standard",
       hub_id: e.hubId,
       template_key: e.templateKey,
@@ -86,6 +97,7 @@ export async function seedStudioContentFromCodebase(supabase: SupabaseClient): P
       hue: e.hue,
       rarity: e.rarity,
       sort_order: i,
+      weight: e.weight ?? 100,
     })),
   ];
 

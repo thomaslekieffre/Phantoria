@@ -103,6 +103,29 @@ export function SpiritEditorForm({ form, editKey, saving, onChange, onSubmit, on
           <span>Nom affiché</span>
           <input value={form.name} onChange={(e) => patch({ name: e.target.value })} required placeholder="Kiro" />
         </label>
+        {form.kind === "catalog" ? (
+          <>
+            <label className="studio-field">
+              <span>Portrait (URL publique)</span>
+              <input
+                value={form.portrait_url}
+                onChange={(e) => patch({ portrait_url: e.target.value })}
+                placeholder="/assets/spirits/portraits/roche.png"
+              />
+            </label>
+            <p className="studio-field__hint studio-field__hint--block">
+              PNG transparent recommandé · dossier{" "}
+              <code>apps/web/public/assets/spirits/portraits/</code> → chemin{" "}
+              <code>/assets/spirits/portraits/hub_id.png</code>
+            </p>
+            {form.portrait_url.trim() ? (
+              <div className="studio-spirit-portrait-preview">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.portrait_url.trim()} alt="Aperçu portrait" />
+              </div>
+            ) : null}
+          </>
+        ) : null}
       </fieldset>
 
       <fieldset className="studio-fieldset">

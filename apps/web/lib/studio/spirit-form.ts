@@ -26,6 +26,7 @@ export type SpiritFormState = {
   skills: Record<SkillSlotKey, SkillFormState>;
   active: boolean;
   sort_order: number;
+  portrait_url: string;
 };
 
 const SKILL_SLOTS: { key: SkillSlotKey; label: string }[] = [
@@ -77,6 +78,7 @@ export function emptySpiritForm(): SpiritFormState {
     },
     active: true,
     sort_order: 0,
+    portrait_url: "",
   };
 }
 
@@ -115,6 +117,7 @@ export function spiritFormFromPayload(
     payload: unknown;
     active: boolean;
     sort_order: number;
+    portrait_url?: string | null;
   },
 ): SpiritFormState {
   const p = row.payload as Record<string, unknown>;
@@ -154,6 +157,7 @@ export function spiritFormFromPayload(
     skills: { basic, special1, special2 },
     active: row.active,
     sort_order: row.sort_order,
+    portrait_url: row.portrait_url ?? "",
   };
 }
 

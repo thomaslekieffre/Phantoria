@@ -315,11 +315,11 @@ pnpm test:core   # tsx --test packages/game-core/src/formulas.test.ts (61 tests)
 9. ✅ **Or victoire histoire** — `computeStoryGoldReward` · RPC `record_story_victory` crédite `player_currencies.gold`
 10. ✅ **Layout mobile** — `responsive.css`, bottom nav, combat touch-friendly
 11. ✅ **Studio + contenu live** — tables `spirit_templates`, gacha, story, `run_rewards`, `hub_events` · `GET /api/content/game` · seed `/api/studio/seed`
-12. **À faire** — zone 3+, UI création pool gacha en Studio
+12. **À faire** — zone 3+ histoire
 
 ### Contenu live (runtime)
 
-Au boot client : `GameContentProvider` → `applyGameContent()` écrase les catalogues `game-core` (personnages, histoire, reliques run, pools gacha, `hubToCore`). Le JSON `data/characters.json` reste la source du **seed** Studio, pas forcément la vérité en prod après édition DB.
+Au boot : `fetchGameContent` lit **uniquement** Supabase (`source: db` \| `empty`). Pas de merge avec pools/SVG hardcodés. `applyGameContent()` injecte personnages, story, reliques, pools gacha, portraits. `characters.json` + `seed-baseline.ts` = **seed Studio uniquement**.
 
 ## Catalogue esprits (`data/characters.json`)
 

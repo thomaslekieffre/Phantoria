@@ -19,6 +19,7 @@ import {
   STANDARD_PULL_TICKET_COST,
   WELCOME_GACHA_POOL,
   getGachaPool,
+  getGachaPoolBanner,
   entryByHubId,
 } from "@/lib/player/gacha-pool";
 import {
@@ -273,6 +274,7 @@ export function GachaScreen() {
   const eventBanner = gameEventEffects.gachaBanner;
   const eventPoolId = eventBanner?.config.poolId;
   const eventPool = eventPoolId ? getGachaPool(eventPoolId) : undefined;
+  const eventBannerImage = eventPoolId ? getGachaPoolBanner(eventPoolId) : undefined;
   const eventTicketCost = eventBanner?.config.ticketCost ?? STANDARD_PULL_TICKET_COST;
   const eventGemCost = eventBanner?.config.gemCost ?? STANDARD_PULL_GEM_COST;
   const eventMultiCount = eventBanner?.config.multiCount ?? STANDARD_MULTI_PULL_COUNT;
@@ -515,7 +517,14 @@ export function GachaScreen() {
                 className={`gacha-banner-btn ${pack === "event" ? "gacha-banner-btn--on" : ""}`}
                 onClick={() => selectPack("event")}
               >
-                <div className="gacha-banner-btn__bg gacha-banner-btn__bg--welcome" />
+                <div
+                  className={`gacha-banner-btn__bg ${eventBannerImage ? "gacha-banner-btn__bg--image" : "gacha-banner-btn__bg--welcome"}`}
+                  style={
+                    eventBannerImage
+                      ? ({ backgroundImage: `url(${eventBannerImage})` } as CSSProperties)
+                      : undefined
+                  }
+                />
                 <span className="gacha-banner-btn__tag">Event</span>
                 <span className="gacha-banner-btn__title">{eventBanner.title}</span>
               </button>
@@ -524,7 +533,9 @@ export function GachaScreen() {
 
           <div className="gacha-altar-wrap">
             <article className="gacha-altar">
-              <div className={`gacha-hero__banner ${pack === "welcome" ? "gacha-hero__banner--welcome" : ""}`}>
+              <div
+                className={`gacha-hero__banner ${pack === "welcome" ? "gacha-hero__banner--welcome" : ""} ${pack === "event" && eventBannerImage ? "gacha-hero__banner--image" : ""}`}
+              >
                 {pack === "welcome" ? (
                   <>
                     <span className="gacha-hero__stamp">GRATUIT</span>
@@ -537,11 +548,23 @@ export function GachaScreen() {
                     </p>
                   </>
                 ) : pack === "event" && eventBanner ? (
-                  <>
-                    <span className="gacha-hero__stamp">EVENT</span>
-                    <h2 className="gacha-hero__headline">{eventBanner.title}</h2>
-                    <p className="gacha-hero__pitch">{eventBanner.subtitle}</p>
-                  </>
+                  eventBannerImage ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={eventBannerImage} alt="" className="gacha-hero__banner-img" />
+                      <div className="gacha-hero__banner-overlay">
+                        <span className="gacha-hero__stamp">EVENT</span>
+                        <h2 className="gacha-hero__headline">{eventBanner.title}</h2>
+                        <p className="gacha-hero__pitch">{eventBanner.subtitle}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="gacha-hero__stamp">EVENT</span>
+                      <h2 className="gacha-hero__headline">{eventBanner.title}</h2>
+                      <p className="gacha-hero__pitch">{eventBanner.subtitle}</p>
+                    </>
+                  )
                 ) : (
                   <>
                     <span className="gacha-hero__stamp gacha-hero__stamp--pity">

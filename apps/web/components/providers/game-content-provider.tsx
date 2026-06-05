@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { applyGameContent, type GameContentSnapshot } from "@/lib/content/game-content";
+import Link from "next/link";
+import { applyGameContent, emptyGameContent, type GameContentSnapshot } from "@/lib/content/game-content";
 import { getSpiritCatalogVersion } from "@/lib/player/spirit-catalog";
 
 type ContentContextValue = {
@@ -34,9 +35,13 @@ export function GameContentProvider({ children }: { children: ReactNode }) {
         const content = (await res.json()) as GameContentSnapshot;
         applyGameContent(content);
         setSource(content.source);
+      } else {
+        applyGameContent(emptyGameContent());
+        setSource("empty");
       }
     } catch {
-      /* fallback game-core defaults */
+      applyGameContent(emptyGameContent());
+      setSource("empty");
     } finally {
       setVersion(getSpiritCatalogVersion());
       setReady(true);
@@ -62,6 +67,16 @@ export function GameContentProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ContentContext.Provider value={{ ready, source, version, reload }}>{children}</ContentContext.Provider>
+    <ContentContext.Provider value={{ ready, source, version, reload }}>
+      {source === "empty" ? (
+        <div className="content-boot content-boot--empty" role="status">
+          <p>Contenu jeu absent en base.</p>
+          <p>
+            Ouvre le <Link href="/studio">Studio</Link> → importe le seed, puis recharge.
+          </p>
+        </div>
+      ) : null}
+      {children}
+    </ContentContext.Provider>
   );
 }

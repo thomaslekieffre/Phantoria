@@ -15,10 +15,24 @@ export type SpiritMeta = {
   tribe: string;
   hue: string;
   rarity: Rarity;
+  portraitUrl?: string;
 };
 
 let catalog: Record<string, SpiritMeta> = {};
+let portraitByHub: Record<string, string> = {};
 let contentVersion = 0;
+
+export function setSpiritPortraitUrls(urls: Record<string, string | null | undefined>): void {
+  portraitByHub = {};
+  for (const [hubId, url] of Object.entries(urls)) {
+    const trimmed = url?.trim();
+    if (trimmed) portraitByHub[hubId] = trimmed;
+  }
+}
+
+export function getSpiritPortraitUrl(hubId: string): string | undefined {
+  return catalog[hubId]?.portraitUrl ?? portraitByHub[hubId];
+}
 
 function entryToMeta(e: GachaPoolEntry): SpiritMeta {
   return {
@@ -28,6 +42,7 @@ function entryToMeta(e: GachaPoolEntry): SpiritMeta {
     tribe: e.tribe,
     hue: e.hue,
     rarity: e.rarity,
+    portraitUrl: portraitByHub[e.hubId],
   };
 }
 
@@ -78,5 +93,3 @@ export function getDisplayPoolEntries(): GachaPoolEntry[] {
 export function isKnownHubId(hubId: string): boolean {
   return hubId in getHubToCore() || hubId in catalog;
 }
-
-rebuildSpiritCatalog();

@@ -31,7 +31,22 @@ Source : [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) (C
 
 Les `.ogg` sont versionnés dans `public/assets/audio/`. Sans fichier → synth Web Audio (fallback).
 
-## 2. Event gacha (`QA-004`)
+## 2. Studio contenu (livré)
+
+État **OK pour édition bêta** — contenu live 100 % DB au runtime.
+
+| Zone | Capacités |
+|------|-----------|
+| **Esprits** | Stats/skills, portrait PNG, 9 jouables en `catalog` |
+| **Gacha** | `+ Pool`, picker catalogue, poids drop, bannière PNG, coûts |
+| **Events** | `gacha_banner` + pool custom |
+| **Seed** | `characters.json` + `seed-baseline.ts` → DB (une fois) |
+
+**Setup neuf** : `supabase db push` → `/studio` admin → **Importer le contenu** → refresh jeu.
+
+Sans seed : bandeau `source: empty` (pas de fallback code).
+
+## 3. Event gacha (`QA-004`)
 
 ### Setup Studio (admin)
 
@@ -48,7 +63,7 @@ Les `.ogg` sont versionnés dans `public/assets/audio/`. Sans fichier → synth 
 
 Migration : `20260605120000_event_gacha_demo.sql` — pool `event-demo`, event `banniere-gacha-demo` **inactive** → Studio → activer + vérifier dates.
 
-## 3. Mobile ≤768px
+## 4. Mobile ≤768px
 
 - [ ] Hub : bottom nav, fiche esprit bottom sheet
 - [ ] `/spirits` : grille + fiche bas
@@ -56,12 +71,12 @@ Migration : `20260605120000_event_gacha_demo.sql` — pool `event-demo`, event `
 - [ ] `/run` + histoire : combat sans topbar/sidebar, deck bas
 - [ ] Toggle son topbar accessible
 
-## 4. Contenu
+## 5. Contenu
 
 - **Zones histoire** : 1–2 jouables (30 niv.). Zone 3 = Costauds définie, niveaux à écrire.
-- **Esprits** : 10+ dans pool standard ; portraits SVG (art Phase 2 `VISUAL-UX-PLAN.md`).
+- **Esprits** : 9 jouables seed · pool standard 9 entrées · portraits PNG via Studio (fallback blob générique).
 
-## 5. Infra bêta
+## 6. Infra bêta
 
 - [ ] Vercel deploy + env (`SUPABASE_*`, `SERVICE_ROLE`, PostHog)
 - [ ] Migrations Supabase à jour

@@ -179,6 +179,150 @@
           "description": "Explosion solaire · 115 % ATK zone"
         }
       }
+    },
+    "roche_costaud": {
+      "key": "roche_costaud",
+      "name": "Roche",
+      "tribe": "costauds",
+      "rarity": "E",
+      "base": {
+        "hp": 110,
+        "atk": 15,
+        "def": 16,
+        "vit": 7
+      },
+      "skills": {
+        "basic": {
+          "id": "roche_basic",
+          "name": "Écrasement",
+          "power": 1,
+          "targeting": "single",
+          "description": "Coup massif · 100 % ATK"
+        },
+        "special1": {
+          "id": "roche_s1",
+          "name": "Séisme",
+          "power": 1.25,
+          "targeting": "aoe",
+          "description": "Secousse sur tous · 125 % ATK zone"
+        },
+        "special2": {
+          "id": "roche_s2",
+          "name": "Mur de pierre",
+          "power": 1.4,
+          "targeting": "single",
+          "tribe": "costauds",
+          "description": "Impact ciblé · 140 % ATK · bonus Costauds"
+        }
+      }
+    },
+    "halo_bienveillant": {
+      "key": "halo_bienveillant",
+      "name": "Halo",
+      "tribe": "bienveillants",
+      "rarity": "E",
+      "base": {
+        "hp": 85,
+        "atk": 13,
+        "def": 11,
+        "vit": 10
+      },
+      "skills": {
+        "basic": {
+          "id": "halo_basic",
+          "name": "Lueur",
+          "power": 1,
+          "targeting": "single",
+          "description": "Rayon apaisant · 100 % ATK"
+        },
+        "special1": {
+          "id": "halo_s1",
+          "name": "Caresse",
+          "power": 1.2,
+          "targeting": "single",
+          "description": "Frappe bienveillante · 120 % ATK"
+        },
+        "special2": {
+          "id": "halo_s2",
+          "name": "Aurore",
+          "power": 1,
+          "targeting": "aoe",
+          "tribe": "bienveillants",
+          "description": "Lumière sur tous · 100 % ATK zone · bonus Bienveillants"
+        }
+      }
+    },
+    "murmure_sinistre": {
+      "key": "murmure_sinistre",
+      "name": "Murmure",
+      "tribe": "sinistres",
+      "rarity": "D",
+      "base": {
+        "hp": 82,
+        "atk": 19,
+        "def": 7,
+        "vit": 12
+      },
+      "skills": {
+        "basic": {
+          "id": "murmure_basic",
+          "name": "Murmure",
+          "power": 1,
+          "targeting": "single",
+          "description": "Chuchotement glaçant · 100 % ATK"
+        },
+        "special1": {
+          "id": "murmure_s1",
+          "name": "Terreur",
+          "power": 1.35,
+          "targeting": "random",
+          "description": "Peur aléatoire · 135 % ATK"
+        },
+        "special2": {
+          "id": "murmure_s2",
+          "name": "Cauchemar",
+          "power": 1.05,
+          "targeting": "aoe",
+          "tribe": "sinistres",
+          "description": "Cauchemar collectif · 105 % ATK zone · bonus Sinistres"
+        }
+      }
+    },
+    "brise_insaisissable": {
+      "key": "brise_insaisissable",
+      "name": "Brise",
+      "tribe": "insaisissables",
+      "rarity": "D",
+      "base": {
+        "hp": 78,
+        "atk": 17,
+        "def": 8,
+        "vit": 15
+      },
+      "skills": {
+        "basic": {
+          "id": "brise_basic",
+          "name": "Rafale",
+          "power": 1,
+          "targeting": "single",
+          "description": "Coup de vent · 100 % ATK"
+        },
+        "special1": {
+          "id": "brise_s1",
+          "name": "Éclair",
+          "power": 1.45,
+          "targeting": "single",
+          "description": "Frappe éclair · 145 % ATK"
+        },
+        "special2": {
+          "id": "brise_s2",
+          "name": "Tempête",
+          "power": 0.95,
+          "targeting": "aoe",
+          "tribe": "insaisissables",
+          "description": "Tempête de zone · 95 % ATK · bonus Insaisissables"
+        }
+      }
     }
   },
   "enemies": {
@@ -250,150 +394,6 @@
           "targeting": "aoe",
           "tribe": "neants",
           "description": "Vortex du néant · 100 % ATK zone · bonus Néants"
-        }
-      }
-    },
-    "roche_costaud": {
-      "key": "roche_costaud",
-      "name": "Roche errante",
-      "tribe": "costauds",
-      "rarity": "E",
-      "base": {
-        "hp": 110,
-        "atk": 15,
-        "def": 16,
-        "vit": 7
-      },
-      "skills": {
-        "basic": {
-          "id": "roche_basic",
-          "name": "Écrasement",
-          "power": 1,
-          "targeting": "single",
-          "description": "Coup massif · 100 % ATK"
-        },
-        "special1": {
-          "id": "roche_s1",
-          "name": "Séisme",
-          "power": 1.25,
-          "targeting": "aoe",
-          "description": "Secousse sur tous · 125 % ATK zone"
-        },
-        "special2": {
-          "id": "roche_s2",
-          "name": "Mur de pierre",
-          "power": 1.4,
-          "targeting": "single",
-          "tribe": "costauds",
-          "description": "Impact ciblé · 140 % ATK · bonus Costauds"
-        }
-      }
-    },
-    "halo_bienveillant": {
-      "key": "halo_bienveillant",
-      "name": "Halo errant",
-      "tribe": "bienveillants",
-      "rarity": "E",
-      "base": {
-        "hp": 85,
-        "atk": 13,
-        "def": 11,
-        "vit": 10
-      },
-      "skills": {
-        "basic": {
-          "id": "halo_basic",
-          "name": "Lueur",
-          "power": 1,
-          "targeting": "single",
-          "description": "Rayon apaisant · 100 % ATK"
-        },
-        "special1": {
-          "id": "halo_s1",
-          "name": "Caresse",
-          "power": 1.2,
-          "targeting": "single",
-          "description": "Frappe bienveillante · 120 % ATK"
-        },
-        "special2": {
-          "id": "halo_s2",
-          "name": "Aurore",
-          "power": 1,
-          "targeting": "aoe",
-          "tribe": "bienveillants",
-          "description": "Lumière sur tous · 100 % ATK zone · bonus Bienveillants"
-        }
-      }
-    },
-    "murmure_sinistre": {
-      "key": "murmure_sinistre",
-      "name": "Murmure sinistre",
-      "tribe": "sinistres",
-      "rarity": "D",
-      "base": {
-        "hp": 82,
-        "atk": 19,
-        "def": 7,
-        "vit": 12
-      },
-      "skills": {
-        "basic": {
-          "id": "murmure_basic",
-          "name": "Murmure",
-          "power": 1,
-          "targeting": "single",
-          "description": "Chuchotement glaçant · 100 % ATK"
-        },
-        "special1": {
-          "id": "murmure_s1",
-          "name": "Terreur",
-          "power": 1.35,
-          "targeting": "random",
-          "description": "Peur aléatoire · 135 % ATK"
-        },
-        "special2": {
-          "id": "murmure_s2",
-          "name": "Cauchemar",
-          "power": 1.05,
-          "targeting": "aoe",
-          "tribe": "sinistres",
-          "description": "Cauchemar collectif · 105 % ATK zone · bonus Sinistres"
-        }
-      }
-    },
-    "brise_insaisissable": {
-      "key": "brise_insaisissable",
-      "name": "Brise fugace",
-      "tribe": "insaisissables",
-      "rarity": "D",
-      "base": {
-        "hp": 78,
-        "atk": 17,
-        "def": 8,
-        "vit": 15
-      },
-      "skills": {
-        "basic": {
-          "id": "brise_basic",
-          "name": "Rafale",
-          "power": 1,
-          "targeting": "single",
-          "description": "Coup de vent · 100 % ATK"
-        },
-        "special1": {
-          "id": "brise_s1",
-          "name": "Éclair",
-          "power": 1.45,
-          "targeting": "single",
-          "description": "Frappe éclair · 145 % ATK"
-        },
-        "special2": {
-          "id": "brise_s2",
-          "name": "Tempête",
-          "power": 0.95,
-          "targeting": "aoe",
-          "tribe": "insaisissables",
-          "description": "Tempête de zone · 95 % ATK · bonus Insaisissables"
         }
       }
     },

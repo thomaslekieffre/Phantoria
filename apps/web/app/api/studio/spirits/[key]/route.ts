@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const body = (await request.json()) as Record<string, unknown>;
   const patch: Record<string, unknown> = {};
-  for (const field of ["hub_id", "name", "tribe", "rarity", "payload", "active", "sort_order", "kind"] as const) {
+  for (const field of ["hub_id", "name", "tribe", "rarity", "payload", "active", "sort_order", "kind", "portrait_url"] as const) {
     if (field in body) patch[field] = body[field];
   }
   patch.updated_at = new Date().toISOString();

@@ -106,22 +106,19 @@ function slotFromMeta(hubId: SpiritId, hp: number): SpiritSlot | null {
   };
 }
 
-/** Roue mock locale (hors Supabase) — dérivée des pools chargés. */
+/** Roue mock locale (hors Supabase) — dérivée du pool welcome DB. */
 export function buildMockInitialRoster(): SpiritSlot[] {
   const pick = (hubId: string, hp: number) => slotFromMeta(hubId, hp) ?? emptyWheelSlot(0);
-  const byHub = (id: string) => WELCOME_GACHA_POOL.find((e) => e.hubId === id);
-  const bram = byHub("bram")?.hubId ?? WELCOME_GACHA_POOL[0]?.hubId;
-  const nyx = byHub("nyx")?.hubId ?? WELCOME_GACHA_POOL[1]?.hubId;
-  const kiro = byHub("kiro")?.hubId ?? WELCOME_GACHA_POOL[3]?.hubId;
-  const luma = byHub("luma")?.hubId ?? WELCOME_GACHA_POOL[2]?.hubId;
+  const starters = WELCOME_GACHA_POOL.slice(0, 4);
+  const hps = [100, 72, 100, 88];
 
   return applyFieldFlags([
-    bram ? pick(bram, 100) : emptyWheelSlot(0),
-    nyx ? pick(nyx, 72) : emptyWheelSlot(1),
+    starters[0] ? pick(starters[0].hubId, hps[0]!) : emptyWheelSlot(0),
+    starters[1] ? pick(starters[1].hubId, hps[1]!) : emptyWheelSlot(1),
     emptyWheelSlot(2),
-    kiro ? pick(kiro, 88) : emptyWheelSlot(3),
+    starters[2] ? pick(starters[2].hubId, hps[2]!) : emptyWheelSlot(3),
     emptyWheelSlot(4),
-    luma ? pick(luma, 100) : emptyWheelSlot(5),
+    starters[3] ? pick(starters[3].hubId, hps[3]!) : emptyWheelSlot(5),
   ]);
 }
 
