@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { GameShell } from "@/components/layout/game-shell";
+import { useToast } from "@/components/providers/toast-provider";
+import { useSound } from "@/lib/audio/use-sound";
 import { useQuests } from "@/lib/quests/use-quests";
 import { mainChainQuests } from "@/lib/quests/quests";
 import type { QuestStatus } from "@/lib/quests/quest-state";
@@ -90,9 +93,33 @@ function QuestSection({
 }
 
 export function QuestsScreen() {
-  const { statuses, mainSummary, pendingRewards, claim, claimError, claimingId } = useQuests({
+  const toast = useToast();
+  const { play } = useSound();
+  const {
+    statuses,
+    mainSummary,
+    pendingRewards,
+    claim,
+    claimError,
+    claimingId,
+    claimSuccessTick,
+    lastClaimLabel,
+  } = useQuests({
     trackLogin: true,
   });
+
+  useEffect(() => {
+    if (claimError) {
+      toast.error(claimError);
+      void play("ui_error");
+    }
+  }, [claimError, toast, play]);
+
+  useEffect(() => {
+    if (claimSuccessTick < 1) return;
+    toast.reward(`Récompense : ${lastClaimLabel}`);
+    void play("quest_claim");
+  }, [claimSuccessTick, lastClaimLabel, toast, play]);
 
   const main = statuses.filter((s) => s.quest.chainId === mainChainQuests()[0]?.chainId);
   const daily = statuses.filter((s) => s.quest.category === "daily");

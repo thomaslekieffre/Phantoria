@@ -1,0 +1,13 @@
+.pressable {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.pressable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active:not(:disabled) {
+    transform: none;
+  }
+}

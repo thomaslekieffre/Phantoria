@@ -2,9 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Nunito, Outfit } from "next/font/google";
 import { Suspense } from "react";
 import { AppErrorBoundary } from "@/components/error-boundary";
+import { AudioProvider } from "@/components/providers/audio-provider";
 import { GameContentProvider } from "@/components/providers/game-content-provider";
 import { PlayerProvider } from "@/components/providers/player-provider";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
+import { ToastProvider } from "@/components/providers/toast-provider";
+import { PageEnter } from "@/components/ui/page-enter";
 import "./globals.css";
 import "./responsive.css";
 
@@ -43,11 +46,17 @@ export default function RootLayout({
       <body className="min-h-full antialiased">
         <AppErrorBoundary>
           <PostHogProvider>
-            <GameContentProvider>
-              <Suspense fallback={null}>
-                <PlayerProvider>{children}</PlayerProvider>
-              </Suspense>
-            </GameContentProvider>
+            <AudioProvider>
+              <ToastProvider>
+                <GameContentProvider>
+                  <Suspense fallback={null}>
+                    <PlayerProvider>
+                      <PageEnter>{children}</PageEnter>
+                    </PlayerProvider>
+                  </Suspense>
+                </GameContentProvider>
+              </ToastProvider>
+            </AudioProvider>
           </PostHogProvider>
         </AppErrorBoundary>
       </body>

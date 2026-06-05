@@ -372,6 +372,28 @@ Skills : `characters.json` / `spirit_templates.payload` — basic + special1/2, 
 4. Hub, gacha welcome, story 1-1, run starter (vérifier esprit choisi = esprit en combat), reliques, `/events`, re-login.
 5. Si `gacha_pool_entries` vide : re-seed Studio Gacha.
 
+## Visuel, UX, sons & animations
+
+Roadmap complète : **[VISUAL-UX-PLAN.md](VISUAL-UX-PLAN.md)**.
+
+Phase 1 livrée :
+
+| Élément | Chemin |
+|---------|--------|
+| Sound manager (synth + fichiers `/assets/audio/`) | `apps/web/lib/audio/` |
+| Mute topbar | `components/ui/sound-toggle.tsx` |
+| Toasts | `components/providers/toast-provider.tsx` |
+| Transition page | `components/ui/page-enter.tsx` |
+| Assets audio (drop) | `apps/web/public/assets/audio/` |
+
+Hook : `useSound()` · Toasts : `useToast()` · Sons branchés : gacha, capture, quêtes, combat.
+
+**Codex** : fond portrait par tribu → `lib/tribe-colors.ts` (`--tribe-bg` sur `.spirits-card__scene`).
+
+**Gacha** : coûts/multi du pack `standard` uniquement (`game-content.ts`). Onglet welcome terminé reste consultable (`packTouched`).
+
+**Polish bêta** : [BETA-POLISH.md](BETA-POLISH.md).
+
 ## Sécurité & QA
 
 - Pentest (non corrigés) : [SECURITY-PENTEST.md](SECURITY-PENTEST.md).

@@ -40,6 +40,7 @@ import {
 } from "@/components/run/capture-sequence";
 import { RunStarterPicker, starterCoreKey } from "@/components/run/run-starter-picker";
 import { ownedSpiritStarters, usePlayer } from "@/components/providers/player-provider";
+import { useSound } from "@/lib/audio/use-sound";
 import { hubIdForTemplateKey } from "@/components/run/wheel-map";
 import { CombatSpirit, combatSpiritHue } from "@/components/run/combat-spirit";
 import { FoeInspect } from "@/components/run/foe-inspect";
@@ -304,6 +305,7 @@ export function RunScreen() {
   const searchParams = useSearchParams();
   const showDevTools = process.env.NODE_ENV === "development" || searchParams.get("dev") === "1";
   const { gameEventEffects } = usePlayer();
+  const { play } = useSound();
 
   engineRef.current = engine;
 
@@ -515,6 +517,7 @@ export function RunScreen() {
     }
 
     if (hits.length > 0) {
+      void play("battle_hit", { volume: 0.45 });
       const next = hits.map((e) => ({ id: e.id, targetId: e.targetId!, amount: e.amount }));
       setFloaters((prev) => [...prev, ...next].slice(-6));
       window.setTimeout(() => {
@@ -534,6 +537,17 @@ export function RunScreen() {
     }, 450);
     return () => clearTimeout(t);
   }, [renderTick]);
+
+  useEffect(() => {
+    if (!captureSeq) return;
+    const captureSounds: Record<CapturePhase, Parameters<typeof play>[0]> = {
+      flight: "capture_throw",
+      shake: "capture_shake",
+      success: "capture_success",
+      fail: "capture_fail",
+    };
+    void play(captureSounds[captureSeq.phase]);
+  }, [captureSeq?.phase, captureSeq?.targetId, play]);
 
   useEffect(() => {
     if (!captureSeq) return;

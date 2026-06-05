@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { IconCoin, IconCube, IconGem } from "@/components/ui/icons";
 import { usePlayer } from "@/components/providers/player-provider";
+import { SoundToggle } from "@/components/ui/sound-toggle";
 import { MobileMenu } from "./mobile-menu";
 
 export function Topbar() {
@@ -52,6 +53,8 @@ export function Topbar() {
               </button>
             </>
           ) : null}
+
+          <SoundToggle />
 
           <div className="topbar__wallet">
             <span className="topbar__cur">

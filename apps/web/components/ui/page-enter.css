@@ -1,0 +1,21 @@
+.page-enter {
+  min-height: 100%;
+  animation: page-enter 0.26s ease-out;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.page-enter--instant {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}

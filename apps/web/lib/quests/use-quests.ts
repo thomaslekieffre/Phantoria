@@ -33,6 +33,8 @@ export function useQuests(opts?: { trackLogin?: boolean }) {
   const [hydrated, setHydrated] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimSuccessTick, setClaimSuccessTick] = useState(0);
+  const [lastClaimLabel, setLastClaimLabel] = useState("");
 
   const loggedIn = supabaseEnabled && Boolean(user);
   const useRemote = loggedIn;
@@ -84,6 +86,8 @@ export function useQuests(opts?: { trackLogin?: boolean }) {
       setClaimError(null);
       setClaimingId(questId);
 
+      const quest = QUESTS.find((q) => q.id === questId);
+
       if (useRemote) {
         const result = await claimQuestRemote(questId);
         if (result.error) {
@@ -94,6 +98,11 @@ export function useQuests(opts?: { trackLogin?: boolean }) {
         await refreshPlayer();
       } else {
         claimQuestLocal(questId);
+      }
+
+      if (quest) {
+        setLastClaimLabel(quest.reward.label);
+        setClaimSuccessTick((n) => n + 1);
       }
 
       setClaimingId(null);
@@ -111,5 +120,7 @@ export function useQuests(opts?: { trackLogin?: boolean }) {
     refresh,
     claimError,
     claimingId,
+    claimSuccessTick,
+    lastClaimLabel,
   };
 }

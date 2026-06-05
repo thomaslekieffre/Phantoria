@@ -27,6 +27,9 @@ import {
   type StandardPullPayment,
 } from "@/lib/player/gacha-service";
 import type { SpiritId } from "@/components/hub/roster";
+import { useToast } from "@/components/providers/toast-provider";
+import { gachaRevealSoundForRarity } from "@/lib/audio/sounds";
+import { useSound } from "@/lib/audio/use-sound";
 import { GachaRatesPanel } from "./gacha-rates-panel";
 import "./gacha.css";
 
@@ -102,8 +105,13 @@ function RevealOverlay({
   pull: GachaPullResult;
   onClose: () => void;
 }) {
+  const { play, confirm } = useSound();
   const rarity = pull.rarity;
   const hue = pull.kind === "spirit" ? pull.hue : "#94a3b8";
+
+  useEffect(() => {
+    void play(gachaRevealSoundForRarity(rarity));
+  }, [play, rarity]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -131,7 +139,14 @@ function RevealOverlay({
         ) : (
           <p className="gacha-reveal-card__sub">+{pull.gems} gemmes</p>
         )}
-        <button type="button" className="gacha-reveal-card__btn" onClick={onClose}>
+        <button
+          type="button"
+          className="gacha-reveal-card__btn"
+          onClick={() => {
+            confirm();
+            onClose();
+          }}
+        >
           Continuer
         </button>
       </div>
@@ -148,6 +163,7 @@ function MultiRevealOverlay({
   pulls: GachaPullResult[];
   onClose: () => void;
 }) {
+  const { play, confirm } = useSound();
   const [revealed, setRevealed] = useState(0);
   const allRevealed = revealed >= pulls.length;
 
@@ -176,6 +192,12 @@ function MultiRevealOverlay({
     const timer = window.setTimeout(() => setRevealed((n) => n + 1), 110);
     return () => window.clearTimeout(timer);
   }, [revealed, allRevealed]);
+
+  useEffect(() => {
+    if (revealed < 1 || revealed > pulls.length) return;
+    const pull = pulls[revealed - 1];
+    if (pull) void play(gachaRevealSoundForRarity(pull.rarity), { volume: 0.85 });
+  }, [revealed, pulls, play]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -216,7 +238,15 @@ function MultiRevealOverlay({
             </li>
           ))}
         </ul>
-        <button type="button" className="gacha-reveal-card__btn" disabled={!allRevealed} onClick={onClose}>
+        <button
+          type="button"
+          className="gacha-reveal-card__btn"
+          disabled={!allRevealed}
+          onClick={() => {
+            if (allRevealed) confirm();
+            onClose();
+          }}
+        >
           {allRevealed ? "Continuer" : `${revealed} / ${pulls.length}`}
         </button>
       </div>
@@ -252,6 +282,8 @@ export function GachaScreen() {
   const [pulling, setPulling] = useState(false);
   const [lastResults, setLastResults] = useState<GachaPullResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  const { play } = useSound();
 
   const tickets = currencies?.tickets ?? 0;
   const gems = currencies?.gems ?? 0;
@@ -277,10 +309,29 @@ export function GachaScreen() {
     else setPack("standard");
   }, [ready, hasWelcome, packTouched, eventBanner, eventPool?.length]);
 
+  // Redirection auto seulement si l'utilisateur n'a pas choisi un onglet (évite le bounce welcome « Terminé »)
   useEffect(() => {
-    if (!hasWelcome && pack === "welcome") setPack(eventBanner && eventPool?.length ? "event" : "standard");
-    if (pack === "event" && (!eventBanner || !eventPool?.length)) setPack("standard");
-  }, [hasWelcome, pack, eventBanner, eventPool?.length]);
+    if (packTouched) return;
+    if (!hasWelcome && pack === "welcome") {
+      setPack(eventBanner && eventPool?.length ? "event" : "standard");
+    }
+    if (pack === "event" && (!eventBanner || !eventPool?.length)) {
+      setPack("standard");
+    }
+  }, [hasWelcome, pack, eventBanner, eventPool?.length, packTouched]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast.error(error);
+    void play("ui_error");
+  }, [error, toast, play]);
+
+  useEffect(() => {
+    if (!pulling) return;
+    void play("gacha_tick");
+    const id = window.setInterval(() => void play("gacha_tick", { volume: 0.6 }), 280);
+    return () => window.clearInterval(id);
+  }, [pulling, play]);
 
   function selectPack(next: PackTab) {
     setPackTouched(true);
@@ -529,13 +580,21 @@ export function GachaScreen() {
                     <div className="gacha-pity__fill" style={{ width: `${pityPct}%` }} />
                   </div>
                 </div>
-              ) : (
+              ) : pack === "welcome" ? (
                 <p className="gacha-welcome-left">
-                  <strong>{welcomePullsRemaining}</strong> invocation
-                  {welcomePullsRemaining > 1 ? "s" : ""} offerte
-                  {welcomePullsRemaining > 1 ? "s" : ""}
+                  {hasWelcome ? (
+                    <>
+                      <strong>{welcomePullsRemaining}</strong> invocation
+                      {welcomePullsRemaining > 1 ? "s" : ""} offerte
+                      {welcomePullsRemaining > 1 ? "s" : ""}
+                    </>
+                  ) : (
+                    <>
+                      Pack <strong>terminé</strong> — consulte le pool ci-dessus
+                    </>
+                  )}
                 </p>
-              )}
+              ) : null}
 
               <div className="gacha-altar__actions">
                 {pack === "welcome" ? (

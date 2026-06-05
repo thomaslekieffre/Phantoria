@@ -49,8 +49,14 @@ export function GameContentProvider({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#0a1210] text-[#9cb8ad]">
-        Chargement du contenu…
+      <div className="content-boot" role="status" aria-live="polite">
+        <div className="content-boot__logo" aria-hidden>
+          P
+        </div>
+        <p>Chargement du contenu…</p>
+        <div className="content-boot__bar" aria-hidden>
+          <span />
+        </div>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import { usePlayer } from "@/components/providers/player-provider";
 import { useGameContent } from "@/components/providers/game-content-provider";
 import type { GachaPoolEntry } from "@/lib/player/gacha-pool";
 import { getDisplayPoolEntries } from "@/lib/player/spirit-catalog";
+import { tribeBgColor } from "@/lib/tribe-colors";
 import { SpiritOwnedStats } from "./spirit-owned-stats";
 import "../hub/hub.css";
 import "./spirits.css";
@@ -199,12 +200,19 @@ export function SpiritsScreen() {
                       <button
                         type="button"
                         className={`spirits-card spirits-card--${spirit.rarity.toLowerCase()} ${owned ? "" : "spirits-card--locked"} ${active ? "spirits-card--active" : ""}`}
-                        style={{ "--hue": spirit.hue } as CSSProperties}
+                        style={
+                          {
+                            "--hue": spirit.hue,
+                            "--tribe-bg": tribeBgColor(spirit.tribe),
+                          } as CSSProperties
+                        }
                         onClick={() => handleSelect(spirit.hubId)}
                         aria-pressed={active}
                       >
                         <span className="spirits-card__rarity">{spirit.rarity}</span>
-                        <SpiritPortrait id={spirit.hubId} className="spirits-card__art" />
+                        <div className="spirits-card__scene" aria-hidden>
+                          <SpiritPortrait id={spirit.hubId} className="spirits-card__art" />
+                        </div>
                         <span className="spirits-card__name">{spirit.name}</span>
                         {stats ? (
                           <span className="spirits-card__level" title="Niveau histoire">
@@ -248,7 +256,12 @@ export function SpiritsScreen() {
                 </button>
                 <div
                   className={`spirit-sheet__hero ${!activeOwned ? "spirits-detail__hero--locked" : ""}`}
-                  style={{ "--hue": activeSpirit.hue } as CSSProperties}
+                  style={
+                    {
+                      "--hue": activeSpirit.hue,
+                      "--tribe-bg": tribeBgColor(activeSpirit.tribe),
+                    } as CSSProperties
+                  }
                 >
                   <SpiritPortrait id={activeSpirit.hubId} className="spirit-sheet__art" />
                   <div className="spirit-sheet__meta">

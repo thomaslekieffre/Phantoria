@@ -172,14 +172,15 @@ export async function fetchGameContent(supabase: SupabaseClient): Promise<GameCo
       extra[e.pool_id]!.push(entry);
     }
     content.gacha.extraPools = extra;
-    if (welcomePool) {
-      content.gacha.ticketCost = welcomePool.ticket_cost;
-      content.gacha.gemCost = welcomePool.gem_cost;
-      content.gacha.multiCount = welcomePool.multi_count;
-    } else if (standardPool) {
+    // Coûts pack général : pool "standard" uniquement (welcome = gratuit, multi_count 1)
+    if (standardPool) {
       content.gacha.ticketCost = standardPool.ticket_cost;
       content.gacha.gemCost = standardPool.gem_cost;
       content.gacha.multiCount = standardPool.multi_count;
+    } else if (welcomePool) {
+      content.gacha.ticketCost = welcomePool.ticket_cost;
+      content.gacha.gemCost = welcomePool.gem_cost;
+      content.gacha.multiCount = welcomePool.multi_count;
     }
   }
 

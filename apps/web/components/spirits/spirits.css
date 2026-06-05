@@ -245,6 +245,22 @@
   color: #fde047;
 }
 
+.spirits-card__scene {
+  width: 100%;
+  aspect-ratio: 1 / 1.05;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.35rem;
+  border-radius: calc(var(--radius) - 2px);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--tribe-bg) 72%, #000 28%) 0%,
+    color-mix(in srgb, var(--tribe-bg) 38%, var(--void) 62%) 100%
+  );
+  border: 1.5px solid color-mix(in srgb, var(--tribe-bg) 55%, var(--border));
+  overflow: hidden;
+}
+
 .spirits-card__art {
   width: 3.25rem;
   height: auto;
@@ -339,6 +355,21 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--success);
+}
+
+.spirits-scene .spirit-sheet__hero {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tribe-bg) 42%, var(--surface-2)) 0%,
+    var(--surface) 100%
+  );
+  border: 2px solid color-mix(in srgb, var(--tribe-bg) 50%, var(--border));
+}
+
+.spirits-scene .spirit-sheet__tribe {
+  color: color-mix(in srgb, var(--tribe-bg) 65%, #fff);
 }
 
 .spirits-detail {

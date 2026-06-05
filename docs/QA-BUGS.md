@@ -5,12 +5,16 @@
 | QA-001 | **Corrigé** | Copy hub → `storyCampaignLabel()` |
 | QA-002 | **Corrigé** | Guard `StoryBattleScreen` + RPC `record_story_victory` |
 | QA-003 | **Corrigé** | Hint Studio event `banner` |
-| QA-004 | À tester | Event `gacha_banner` + pull |
+| QA-004 | En cours | Event `gacha_banner` — voir `BETA-POLISH.md` |
 | QA-005 | OK | Starter Brise |
 | QA-010 | **Corrigé** | Même que QA-002 |
+| QA-011 | **Corrigé** | Pack général ×10 / coûts 0 — `game-content.ts` priorise pool `standard` |
+| QA-012 | **Corrigé** | Clic onglet « Premiers esprits » terminé — plus de bounce vers pack général |
 
-Migration à appliquer : `20260603130000_security_hardening.sql`
+**Migration** `20260603130000_security_hardening.sql` — appliquée (prod/dev).
 
-## Non testé automatiquement
+**Smoke compte neuf** — validé manuellement.
 
-Compte neuf, gacha event, mobile, fin run meta-reward après migration.
+## Polish bêta (phase B)
+
+Voir [BETA-POLISH.md](BETA-POLISH.md).
