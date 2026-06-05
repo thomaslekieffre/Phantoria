@@ -23,9 +23,13 @@ Assets dans `apps/web/public/assets/audio/` — noms = IDs du registry (`lib/aud
 | `quest_claim` | `confirmation_001.ogg` |
 | `gold_gain` | `select_003.ogg` |
 
-Source : [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0). Script : `scripts/fetch-kenney-sfx.ps1`.
+Source : [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0).
 
-Sans fichier → synth Web Audio (fallback dev).
+```powershell
+.\scripts\fetch-kenney-sfx.ps1
+```
+
+Les `.ogg` sont versionnés dans `public/assets/audio/`. Sans fichier → synth Web Audio (fallback).
 
 ## 2. Event gacha (`QA-004`)
 
@@ -42,7 +46,7 @@ Sans fichier → synth Web Audio (fallback dev).
 - [ ] Pull ticket ×1 et ×multi
 - [ ] `POST /api/gacha/event` 200, monnaies débitées, esprit en collection
 
-Migration seed optionnelle : `20260605120000_event_gacha_demo.sql` (inactive par défaut en prod — activer via Studio).
+Migration : `20260605120000_event_gacha_demo.sql` — pool `event-demo`, event `banniere-gacha-demo` **inactive** → Studio → activer + vérifier dates.
 
 ## 3. Mobile ≤768px
 

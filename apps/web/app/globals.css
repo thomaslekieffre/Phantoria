@@ -384,6 +384,17 @@ body::after {
     width: 0.8rem;
     height: 0.8rem;
   }
+
+  .topbar__sound {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+  }
+
+  .topbar__wallet {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
 }
 
 .topbar__menu {

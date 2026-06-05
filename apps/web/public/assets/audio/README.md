@@ -1,6 +1,8 @@
 # Assets audio Phantoria
 
-Dépose ici des fichiers nommés **`{soundId}.webm`** (ou `.mp3` / `.ogg`).
+**14 fichiers Kenney** (`*.ogg`) déjà présents — régénérer avec `..\..\..\scripts\fetch-kenney-sfx.ps1`.
+
+Tu peux aussi déposer **`{soundId}.webm`** (ou `.mp3` / `.ogg`) pour remplacer un son.
 
 Le sound manager les charge automatiquement ; sinon il utilise la **synthèse procédurale** (dev).
 

@@ -157,7 +157,9 @@ supabase db push
 
 **Env serveur** : `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local` (jamais `NEXT_PUBLIC_`). Sans cette clé, les invocations renvoient 503.
 
-**Migrations** : `20260531200000_gacha_pity.sql` · `20260601120000_gacha_secure_rls.sql` · `20260602100000_claim_run_meta_reward.sql` · `20260601140000_run_meta_reward_balance.sql` · `20260602110000_roster_field_front_slots.sql` · `20260602120000_profile_runs_completed.sql` · `20260602130000_quests_story_persistence.sql` · `20260602170000_hub_events.sql` · `20260602180000_studio_admin.sql` · **`20260603100000_studio_content.sql`** · **`20260603110000_hub_events_mechanics.sql`** · **`20260603120000_hub_events_seed_inactive.sql`** · **`20260603130000_security_hardening.sql`** (admin, quêtes, runs, histoire).
+**Migrations** : … · **`20260603130000_security_hardening.sql`** · **`20260605120000_event_gacha_demo.sql`** (pool `event-demo` + event `gacha_banner` inactif).
+
+**SFX** : `.\scripts\fetch-kenney-sfx.ps1` → `public/assets/audio/*.ogg` (Kenney CC0).
 
 ### Analytics PostHog
 
