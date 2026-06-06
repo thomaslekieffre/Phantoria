@@ -40,58 +40,51 @@
 .hub__gacha-cta {
   display: inline-block;
   align-self: center;
-  padding: 0.65rem 1.25rem;
-  border-radius: var(--radius);
-  border: 2px solid var(--ink);
-  background: var(--ember);
-  color: var(--ink);
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--accent);
+  color: #fff;
   font-weight: 800;
   font-size: 0.9rem;
   text-decoration: none;
-  box-shadow: var(--hard-shadow);
+  box-shadow: var(--shadow-colored);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .hub__gacha-cta:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(var(--accent-rgb), 0.35);
 }
 
-/* Scene — nuit + lucioles (aplats) */
+/* Scene — ciel lumineux style Puni Puni */
 .scene {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  background: var(--void);
+  background: var(--gradient-sky);
 }
 
 .scene__moon {
   position: absolute;
   top: 7%;
   right: 10%;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: 50%;
-  background: #fff3c4;
-  border: 2px solid var(--ink);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 35% 35%, #fff8e1, #ffd54f);
+  box-shadow: 0 0 24px rgba(255, 213, 79, 0.4);
 }
 
 .scene__floor {
   position: absolute;
   inset: 0;
-  background-color: var(--void-elevated);
-  background-image: var(--pattern-filaments),
-    repeating-linear-gradient(
-      175deg,
-      transparent,
-      transparent 56px,
-      rgba(var(--accent-rgb), 0.012) 56px,
-      rgba(var(--accent-rgb), 0.012) 57px
-    );
-  background-size: 192px 192px, 100% 100%;
-  mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 100%);
-  animation: filament-drift 88s linear infinite;
+  background-color: transparent;
+  background-image: var(--pattern-filaments);
+  background-size: 200px 200px;
+  opacity: 0.5;
+  animation: filament-drift 120s linear infinite;
 }
 
 .scene__ripples {
@@ -148,7 +141,7 @@
   bottom: 10%;
   width: 20rem;
   height: 7rem;
-  background: rgba(var(--accent-rgb), 0.04);
+  background: rgba(var(--accent-rgb), 0.06);
   transform: rotate(-7deg);
 }
 
@@ -157,7 +150,7 @@
   bottom: 16%;
   width: 13rem;
   height: 4.5rem;
-  background: rgba(var(--ember-rgb), 0.03);
+  background: rgba(255, 92, 161, 0.04);
   transform: rotate(5deg);
 }
 
@@ -226,10 +219,10 @@
   align-items: baseline;
   gap: 0.25rem;
   padding: 0.55rem 1rem;
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  border: 2px solid var(--border-strong);
-  box-shadow: var(--hard-shadow-accent);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .wheel__counter-num {
@@ -260,7 +253,7 @@
   height: 15rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 2px dashed var(--border-strong);
+  border: 2px dashed var(--border);
 }
 
 .wheel__ring-glow {
@@ -278,8 +271,8 @@
   padding: 0.85rem 1.15rem;
   border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 2px solid var(--ink);
-  box-shadow: var(--hard-shadow);
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .wheel__core-val {
@@ -353,10 +346,10 @@
   place-items: center;
   border-radius: var(--radius);
   overflow: visible;
-  background: color-mix(in srgb, var(--hue) 82%, #000 18%);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
-  transition: transform 0.15s, outline 0.15s;
+  background: color-mix(in srgb, var(--hue) 70%, #fff 30%);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), outline 0.15s;
 }
 
 .wheel__rarity {
@@ -378,7 +371,7 @@
 }
 
 .wheel__slot--empty .wheel__bubble {
-  background: var(--surface-2);
+  background: var(--void);
   border: 2px dashed var(--border);
   box-shadow: none;
 }
@@ -387,9 +380,9 @@
   display: block;
   width: 1.25rem;
   height: 1.25rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .wheel__empty-label {
@@ -455,9 +448,9 @@
 .spirit-sheet {
   padding: 1.25rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  box-shadow: var(--hard-shadow);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .spirit-sheet--empty {
@@ -543,8 +536,8 @@
 
 .spirit-sheet__hp {
   height: 0.5rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-pill);
+  background: var(--border);
   overflow: hidden;
 }
 
@@ -570,20 +563,20 @@
   width: 100%;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  border: 2px solid var(--ink);
-  border-radius: var(--radius);
+  border: none;
+  border-radius: var(--radius-pill);
   background: var(--accent);
-  color: var(--ink);
+  color: #fff;
   font-size: 0.85rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: var(--hard-shadow);
-  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: var(--shadow-colored);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .spirit-sheet__action:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
-  box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35);
 }
 
 .spirit-sheet__action:disabled {
@@ -611,8 +604,9 @@
 .hub-bench {
   padding: 1rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 2px solid var(--border);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .hub-bench__head {
@@ -663,16 +657,17 @@
   gap: 0.2rem;
   width: 100%;
   padding: 0.45rem 0.35rem;
-  border: 2px solid var(--border);
+  border: none;
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--hue) 18%, var(--surface));
+  background: color-mix(in srgb, var(--hue) 12%, var(--void));
   cursor: pointer;
-  transition: transform 0.1s, border-color 0.12s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .hub-bench__card:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--hue) 55%, var(--border));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .hub-bench__card:disabled {
@@ -703,8 +698,10 @@
   flex-direction: column;
   gap: 1.25rem;
   padding: 1.75rem;
-  border-left: 2px solid var(--border);
-  background: var(--surface);
+  border-left: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   overflow-y: auto;
 }
 
@@ -720,13 +717,15 @@
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: inherit;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  transition: border-color 0.15s;
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
 .hub-panel__quest:hover {
-  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .hub-panel__quest-kicker {
@@ -744,8 +743,8 @@
 
 .hub-panel__quest-bar {
   height: 0.4rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-pill);
+  background: var(--border);
   overflow: hidden;
 }
 
@@ -774,8 +773,9 @@
   align-items: center;
   padding: 0.85rem;
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .hub-panel__stat-val {
@@ -866,14 +866,14 @@
   padding: 1.1rem 1.25rem;
   border-radius: var(--radius-lg);
   text-decoration: none;
-  border: 2px solid var(--ink);
-  box-shadow: var(--hard-shadow);
-  transition: transform 0.1s, box-shadow 0.1s;
+  border: none;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .play:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 var(--ink);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 .play--run {

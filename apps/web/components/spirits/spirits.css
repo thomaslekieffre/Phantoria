@@ -6,7 +6,6 @@
   height: 100%;
   min-height: 0;
   padding: 0.75rem 1.25rem 1rem;
-  background: var(--void);
   overflow: hidden;
 }
 
@@ -20,7 +19,7 @@
   width: 100%;
   margin: 0 auto 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .spirits-top__kicker {
@@ -68,9 +67,9 @@
   gap: 1rem;
   padding: 1rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  box-shadow: var(--hard-shadow);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-md);
   height: fit-content;
 }
 
@@ -135,26 +134,27 @@
 }
 
 .spirits-pill {
-  padding: 0.35rem 0.55rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.65rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--void);
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  box-shadow: var(--shadow-sm);
 }
 
 .spirits-pill:hover {
   color: var(--text);
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  transform: scale(1.05);
 }
 
 .spirits-pill--on {
   background: var(--accent);
-  color: var(--ink);
-  border-color: var(--ink);
+  color: #fff;
+  box-shadow: var(--shadow-colored);
 }
 
 .spirits-pill--s.spirits-pill--on {
@@ -163,10 +163,10 @@
 
 .spirits-select {
   width: 100%;
-  padding: 0.45rem 0.5rem;
-  border: 2px solid var(--border);
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--void);
   color: var(--text);
   font-size: 0.8rem;
   font-weight: 600;
@@ -202,23 +202,22 @@
   align-items: center;
   width: 100%;
   padding: 0.65rem 0.4rem 0.5rem;
-  border: 2px solid var(--border);
+  border: none;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  box-shadow: var(--hard-shadow);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: transform 0.1s, border-color 0.12s, box-shadow 0.1s;
+  transition: transform 0.2s, box-shadow 0.2s;
   text-align: center;
 }
 
 .spirits-card:hover {
-  transform: translate(-1px, -1px);
-  border-color: color-mix(in srgb, var(--hue) 55%, var(--border));
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .spirits-card--active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), var(--hard-shadow);
+  box-shadow: 0 0 0 3px var(--accent), var(--shadow-md);
 }
 
 .spirits-card--locked {
@@ -235,10 +234,10 @@
   right: 0.35rem;
   font-size: 0.58rem;
   font-weight: 900;
-  padding: 0.1rem 0.3rem;
-  border-radius: 0.2rem;
-  background: rgba(0, 0, 0, 0.45);
-  color: var(--text);
+  padding: 0.12rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
 }
 
 .spirits-card--s .spirits-card__rarity {
@@ -254,10 +253,10 @@
   border-radius: calc(var(--radius) - 2px);
   background: linear-gradient(
     165deg,
-    color-mix(in srgb, var(--tribe-bg) 72%, #000 28%) 0%,
-    color-mix(in srgb, var(--tribe-bg) 38%, var(--void) 62%) 100%
+    color-mix(in srgb, var(--tribe-bg) 30%, #fff 70%) 0%,
+    color-mix(in srgb, var(--tribe-bg) 15%, var(--void) 85%) 100%
   );
-  border: 1.5px solid color-mix(in srgb, var(--tribe-bg) 55%, var(--border));
+  border: none;
   overflow: hidden;
 }
 
@@ -362,10 +361,11 @@
   border-radius: var(--radius-lg);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--tribe-bg) 42%, var(--surface-2)) 0%,
+    color-mix(in srgb, var(--tribe-bg) 20%, #fff) 0%,
     var(--surface) 100%
   );
-  border: 2px solid color-mix(in srgb, var(--tribe-bg) 50%, var(--border));
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .spirits-scene .spirit-sheet__tribe {

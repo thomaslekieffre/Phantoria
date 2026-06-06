@@ -6,7 +6,6 @@
   height: 100%;
   min-height: 0;
   padding: 0.75rem 1.25rem 1rem;
-  background: var(--void);
   overflow: hidden;
 }
 
@@ -37,6 +36,7 @@
   font-family: var(--font-display), sans-serif;
   font-size: 1.35rem;
   font-weight: 800;
+  color: var(--ink);
 }
 
 .quests-top__meta {
@@ -49,10 +49,10 @@
 .quests-top__badge {
   margin: 0;
   padding: 0.35rem 0.65rem;
-  border-radius: var(--radius);
-  background: var(--accent-15);
-  border: 1px solid var(--accent);
-  color: var(--accent-soft);
+  border-radius: var(--radius-pill);
+  background: var(--accent-12);
+  border: none;
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -73,9 +73,9 @@
 .quests-main-card {
   padding: 1.1rem 1.25rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(244, 114, 182, 0.08), rgba(0, 0, 0, 0.2));
-  border: 2px solid color-mix(in srgb, #f472b6 35%, var(--border));
-  box-shadow: var(--hard-shadow);
+  background: linear-gradient(135deg, rgba(255, 92, 161, 0.08), rgba(var(--accent-rgb), 0.06));
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .quests-main-card__kicker {
@@ -84,19 +84,20 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #f472b6;
+  color: var(--pink);
 }
 
 .quests-main-card__title {
   margin: 0.35rem 0 0.75rem;
   font-size: 1.15rem;
   font-weight: 800;
+  color: var(--ink);
 }
 
 .quests-main-card__bar {
-  height: 0.45rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--border);
   overflow: hidden;
 }
 
@@ -104,7 +105,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #f472b6, var(--accent));
+  background: linear-gradient(90deg, var(--pink), var(--accent));
   transition: width 0.2s ease;
 }
 
@@ -132,6 +133,7 @@
   margin: 0.15rem 0 0;
   font-size: 1rem;
   font-weight: 800;
+  color: var(--ink);
 }
 
 .quests-list {
@@ -146,13 +148,19 @@
 .quest-row {
   padding: 0.85rem 1rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  box-shadow: var(--hard-shadow);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.quest-row:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .quest-row--done:not(.quest-row--claimed) {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow-sm);
 }
 
 .quest-row__head {
@@ -166,6 +174,7 @@
   margin: 0;
   font-size: 0.92rem;
   font-weight: 800;
+  color: var(--ink);
 }
 
 .quest-row__desc {
@@ -179,18 +188,18 @@
   flex-shrink: 0;
   font-size: 0.68rem;
   font-weight: 800;
-  padding: 0.2rem 0.45rem;
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border);
-  color: var(--accent-soft);
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--gold);
+  border: none;
+  color: var(--ink);
 }
 
 .quest-row__bar {
   height: 0.35rem;
   margin-top: 0.65rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-pill);
+  background: var(--border);
   overflow: hidden;
 }
 
@@ -225,19 +234,20 @@
 }
 
 .quest-row__claim {
-  padding: 0.3rem 0.65rem;
-  border: 2px solid var(--ink);
-  border-radius: var(--radius);
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: var(--radius-pill);
   background: var(--accent);
-  color: var(--ink);
+  color: #fff;
   font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-colored);
+  transition: transform 0.15s;
 }
 
 .quest-row__claim:hover {
-  filter: brightness(1.05);
+  transform: scale(1.05);
 }
 
 .quest-row__go {
@@ -255,9 +265,9 @@
   margin: 0 0 1rem;
   padding: 0.55rem 0.75rem;
   border-radius: var(--radius);
-  border: 1px solid var(--ember);
-  background: rgba(var(--ember-rgb), 0.08);
-  color: var(--ember-soft);
+  border: none;
+  background: rgba(var(--ember-rgb), 0.1);
+  color: var(--ember);
   font-size: 0.82rem;
   font-weight: 600;
 }

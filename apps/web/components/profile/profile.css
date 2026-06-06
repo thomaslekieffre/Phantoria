@@ -3,7 +3,6 @@
   min-height: 0;
   overflow-y: auto;
   padding: 1.5rem 2rem 2rem;
-  background: var(--void);
 }
 
 .profile-scene__loading {
@@ -17,23 +16,25 @@
   gap: 1.25rem;
   max-width: 52rem;
   margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 2px solid var(--border);
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.06), rgba(255, 92, 161, 0.05));
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-hero__avatar {
   display: grid;
   place-items: center;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 5rem;
+  height: 5rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(145deg, var(--accent), var(--accent-deep));
-  border: 2px solid var(--ink);
-  box-shadow: var(--hard-shadow);
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-colored);
   font-family: var(--font-display), sans-serif;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 800;
-  color: var(--ink);
+  color: #fff;
 }
 
 .profile-hero__kicker {
@@ -50,6 +51,7 @@
   font-family: var(--font-display), sans-serif;
   font-size: 1.75rem;
   font-weight: 800;
+  color: var(--ink);
 }
 
 .profile-hero__email,
@@ -69,9 +71,15 @@
 .profile-card {
   padding: 1.15rem 1.25rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 2px solid var(--border);
-  box-shadow: var(--hard-shadow);
+  background: var(--surface);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .profile-card--wide {
@@ -95,7 +103,7 @@
 }
 
 .profile-card__hint a {
-  color: var(--accent-soft);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -112,13 +120,20 @@
 }
 
 .profile-form__field input {
-  padding: 0.55rem 0.65rem;
-  border: 2px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--void);
   color: var(--text);
   font-size: 0.95rem;
   font-weight: 600;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-form__field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-15);
 }
 
 .profile-form__actions {
@@ -158,9 +173,10 @@
 
 .profile-stats dd {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 800;
   text-align: right;
+  color: var(--accent);
 }
 
 .profile-stats__sub {
@@ -193,6 +209,8 @@
 .profile-wallet__val {
   font-weight: 800;
   min-width: 3rem;
+  font-size: 1rem;
+  color: var(--ink);
 }
 
 .profile-wallet__lbl {
@@ -205,7 +223,7 @@
   margin-top: 0.75rem;
   font-size: 0.82rem;
   font-weight: 800;
-  color: var(--accent-soft);
+  color: var(--accent);
 }
 
 .profile-account {
@@ -215,35 +233,35 @@
 }
 
 .profile-btn {
-  padding: 0.55rem 1rem;
-  border: 2px solid var(--ink);
-  border-radius: var(--radius);
+  padding: 0.6rem 1.15rem;
+  border: none;
+  border-radius: var(--radius-pill);
   font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .profile-btn--primary {
   background: var(--accent);
-  color: var(--ink);
-  box-shadow: var(--hard-shadow);
+  color: #fff;
+  box-shadow: var(--shadow-colored);
 }
 
 .profile-btn--primary:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35);
 }
 
 .profile-btn--ghost {
-  background: transparent;
+  background: var(--void);
   color: var(--text-muted);
-  border-color: var(--border);
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-btn--ghost:hover {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+  box-shadow: 0 0 0 2px var(--danger);
 }
 
 .profile-btn--block {
@@ -264,7 +282,7 @@
   max-width: 52rem;
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 2px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .profile-shortcuts a {
@@ -274,5 +292,5 @@
 }
 
 .profile-shortcuts a:hover {
-  color: var(--accent-soft);
+  color: var(--accent);
 }

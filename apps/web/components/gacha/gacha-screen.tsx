@@ -290,8 +290,6 @@ export function GachaScreen() {
   const tickets = currencies?.tickets ?? 0;
   const gems = currencies?.gems ?? 0;
   const hasWelcome = welcomePullsRemaining > 0;
-  const pityPct = Math.min(100, Math.round((gachaPityStandard / GACHA_HARD_PITY) * 100));
-
   const canWelcome = supabaseEnabled && user && welcomePullsRemaining > 0;
   const canTicket = tickets >= STANDARD_PULL_TICKET_COST;
   const canGems = gems >= STANDARD_PULL_GEM_COST;
@@ -591,19 +589,7 @@ export function GachaScreen() {
                 <GachaMachine pulling={pulling} pack={pack} />
               </div>
 
-              {pack === "standard" ? (
-                <div className="gacha-pity">
-                  <div className="gacha-pity__labels">
-                    <span>Pity légendaire (S)</span>
-                    <span>
-                      {gachaPityStandard} / {GACHA_HARD_PITY}
-                    </span>
-                  </div>
-                  <div className="gacha-pity__track">
-                    <div className="gacha-pity__fill" style={{ width: `${pityPct}%` }} />
-                  </div>
-                </div>
-              ) : pack === "welcome" ? (
+              {pack === "welcome" ? (
                 <p className="gacha-welcome-left">
                   {hasWelcome ? (
                     <>

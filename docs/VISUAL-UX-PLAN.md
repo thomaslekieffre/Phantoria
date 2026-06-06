@@ -9,7 +9,7 @@
 
 | Domaine | État |
 |---------|------|
-| Design system CSS | ✅ Nuit + lanternes, hard shadows, filaments hub |
+| Design system CSS | ✅ Puni Puni — fond clair, accent corail, ombres douces (`globals.css`) |
 | Animations CSS | ✅ Hub, combat (dmg-pop, capture), gacha reveal |
 | Portraits | ⚠️ SVG procéduraux (4 custom, reste générique) |
 | Sons / musique | ❌ Aucun asset — **Phase 1 ajoute synth + pipeline fichiers** |
@@ -85,7 +85,43 @@ Sans fichier → **synth Web Audio** (tones procédurales, remplaçables sans ch
 4. **10 esprits ref** minimum pour la bêta (welcome pool + 4 starters).
 5. Studio : champ `portrait_url` optionnel (futur).
 
-**Référence style** : Yo-kai (expressif) + palette Phantoria (`--accent`, `--ember`, void).
+**Référence style** : Yo-kai Watch Puni Puni / Wibble Wobble (lumineux, arrondi, coloré) + tokens Phantoria ci-dessous.
+
+---
+
+## Refonte UI Puni Puni ✅ (juin 2026)
+
+**Objectif** : passer du thème sombre « nuit + lanternes » à une UI mobile-game lumineuse, sans dégradés décoratifs partout.
+
+### Palette (tokens `:root`)
+
+| Token | Rôle | Valeur |
+|-------|------|--------|
+| `--void` | Fond page | `#f0f5fa` |
+| `--surface` | Cartes / panneaux | `#ffffff` |
+| `--accent` | CTA, nav active, liens | `#ff6161` (corail) |
+| `--accent-deep` | Hover / machine gacha | `#e84848` |
+| `--ember` | Roguelite, accents chauds | `#ff8c42` |
+| `--gold` | Monnaies, achats | `#ffb800` |
+| `--ink` / `--text` | Titres | `#2b2b3d` |
+| `--gradient-sky` | Seul dégradé conservé (fond ciel) | bleu → pêche |
+
+**Principes** : boutons et badges en **couleur unie** + `box-shadow` colorée ; `border-radius-pill` pour les CTA ; pas de `border: solid var(--ink)` sur les cartes gacha.
+
+### Fichiers touchés
+
+| Zone | CSS / TSX |
+|------|-----------|
+| Tokens + shell | `app/globals.css`, `app/responsive.css`, `app/layout.tsx` (`themeColor`) |
+| Hub | `components/hub/hub.css` |
+| Gacha | `components/gacha/gacha.css`, `gacha-screen.tsx` (barre pity sous machine **retirée** ; badge `PITY n/100` sur bannière conservé) |
+| Esprits, quêtes, shop, profile, story | `components/*/…css` |
+| Primitives | `components/ui/rarity-badge.css`, `toast.css` |
+
+### Gacha — pity
+
+- **Retiré** : barre horizontale « Pity légendaire (S) » sous l'autel (collision visuelle avec la machine).
+- **Conservé** : stamp `PITY {n}/{hard}` sur la bannière du pack standard + texte « S garanti à 100 invocations ».
 
 ---
 
@@ -154,4 +190,4 @@ Phase 3 **étend** ces fichiers, ne les remplace pas.
 
 ---
 
-*Dernière mise à jour : juin 2026 — Phase 1 implémentée.*
+*Dernière mise à jour : juin 2026 — Phase 1 + refonte UI Puni Puni (palette corail).*
